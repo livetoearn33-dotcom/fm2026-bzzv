@@ -11,19 +11,34 @@ FUTUREMODE × SITCON BUILDMODE Hackathon 2026｜賽道 Future of Work
 | 項目 | 決定 | 決定時間 |
 |---|---|---|
 | 平台 | **Android** | 2026-08-31 |
+| **介面形態** | **兩個 surface：浮層卡片 ＋ 鍵盤上方建議條** | 2026-08-31 |
 | UI 技術 | **純 HTML + CSS，跑在 WebView 裡** | 2026-08-31 |
 | 知識庫 | **事實庫 ＋ 對象檔案** | 2026-08-31 |
 
-### 為什麼是 Android 殼 + WebView
+### 為什麼是兩個 surface
 
-Android 原生 UI 是 Compose／XML，吃不了 HTML。如果 Zanna 畫的東西要被原生重刻一次，等於做兩次。
+各司其職，而且 demo 的兩幕正好各佔一個：
+
+| Surface | 負責 | Demo |
+|---|---|---|
+| **浮層卡片** | 讀懂對話、產生回覆 | 第一幕（讀空氣） |
+| **鍵盤建議條** | 攔截使用者自己打的字 | 第二幕（防自爆） |
+
+**注意兩件技術事實**：
+
+1. **鍵盤讀不到對方的訊息。** Android IME 跟 iOS 一樣，只能存取使用者正在輸入的欄位。所以「讀懂對話」一定要靠 Accessibility Service，鍵盤不能取代它。
+2. **Accessibility Service 也監聽得到輸入框的文字變化**（`TYPE_VIEW_TEXT_CHANGED`）。所以防自爆的「偵測」可以由它做，鍵盤負責的是「呈現建議」這個介面。
+
+### 為什麼是原生殼 + WebView
+
+Android 原生 UI 是 Compose／XML，吃不了 HTML。如果視覺稿要被原生重刻一次，等於做兩次。
 
 所以架構切成兩層：
 
-- **Android 原生**只負責它非做不可的事：懸浮球、螢幕權限、讀畫面、填回輸入框
-- **WebView 裡的 HTML** 就是產品的 UI 本體，Zanna 的產出直接是成品
+- **Android 原生**只負責它非做不可的事：懸浮球、螢幕權限、讀畫面、IME 殼、填回輸入框
+- **WebView 裡的 HTML** 就是產品的 UI 本體
 
-副作用是 Android 那塊的範圍縮到很小，Brian 不用碰 Compose。
+兩個 surface 都用 WebView：浮層是一個 WebView，IME 的建議條也是一個 WebView（Android IME 的 input view 可以是任意 View）。
 
 ---
 
@@ -33,26 +48,32 @@ Android 原生 UI 是 Compose／XML，吃不了 HTML。如果 Zanna 畫的東西
 flowchart TB
     subgraph AND["Android 原生殼"]
         F["懸浮球<br/>SYSTEM_ALERT_WINDOW"]
-        R["讀畫面<br/>Accessibility 或 MediaProjection"]
-        W["WebView<br/>載入 UI"]
-        P["填回輸入框<br/>或寫剪貼簿"]
+        R["Accessibility Service<br/>讀對話 + 監聽輸入框"]
+        IME["自訂輸入法 IME 殼"]
+        P["填回輸入框"]
     end
-    subgraph WEB["WebView 內 · 純 HTML+CSS+JS"]
-        U["五個畫面與狀態"]
+    subgraph WEB1["浮層 WebView · HTML"]
+        U1["讀空氣 + 回覆生成"]
+    end
+    subgraph WEB2["建議條 WebView · HTML"]
+        U2["防自爆攔截"]
     end
     subgraph API["後端"]
         S["/analyze 分析對話"]
         G["/guard 防自爆檢查"]
         K["知識庫<br/>facts.json + contacts.json"]
     end
-    F --> R --> W
-    W --> U
-    U -->|"對話文字"| S
+    F --> U1
+    R -->|"對話文字"| U1
+    R -->|"你正在打的字"| U2
+    IME --> U2
+    U1 -->|"對話"| S
     S --> K
-    S -->|"風險等級 安全牌 回覆 來源"| U
-    U -->|"使用者自己打的字"| G
-    G -->|"風險詞 建議版本"| U
-    U --> P
+    S -->|"風險等級 安全牌 回覆 來源"| U1
+    U2 -->|"草稿"| G
+    G -->|"風險詞 建議版本"| U2
+    U1 --> P
+    U2 --> P
 ```
 
 ---
@@ -221,15 +242,21 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 詳細狀態見 [demo-script.md](demo-script.md)。這裡列前端要實作的部分。
 
-| # | 畫面 | 前端要做的事 |
-|---|---|---|
-| 1 | 待命 | 收起／hover 兩個狀態 |
-| 2 | **讀空氣＋回覆生成** ⭐ | safeCard 先顯示 → reply 接續長出來的動畫；風險標記；來源標籤；對比展開 |
-| 3 | **防自爆攔截** ⭐ | 輸入區；打字時呼叫 `/guard`（debounce，指延遲觸發避免每個字都送）；攔截卡滑入；`spans` 標記 |
-| 4 | 跨 App | 動畫或預錄，不用真做 |
-| 5 | 知識庫設定 | 靜態一張，被問到才開 |
+| # | Surface | 畫面 | 前端要做的事 |
+|---|---|---|---|
+| 1 | 浮層 | 懸浮球待命 | 收起／hover 兩個狀態 |
+| 2 | **浮層** | **讀空氣＋回覆生成** ⭐ | safeCard 先顯示 → reply 接續長出來的動畫；風險標記；來源標籤；對比展開 |
+| 3 | **鍵盤** | **防自爆建議條** ⭐ | 待命（高度 0）→ 觸發（長出 56dp）→ 展開（160dp）→ 採用後收回；`spans` 標記風險詞 |
+| 4 | — | 跨 App | 動畫或預錄，不用真做 |
+| 5 | — | 知識庫設定 | 靜態一張，被問到才開 |
 
-**視覺火力集中在 2 和 3。**
+**視覺火力集中在 2 和 3。** 兩個 surface 要用同一套視覺語言，但版面完全不同——一個是大卡片，一個是窄條。
+
+### 建議條的尺寸限制
+
+它緊貼鍵盤上緣、橫跨螢幕寬，收合高度約 **56dp**，只放得下一行提示加一個動作。完整建議句要**展開**才顯示（約 160dp）。
+
+出現方式要**推開**內容而不是蓋住——它是鍵盤的一部分，不是浮在鍵盤上的東西。
 
 ---
 
@@ -237,8 +264,9 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 | 模組 | 內容 |
 |---|---|
-| **Android 殼** | 懸浮球權限、讀畫面、WebView 容器、JS bridge、填回輸入框 |
-| **前端 UI** | 五個畫面與所有狀態，純 HTML+CSS+JS |
+| **Android 殼 A · 浮層** | 懸浮球權限（`SYSTEM_ALERT_WINDOW`）、Accessibility Service 讀對話、WebView 容器、JS bridge |
+| **Android 殼 B · 輸入法** | IME 骨架、建議條 WebView、填回輸入框。**建議 fork [AOSP SoftKeyboard sample](https://github.com/aosp-mirror/platform_development/tree/master/samples/SoftKeyboard) 加一條 WebView，不要自己從零寫鍵盤**——鍵盤本體只要能打字就好，不用做好 |
+| **前端 UI** | 兩個 surface 的所有狀態，純 HTML+CSS+JS |
 | **後端** | `/analyze`、`/guard`、知識庫檢索、分流規則 |
 | **內容與測資** | facts.json、contacts.json 的真實資料；demo 對話腳本；備援錄影 |
 
