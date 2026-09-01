@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · Chief of Staff — refined v0.3（鍵盤形態）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   幕僚 · refined v0.3 — 鍵盤（IME）形態
+   純 HTML / CSS / vanilla JS。可直接開瀏覽器，也可放進 WebView。
+
+   設計語言：Raycast
+   （#040506 canvas、hairline + inset key shadow、單一珊瑚色品牌標記、
+     Mist #e6e6e6 填色為唯一主要動作、不用 drop-shadow / 不用發光）
+
+   一個元件、六個狀態：
+     待命 → 讀取中 → 有建議 → 展開 → 採用後 → 防自爆
+   代寫（讀對方訊息）與防自爆（讀你自己打的字）共用同一副骨架。
+   ============================================================ */
+
+:root{
+  /* 表面六階 —— 沿用原系統 */
+  --void:  #040506;
+  --ink:   #07080a;   /* 收合列 */
+  --obsid: #111214;   /* 展開面板 */
+  --graph: #1b1c1e;   /* 中性標籤底 */
+  --slate: #363739;   /* 次要邊框 */
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;   /* 唯一的填色動作 = 幕僚手上有東西給你 */
+  --white: #ffffff;
+
+  --coral: #ff6363;   /* 品牌菱形，只出現在品牌標記 */
+  --ember: #452324;   /* 高壓 / 語氣 */
+  --amber: #4a3a1f;   /* 敏感 */
+
+  /* 宿主 App（LINE）淺色系 —— 刻意是另一套系統 */
+  --host-bg:   #f2f2f3;
+  --host-card: #ffffff;
+  --host-line: #dfdfe0;
+  --host-ink:  #1b1c1e;
+  --host-key:  #d4d4d5;
+
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button{ font-family: inherit; cursor: pointer; }
+
+/* ---------- 展示頁外框 ---------- */
+.page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:48px; }
+.intro{ display:flex; flex-direction:column; gap:16px; max-width:680px; }
+.brandline{ display:flex; align-items:center; gap:8px; }
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:10px; line-height:1;
+  letter-spacing:.8px; text-transform:uppercase; color: var(--smoke);
+}
+.eyebrow.lg{ font-size:11px; }
+h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
+.lede{ font-size:16px; line-height:1.6; color: var(--ash); text-wrap:pretty; margin:0; }
+
+.decks{ display:flex; gap:48px; flex-wrap:wrap; align-items:flex-start; }
+.deck{ display:flex; flex-direction:column; gap:20px; }
+.deck-head{ display:flex; flex-direction:column; gap:10px; }
+.tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+.tab{
+  font-family: var(--mono); font-size:11px; line-height:1; letter-spacing:.3px;
+  padding:9px 11px; border-radius:8px;
+  background:transparent; color: var(--smoke); border:1px solid var(--slate);
+  transition: color 150ms var(--ease), background 150ms var(--ease), border-color 150ms var(--ease);
+}
+.tab:hover{ color: var(--mist); }
+.tab[aria-selected="true"]{ background: var(--mist); color: var(--iron); border-color: var(--mist); }
+.tabs.sub .tab[aria-selected="true"]{ background: var(--graph); color: var(--mist); border-color: var(--slate); }
+.caption{ width:390px; font-size:12px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
+
+/* ---------- 手機外框 390 × 800 ---------- */
+.phone{
+  position:relative; width:390px; height:800px; flex:none;
+  border-radius:40px; background: var(--ink); padding:8px;
+  box-shadow: var(--keyline-soft);
+}
+.screen{
+  position:relative; width:374px; height:784px; border-radius:33px;
+  overflow:hidden; background: var(--host-bg);
+  display:flex; flex-direction:column;
+}
+
+/* ---------- 宿主 App ---------- */
+.statusbar{
+  height:24px; flex:none; display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px; font-family: var(--mono); font-size:10px; letter-spacing:.5px; color: var(--iron);
+}
+.apphead{
+  flex:none; display:flex; align-items:center; gap:8px;
+  padding:8px 16px; border-bottom:1px solid var(--host-line); background: var(--host-card);
+}
+.avatar{ width:32px; height:32px; border-radius:9999px; background: var(--host-line); flex:none; }
+.apphead .nm{ font-size:13px; font-weight:500; line-height:1.4; color: var(--host-ink); }
+.apphead .sub{ font-size:11px; line-height:1.4; color: var(--smoke); }
+
+/* 對話區靠底對齊 —— 真實聊天室最新訊息永遠貼著輸入框 */
+.thread{
+  flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-end;
+  gap:8px; padding:16px; overflow:hidden;
+}
+.bubble{
+  max-width:78%; align-self:flex-start; background: var(--host-card);
+  border:1px solid var(--host-line); border-radius:8px; padding:8px 12px;
+  font-size:14px; line-height:1.55; color: var(--host-ink); text-wrap:pretty;
+}
+.composer{
+  flex:none; display:flex; align-items:flex-end; gap:8px;
+  padding:8px 16px 12px; border-top:1px solid var(--host-line); background: var(--host-card);
+}
+.field{
+  flex:1; min-height:36px; border-radius:8px; background: var(--host-bg);
+  display:flex; align-items:center;
+  padding:8px 12px; font-size:14px; line-height:1.6; color: var(--ash);
+  transition: color 200ms var(--ease);
+}
+/* 打字狀態改成 block：flex 會把每個 span 當成 flex item，
+   標記結束後的「，」就會被丟到下一行開頭（中文排版錯誤） */
+.field.typed{ display:block; color: var(--host-ink); line-break:strict; }
+.sendbtn{
+  width:36px; height:36px; flex:none; border-radius:8px; background: var(--host-bg);
+  transition: background 200ms var(--ease);
+}
+/* 填入之後送出鍵才活起來 —— 幕僚只把字放進去，送不送是使用者按的 */
+.sendbtn.live{ background: var(--graph); }
+.caret{ display:inline-block; width:1.5px; height:16px; background: var(--iron); margin-left:2px; vertical-align:-3px; }
+
+/* 兩種標記：形狀不同、顏色不同，紅色永不出現 */
+.mark-typo{ border-bottom:1px dotted var(--ash); }
+.mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
+
+/* ============================================================
+   幕僚面板 —— 貼齊左右緣，從鍵盤上緣往上長
+   ============================================================ */
+.panel{
+  position:relative; flex:none; background: var(--ink);
+  border-radius:16px 16px 0 0; overflow:hidden;
+  /* 唯一的 keyline：上緣一道 inset 亮線。左右下三邊都貼死，不需要邊框 */
+  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset;
+}
+
+/* 讀取中：沿著已經存在的上緣亮線掃一道光。不做 spinner、不蓋住畫面 */
+.panel.reading::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:35%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
+  animation: sweep 1100ms linear infinite;
+}
+@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
+
+/* 收合列 56dp —— 六個狀態共用同一個容器，只換裡面的槽位 */
+/* gap 12→8、chevron 40→32：省下的 20px 全給標題，
+   讓「他已經問第二次 · …」這種情境判讀盡量不被 ellipsis 切掉 */
+.panel-row{ height:56px; display:flex; align-items:center; gap:8px; padding:0 8px 0 16px; }
+.panel-hit{
+  flex:1; min-width:0; display:flex; align-items:center; gap:8px;
+  border:0; background:transparent; padding:0; text-align:left;
+}
+.panel-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.panel-eyebrow{ display:flex; align-items:center; gap:8px; }
+.panel-title{
+  font-size:13px; font-weight:500; line-height:1.3; color: var(--white);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chip{
+  font-family: var(--mono); font-size:10px; line-height:1.6; letter-spacing:.3px;
+  border-radius:6px; padding:3px 6px; white-space:nowrap;
+  background: var(--graph); color: var(--ash);
+  transition: background 200ms var(--ease), color 200ms var(--ease);
+}
+.chip.mood{ letter-spacing:.8px; text-transform:uppercase; }
+.chip.warm{ background: var(--ember); color: var(--mist); }
+.chip.amber{ background: var(--amber); color: var(--mist); }
+
+/* 主要動作：Mist 填色。整個系統只有這一種填色，
+   而且只有「幕僚手上真的有東西給你」時才會出現 */
+.btn-adopt{
+  flex:none; height:40px; padding:0 14px; border-radius:8px; border:0;
+  background: var(--mist); color: var(--iron); font-size:13px; font-weight:500;
+  transition: background 150ms var(--ease);
+}
+.btn-adopt:hover{ background: var(--white); }
+/* 待命的「附加」刻意用次要樣式：它是邀請，不是建議 */
+.btn-attach{
+  flex:none; height:40px; padding:0 14px; border-radius:8px;
+  background:transparent; color: var(--ash); border:1px solid var(--slate);
+  font-size:13px; font-weight:500;
+  transition: color 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn-attach:hover{ color: var(--white); border-color: var(--iron); }
+.chevron{
+  flex:none; width:32px; height:40px; border:0; background:transparent; border-radius:8px;
+  font-family: var(--mono); font-size:11px; color: var(--smoke);
+  display:flex; align-items:center; justify-content:center;
+  transition: color 150ms var(--ease), background 150ms var(--ease);
+}
+.chevron:hover{ color: var(--white); background: var(--graph); }
+.chevron span{ display:inline-block; transition: transform 200ms var(--ease); }
+.panel[data-open="true"] .chevron span{ transform: rotate(180deg); }
+
+/* 展開面板 —— 用表面色階（#07080a → #111214）分層，不用分隔線 */
+.panel-body{
+  background: var(--obsid);
+  display:grid; grid-template-rows:0fr;
+  transition: grid-template-rows 200ms var(--ease);
+}
+.panel[data-open="true"] .panel-body{ grid-template-rows:1fr; }
+.panel-body > div{ overflow:hidden; }
+.panel-in{ padding:16px; display:flex; flex-direction:column; gap:8px; }
+.tagrow{ display:flex; gap:6px; flex-wrap:wrap; }
+/* 本文＝畫面唯一的 17px。它就是要填進輸入框的那句話 */
+.sugtext{ font-size:17px; font-weight:400; line-height:1.6; color: var(--white); text-wrap:pretty; }
+.sugtext.flash{ animation: fadein 180ms var(--ease) both; }
+@keyframes fadein{ from{opacity:0} to{opacity:1} }
+/* flex-end：「換一版」落在理由最後一行的高度，理由換幾行都不會撞到它 */
+.footrow{ display:flex; align-items:flex-end; gap:12px; }
+.sugreason{ flex:1; font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty; }
+.linkbtn{
+  flex:none; border:0; background:transparent; padding:0 0 0 4px;
+  font-family: var(--mono); font-size:10px; letter-spacing:.3px; line-height:1.6; color: var(--smoke);
+  transition: color 150ms var(--ease);
+}
+.linkbtn:hover{ color: var(--mist); }
+
+/* ---------- 注音鍵盤 ---------- */
+.kbd{ flex:none; background: var(--mist); padding:8px 4px 12px; display:flex; flex-direction:column; gap:6px; }
+.kbd-row{ display:flex; gap:5px; justify-content:center; padding:0 4px; }
+.key{
+  flex:1; height:40px; border-radius:8px; background: var(--host-card); color: var(--iron);
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.key.mod{ background: var(--host-key); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="intro">
+    <div class="brandline">
+      <i class="diamond" style="width:8px;height:8px"></i>
+      <span class="eyebrow lg">幕僚 / Chief of Staff · refined v0.3 · 鍵盤形態</span>
+    </div>
+    <h1>層級靠留白，不靠格線</h1>
+    <p class="lede">六個狀態共用一個元件：眉標／情境判讀／來源標籤／本文／理由，代寫和防自爆同一副骨架，只換內容。原本卡片裡的五條分隔線全部改成表面色階，動作從四個減到一個，字級從六種收回四種。Mist 白色填色被收攏成一個意思——只有幕僚手上真的有東西給你時才會出現，所以待命的「附加」刻意是次要樣式。所有桌機鍵盤提示（esc／⌘C／⌘R／⇥）移除：Android 輸入法沒有那些鍵，也不能替使用者按送出，所以動作是「填入」與「替換」。</p>
+  </div>
+
+  <div class="decks">
+
+    <!-- ============ 代寫生命週期 ============ -->
+    <div class="deck">
+      <div class="deck-head">
+        <span class="eyebrow lg">01 · 代寫 — 點附加，它才看這一次</span>
+        <div class="tabs" id="stateTabs">
+          <button class="tab" data-state="idle" aria-selected="true">待命</button>
+          <button class="tab" data-state="reading">讀取中</button>
+          <button class="tab" data-state="ready">有建議</button>
+          <button class="tab" data-state="expanded">展開</button>
+          <button class="tab" data-state="adopted">採用後</button>
+        </div>
+        <div class="tabs sub" id="moodTabs">
+          <button class="tab" data-mood="normal">一般</button>
+          <button class="tab" data-mood="tense" aria-selected="true">高壓</button>
+          <button class="tab" data-mood="sensitive">敏感</button>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span>14:32</span><span>LTE</span></div>
+
+          <div class="apphead">
+            <div class="avatar"></div>
+            <div>
+              <div class="nm">王經理</div>
+              <div class="sub">宏碩採購</div>
+            </div>
+          </div>
+
+          <div class="thread">
+            <div class="bubble">上次那批的報價還沒給我，明天要開會。</div>
+            <div class="bubble">這已經是我第二次問了。</div>
+          </div>
+
+          <div class="composer">
+            <div class="field" id="fieldA">輸入訊息<span class="caret"></span></div>
+            <div class="sendbtn" id="sendA"></div>
+          </div>
+
+          <div class="panel" id="panelA" data-open="false">
+            <div class="panel-row" id="rowA"><!-- 由 JS 依狀態填入 --></div>
+            <div class="panel-body"><div><div class="panel-in">
+              <div class="tagrow" id="tagsA"></div>
+              <div class="sugtext" id="replyA"></div>
+              <div class="footrow">
+                <span class="sugreason" id="reasonA"></span>
+                <button class="linkbtn" id="rerollA">換一版</button>
+              </div>
+            </div></div></div>
+          </div>
+
+          <div class="kbd" data-kbd></div>
+        </div>
+      </div>
+
+      <p class="caption">待命時條上只有品牌菱形和「附加」，那顆按鈕就是這條 bar 存在的理由——幕僚不自己偷看，使用者點一下，它才截這一次的畫面。讀取中不做 spinner，只沿著條子上緣本來就有的那道 1px 亮線掃一道光。採用後條子收回待命：建議已經被用掉了，差別在輸入框而不在條上，而且送出鍵這時才活起來——幕僚只把字放進去，送不送是使用者按的。</p>
+    </div>
+
+    <!-- ============ 防自爆 ============ -->
+    <div class="deck">
+      <div class="deck-head">
+        <span class="eyebrow lg">02 · 防自爆 — 你自己打字帶了火氣</span>
+        <div class="tabs" id="barTabs">
+          <button class="tab" data-bar="closed" aria-selected="true">收合 56dp</button>
+          <button class="tab" data-bar="open">展開 198dp</button>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span>14:34</span><span>LTE</span></div>
+
+          <div class="apphead">
+            <div class="avatar"></div>
+            <div>
+              <div class="nm">王經理</div>
+              <div class="sub">宏碩採購</div>
+            </div>
+          </div>
+
+          <div class="thread">
+            <div class="bubble">這已經是我第二次問了。</div>
+            <div class="bubble">交期到底能不能給我確定的？</div>
+          </div>
+
+          <div class="composer">
+            <div class="field typed">這個<span class="mark-typo">交其</span><span class="mark-tone">本來就不是我能決定的</span>，你要問生產那邊<span class="caret"></span></div>
+            <div class="sendbtn"></div>
+          </div>
+
+          <div class="panel" id="panelB" data-open="false">
+            <div class="panel-row">
+              <button class="panel-hit" id="hitB">
+                <span class="panel-txt">
+                  <span class="panel-eyebrow">
+                    <i class="diamond" style="width:6px;height:6px"></i>
+                    <span class="eyebrow">幕僚 · 對方會怎麼讀</span>
+                  </span>
+                  <span class="panel-title">他讀起來會像被推回去自己想辦法</span>
+                </span>
+              </button>
+              <button class="btn-adopt">替換</button>
+              <button class="chevron" id="chevB" aria-label="展開"><span>▴</span></button>
+            </div>
+
+            <div class="panel-body"><div><div class="panel-in">
+              <div class="tagrow">
+                <span class="chip warm">聽起來在推開</span>
+                <span class="chip">#P-118 · 14 天</span>
+              </div>
+              <div class="sugtext">交期我來幫您確認。今天內跟生產端對過，回覆您一個能承諾的日期。</div>
+              <div class="footrow">
+                <span class="sugreason">他會覺得有人接手了，而不是又被轉一手。</span>
+              </div>
+            </div></div></div>
+          </div>
+
+          <div class="kbd" data-kbd></div>
+        </div>
+      </div>
+
+      <p class="caption">防自爆不需要「附加」——輸入法本來就看得到你自己打的字，看不到的是對方的訊息。這條界線剛好把授權說清楚：要讀對方的，你得點一下；要接住你自己的，它一直都在。骨架跟代寫完全一樣，只是眉標換成「對方會怎麼讀」、主動作換成「替換」。展開後的建議句從 15px 改成 17px，跟代寫的本文同一級，語氣標籤從三個減到兩個。</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- 內容：沿用原檔文案，未改寫 ---------- */
+const MOODS = {
+  normal: {
+    label: "一般", chip: "",
+    strategy: "",
+    tags: [["#Q-2410",""], ["交期 14 天",""], ["偏好 · 先給結論",""]],
+    replies: [
+      "王經理午安，報價已完成：A 規格 NT$248／pcs，B 規格 NT$276／pcs，交期同為 14 天。稍後寄 PDF 給您，明天開會直接用這版。",
+      "王經理午安。A 規格 NT$248／pcs、B 規格 NT$276／pcs，交期都是 14 天，等下把 PDF 寄過去。"
+    ],
+    reason: "他只是要數字，這樣他一眼就能複製到明天的會議資料裡。"
+  },
+  tense: {
+    label: "高壓", chip: "warm",
+    strategy: "他已經問第二次 · 這時候他要的是有人接住",
+    tags: [["#Q-2410",""], ["催問 ×2","warm"], ["交期 14 天",""], ["偏好 · 條列",""]],
+    replies: [
+      "王經理，抱歉讓您問到第二次，這是我這邊的疏漏。報價今天下午三點前給您，含 A／B 兩種規格與交期。明天開會若要簡報版本，我一併整理好。",
+      "王經理，第二次才回覆是我的問題，抱歉。今天下午三點前給您完整報價（A／B 規格與交期），並附一份可直接開會用的一頁版。"
+    ],
+    reason: "他讀到的是有人認了、有時間點；沒有解釋延遲，所以不會像在找理由。"
+  },
+  sensitive: {
+    label: "敏感", chip: "amber",
+    strategy: "話題已碰到價格 · 這裡多說一個數字就會被當成承諾",
+    tags: [["#Q-2410",""], ["折讓需核准","amber"], ["敏感詞 · 降價","amber"]],
+    replies: [
+      "王經理，抱歉讓您等。完整報價今天下午三點前給您；價格條件我需要先與主管確認，今天下班前正式回覆，不會讓您明天開會前空著。",
+      "王經理，抱歉。報價今天下午三點前送到；折讓條件涉及內部核准，我今天下班前正式回覆您，開會前一定給確定的數字。"
+    ],
+    reason: "他會覺得你在幫他爭取，而不是拒絕他；折讓幅度沒有提前露出去。"
+  }
+};
+
+/* state: idle | reading | ready | expanded | adopted */
+const state = { view: "idle", mood: "tense", variant: 0, openB: false };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+/* 待命／採用後：只有品牌菱形 + 附加。這條 bar 存在的理由就是那顆按鈕 */
+const ROW_IDLE = `
+  <i class="diamond" style="width:9px;height:9px"></i>
+  <span style="flex:1"></span>
+  <button class="btn-attach" id="attachBtn">附加</button>`;
+
+/* 讀取中：條上一個輕微狀態，光掃在上緣，不蓋畫面 */
+const ROW_READING = `
+  <i class="diamond" style="width:9px;height:9px"></i>
+  <span class="eyebrow">讀取中</span>
+  <span style="flex:1"></span>`;
+
+function rowSuggest(m, title) {
+  return `
+  <button class="panel-hit" id="hitA">
+    <span class="panel-txt">
+      <span class="panel-eyebrow">
+        <i class="diamond" style="width:6px;height:6px"></i>
+        <span class="eyebrow">幕僚</span>
+        <span class="chip mood ${m.chip}">${esc(m.label)}</span>
+      </span>
+      <span class="panel-title">${esc(title)}</span>
+    </span>
+  </button>
+  <button class="btn-adopt" id="adoptBtn">填入</button>
+  <button class="chevron" id="chevA" aria-label="展開"><span>▴</span></button>`;
+}
+
+function renderA(animate) {
+  const m = MOODS[state.mood];
+  const reply = m.replies[state.variant % m.replies.length];
+  const v = state.view;
+  const suggesting = (v === "ready" || v === "expanded");
+
+  // 收合列第二行 = 此刻最該讀的那一行：
+  // 有語氣風險 → 情境判讀（他已經問第二次…）；沒有 → 待填入本文的開頭。
+  // 面板裡不再放第二條灰色說明，「為什麼」只留理由行一條。
+  $("rowA").innerHTML = suggesting ? rowSuggest(m, m.strategy || reply)
+                      : v === "reading" ? ROW_READING
+                      : ROW_IDLE;
+
+  $("panelA").dataset.open = String(v === "expanded");
+  $("panelA").classList.toggle("reading", v === "reading");
+
+  $("tagsA").innerHTML = m.tags
+    .map(([t, k]) => '<span class="chip' + (k ? " " + k : "") + '">' + esc(t) + '</span>')
+    .join("");
+
+  const el = $("replyA");
+  el.textContent = reply;
+  if (animate) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+  $("reasonA").textContent = m.reason;
+
+  // 採用後：字進了輸入框，送出鍵才活起來
+  const f = $("fieldA");
+  if (v === "adopted") {
+    f.classList.add("typed");
+    f.innerHTML = esc(reply) + '<span class="caret"></span>';
+    $("sendA").classList.add("live");
+  } else {
+    f.classList.remove("typed");
+    f.innerHTML = '輸入訊息<span class="caret"></span>';
+    $("sendA").classList.remove("live");
+  }
+
+  bindRow();
+  syncTabs("#stateTabs", "state", state.view);
+  syncTabs("#moodTabs", "mood", state.mood);
+}
+
+function bindRow() {
+  const attach = $("attachBtn");
+  if (attach) attach.addEventListener("click", () => {
+    state.view = "reading"; renderA(false);
+    setTimeout(() => { if (state.view === "reading") { state.view = "ready"; renderA(true); } }, 1100);
+  });
+  const adopt = $("adoptBtn");
+  if (adopt) adopt.addEventListener("click", () => { state.view = "adopted"; renderA(false); });
+  const toggle = () => { state.view = state.view === "expanded" ? "ready" : "expanded"; renderA(false); };
+  const chev = $("chevA"), hit = $("hitA");
+  if (chev) chev.addEventListener("click", toggle);
+  if (hit) hit.addEventListener("click", toggle);
+}
+
+function syncTabs(sel, key, val) {
+  document.querySelectorAll(sel + " .tab").forEach(t => {
+    if (t.dataset[key] === val) t.setAttribute("aria-selected", "true");
+    else t.removeAttribute("aria-selected");
+  });
+}
+
+function renderB() {
+  $("panelB").dataset.open = String(state.openB);
+  syncTabs("#barTabs", "bar", state.openB ? "open" : "closed");
+}
+
+document.querySelectorAll("#stateTabs .tab").forEach(t => {
+  t.addEventListener("click", () => { state.view = t.dataset.state; renderA(true); });
+});
+document.querySelectorAll("#moodTabs .tab").forEach(t => {
+  t.addEventListener("click", () => { state.mood = t.dataset.mood; state.variant = 0; renderA(true); });
+});
+$("rerollA").addEventListener("click", () => { state.variant++; renderA(true); });
+
+document.querySelectorAll("#barTabs .tab").forEach(t => {
+  t.addEventListener("click", () => { state.openB = t.dataset.bar === "open"; renderB(); });
+});
+const toggleB = () => { state.openB = !state.openB; renderB(); };
+$("chevB").addEventListener("click", toggleB);
+$("hitB").addEventListener("click", toggleB);
+
+/* ---------- 注音鍵盤 ---------- */
+const KEY_ROWS = [
+  "ㄅㄉˇˋㄓˊ˙ㄚㄞㄢ".split("").map(c => ({ label: c, flex: 1 })),
+  "ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ".split("").map(c => ({ label: c, flex: 1 })),
+  "ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ".split("").map(c => ({ label: c, flex: 1 })),
+  [{ label: "⇧", flex: 1.4, mod: true },
+   ...["ㄈ","ㄌ","ㄏ","ㄒ","ㄖ","ㄙ"].map(c => ({ label: c, flex: 1 })),
+   { label: "⌫", flex: 1.4, mod: true }],
+  [{ label: "?123", flex: 1.6, mod: true },
+   { label: "，", flex: 1 },
+   { label: "", flex: 4.4 },
+   { label: "。", flex: 1 },
+   { label: "↵", flex: 1.6, mod: true }]
+];
+const KBD_HTML = KEY_ROWS.map(row =>
+  '<div class="kbd-row">' + row.map(k =>
+    '<div class="key' + (k.mod ? " mod" : "") + '" style="flex:' + k.flex + '">' + k.label + '</div>'
+  ).join("") + '</div>'
+).join("");
+document.querySelectorAll("[data-kbd]").forEach(el => { el.innerHTML = KBD_HTML; });
+
+renderA(false);
+renderB();
+</script>
+</body>
+</html>

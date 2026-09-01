@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #040506; font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #e6e6e6; }
+  a:hover { color: #ffffff; }
+  @keyframes mu-rise { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+<div style="padding: 48px 48px 80px; display: flex; flex-direction: column; gap: 48px; background: #040506; color: #ffffff">
+
+  <div style="display: flex; flex-direction: column; gap: 16px; max-width: 640px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <div style="width: 8px; height: 8px; background: #ff6363; transform: rotate(45deg)"></div>
+      <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">幕僚 / Chief of Staff · v0.2</div>
+    </div>
+    <div style="font-size: 32px; font-weight: 400; line-height: 1.15; color: #ffffff">邊界靠邊框，不靠陰影</div>
+    <div style="font-size: 16px; line-height: 1.6; color: #9c9c9d; text-wrap: pretty">浮層與建議條都改用 hairline 邊框加 inset 內陰影分離，取消 drop-shadow 與發光。彩度只留給左上角的品牌菱形；氣氛判定改用亮度階梯與暖色表面色，不用彩色圓點。回覆文字是唯一的主角，其餘全部降到 10–13px 灰階。所有提醒改為描述對方會怎麼讀，而不是宣告這句話錯了。</div>
+  </div>
+
+  <div style="display: flex; gap: 48px; flex-wrap: wrap; align-items: flex-start">
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">01 · Floating card</div>
+        <div style="display: flex; gap: 8px">
+          <button onClick="{{ setNormal }}" style="{{ tabNormal }}">一般</button>
+          <button onClick="{{ setTense }}" style="{{ tabTense }}">高壓</button>
+          <button onClick="{{ setSensitive }}" style="{{ tabSensitive }}">敏感</button>
+          <button onClick="{{ toggleEvidence }}" style="{{ tabEvidence }}">依據</button>
+        </div>
+      </div>
+
+      <div style="position: relative; width: 390px; height: 800px; border-radius: 40px; background: #07080a; padding: 8px; box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset, rgba(255,255,255,0.14) 0px 0px 0px 1px, rgba(0,0,0,0.2) 0px -1px 0px 0px inset">
+        <div style="position: relative; width: 374px; height: 784px; border-radius: 33px; overflow: hidden; background: #f2f2f3; display: flex; flex-direction: column">
+
+          <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.5px; color: #454647">
+            <span>14:32</span><span>LTE</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #dfdfe0; background: #ffffff">
+            <div style="width: 32px; height: 32px; border-radius: 99999px; background: #dfdfe0"></div>
+            <div style="display: flex; flex-direction: column">
+              <div style="font-size: 14px; font-weight: 500; color: #1b1c1e">王經理</div>
+              <div style="font-size: 11px; line-height: 1.4; color: #6a6b6c">宏碩採購</div>
+            </div>
+          </div>
+
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 0; overflow: hidden">
+            <div style="align-self: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.5px; color: #9c9c9d">TODAY</div>
+            <div style="max-width: 76%; align-self: flex-start; background: #ffffff; border: 1px solid #dfdfe0; border-radius: 8px; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: #1b1c1e">上次那批的報價還沒給我，明天要開會。</div>
+            <div style="max-width: 76%; align-self: flex-start; background: #ffffff; border: 1px solid #dfdfe0; border-radius: 8px; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: #1b1c1e">這已經是我第二次問了。</div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px 16px; border-top: 1px solid #dfdfe0; background: #ffffff">
+            <div style="flex: 1; height: 36px; border-radius: 8px; background: #f2f2f3; display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: #9c9c9d">輸入訊息</div>
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: #f2f2f3"></div>
+          </div>
+
+          <div style="position: absolute; top: 216px; left: 16px; right: 16px; animation: mu-rise 160ms cubic-bezier(0.16, 1, 0.3, 1) both">
+            <div style="background: #07080a; border-radius: 16px; overflow: hidden; box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset, rgba(255,255,255,0.25) 0px 0px 0px 1px, rgba(0,0,0,0.2) 0px -1px 0px 0px inset">
+
+              <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #1b1c1e">
+                <div style="width: 7px; height: 7px; background: #ff6363; transform: rotate(45deg)"></div>
+                <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">幕僚</div>
+                <div style="flex: 1"></div>
+                <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.5px; color: #6a6b6c; background: #1b1c1e; border-radius: 6px; padding: 3px 6px">esc</div>
+              </div>
+
+              <sc-if value="{{ moodShow }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: baseline; gap: 8px; padding: 8px 16px; background: {{ stripBg }}; border-bottom: 1px solid #1b1c1e">
+                  <div style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; letter-spacing: 0.8px; text-transform: uppercase; color: #e6e6e6">{{ moodLabel }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: #9c9c9d; text-wrap: pretty">{{ strategy }}</div>
+                </div>
+              </sc-if>
+
+              <div style="padding: 16px">
+                <div style="font-size: 17px; font-weight: 400; line-height: 1.65; color: #ffffff; text-wrap: pretty">{{ reply }}</div>
+              </div>
+
+              <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 16px 12px">
+                <div style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; color: #454647">↳</div>
+                <div style="font-size: 12px; line-height: 1.55; color: #6a6b6c; text-wrap: pretty">{{ reason }}</div>
+              </div>
+
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 12px">
+                <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="3">
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; letter-spacing: 0.3px; color: #e6e6e6; background: #1b1c1e; border-radius: 6px; padding: 3px 6px">{{ tag }}</div>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ evidenceOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px 16px; border-top: 1px solid #1b1c1e; background: #111214; display: flex; flex-direction: column; gap: 8px">
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">引用依據</div>
+                  <sc-for list="{{ evidence }}" as="row" hint-placeholder-count="3">
+                    <div style="display: flex; gap: 8px">
+                      <div style="width: 96px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; color: #6a6b6c">{{ row.src }}</div>
+                      <div style="font-size: 12px; line-height: 1.55; color: #9c9c9d; text-wrap: pretty">{{ row.val }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-top: 1px solid #1b1c1e; background: #040506">
+                <button style="flex: none; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 500; color: #454647; background: #e6e6e6; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer" style-hover="background: #ffffff">送出<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: #9c9c9d">⏎</span></button>
+                <button style="flex: none; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 500; color: #9c9c9d; background: transparent; border: 1px solid #363739; border-radius: 8px; padding: 8px 12px; cursor: pointer" style-hover="color: #ffffff">複製<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: #454647">⌘C</span></button>
+                <button onClick="{{ reroll }}" style="flex: none; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 500; color: #9c9c9d; background: transparent; border: 1px solid #363739; border-radius: 8px; padding: 8px 12px; cursor: pointer" style-hover="color: #ffffff">換一版<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: #454647">⌘R</span></button>
+                <div style="flex: 1"></div>
+                <button onClick="{{ toggleEvidence }}" style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.3px; color: #6a6b6c; background: transparent; border: 0; padding: 8px; cursor: pointer" style-hover="color: #e6e6e6">{{ evidenceLabel }}</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="position: absolute; right: 16px; bottom: 96px; width: 44px; height: 44px; border-radius: 99999px; background: #07080a; display: flex; align-items: center; justify-content: center; box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset, rgba(255,255,255,0.25) 0px 0px 0px 1px, rgba(0,0,0,0.2) 0px -1px 0px 0px inset">
+            <div style="width: 9px; height: 9px; background: #ff6363; transform: rotate(45deg)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width: 390px; font-size: 12px; line-height: 1.7; color: #6a6b6c; text-wrap: pretty">主角是 17px／400 的白色回覆文字，佔卡片唯一的大字級。策略帶、理由行、知識庫標籤全部壓在 10–12px 灰階，用 hairline 分隔而非留白撐開，被打斷的使用者一眼掃完四個區塊。</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">02 · IME suggestion bar</div>
+        <div style="display: flex; gap: 8px">
+          <button onClick="{{ collapseBar }}" style="{{ tabCollapsed }}">收合 56dp</button>
+          <button onClick="{{ expandBar }}" style="{{ tabExpanded }}">展開 160dp</button>
+        </div>
+      </div>
+
+      <div style="position: relative; width: 390px; height: 800px; border-radius: 40px; background: #07080a; padding: 8px; box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset, rgba(255,255,255,0.14) 0px 0px 0px 1px, rgba(0,0,0,0.2) 0px -1px 0px 0px inset">
+        <div style="position: relative; width: 374px; height: 784px; border-radius: 33px; overflow: hidden; background: #f2f2f3; display: flex; flex-direction: column">
+
+          <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.5px; color: #454647">
+            <span>14:34</span><span>LTE</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #dfdfe0; background: #ffffff">
+            <div style="width: 32px; height: 32px; border-radius: 99999px; background: #dfdfe0"></div>
+            <div style="display: flex; flex-direction: column">
+              <div style="font-size: 14px; font-weight: 500; color: #1b1c1e">王經理</div>
+              <div style="font-size: 11px; line-height: 1.4; color: #6a6b6c">宏碩採購</div>
+            </div>
+          </div>
+
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 16px; overflow: hidden">
+            <div style="max-width: 76%; align-self: flex-start; background: #ffffff; border: 1px solid #dfdfe0; border-radius: 8px; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: #1b1c1e">這已經是我第二次問了。</div>
+            <div style="max-width: 76%; align-self: flex-start; background: #ffffff; border: 1px solid #dfdfe0; border-radius: 8px; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: #1b1c1e">交期到底能不能給我確定的？</div>
+          </div>
+
+          <div style="display: flex; align-items: flex-end; gap: 8px; padding: 8px 16px; border-top: 1px solid #dfdfe0; background: #ffffff">
+            <div style="flex: 1; min-height: 36px; border-radius: 8px; background: #f2f2f3; display: flex; align-items: center; flex-wrap: wrap; padding: 8px 12px; font-size: 14px; line-height: 1.6; color: #1b1c1e">這個<span style="border-bottom: 1px dotted #9c9c9d">交其</span><span style="background: rgba(69,35,36,0.08); border-bottom: 2px solid #452324; padding-bottom: 1px">本來就不是我能決定的</span>，你要問生產那邊<span style="width: 1.5px; height: 16px; background: #454647; margin-left: 2px"></span></div>
+            <div style="width: 36px; height: 36px; flex: none; border-radius: 8px; background: #f2f2f3"></div>
+          </div>
+
+          <div style="background: #07080a; box-shadow: rgba(255,255,255,0.25) 0px 1px 0px 0px inset">
+            <div style="height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px">
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <div style="width: 6px; height: 6px; flex: none; background: #ff6363; transform: rotate(45deg)"></div>
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1; letter-spacing: 0.8px; text-transform: uppercase; color: #6a6b6c">幕僚 · 對方會怎麼讀</div>
+                </div>
+                <div style="font-size: 13px; font-weight: 500; line-height: 1.3; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ barTitle }}</div>
+              </div>
+              <button onClick="{{ toggleBar }}" style="flex: none; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 500; color: #454647; background: #e6e6e6; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer" style-hover="background: #ffffff">替換<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: #9c9c9d">⇥</span></button>
+              <button onClick="{{ toggleBar }}" style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1; color: #6a6b6c; background: transparent; border: 1px solid #363739; border-radius: 8px; padding: 9px 10px; cursor: pointer" style-hover="color: #ffffff">{{ chevron }}</button>
+            </div>
+
+            <sc-if value="{{ barOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="height: 104px; box-sizing: border-box; border-top: 1px solid #1b1c1e; background: #111214; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; letter-spacing: 0.3px; color: #e6e6e6; background: #452324; border-radius: 6px; padding: 3px 6px">聽起來在推開</div>
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; letter-spacing: 0.3px; color: #e6e6e6; background: #452324; border-radius: 6px; padding: 3px 6px">帶防衛感</div>
+                  <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; letter-spacing: 0.3px; color: #9c9c9d; background: #1b1c1e; border-radius: 6px; padding: 3px 6px">#P-118 · 14 天</div>
+                </div>
+                <div style="font-size: 15px; line-height: 1.6; color: #ffffff; text-wrap: pretty">交期我來幫您確認。今天內跟生產端對過，回覆您一個能承諾的日期。</div>
+                <div style="display: flex; align-items: baseline; gap: 8px">
+                  <div style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; line-height: 1.6; color: #454647">↳</div>
+                  <div style="font-size: 11px; line-height: 1.5; color: #6a6b6c">他會覺得有人接手了，而不是又被轉一手。</div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="background: #e6e6e6; padding: 8px 4px 12px; display: flex; flex-direction: column; gap: 6px">
+            <sc-for list="{{ keyRows }}" as="row" hint-placeholder-count="5">
+              <div style="display: flex; gap: 5px; justify-content: center; padding: 0 4px">
+                <sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10">
+                  <div style="flex: {{ k.flex }}; height: 40px; border-radius: 8px; background: {{ k.bg }}; color: #454647; display: flex; align-items: center; justify-content: center; font-size: 14px">{{ k.label }}</div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width: 390px; font-size: 12px; line-height: 1.7; color: #6a6b6c; text-wrap: pretty">提醒語描述效果不判對錯：「他讀起來會像被推回去自己想辦法」，不是「這句有風險」。輸入框裡兩種標記明確分開──語氣段落用暖色底線（#452324 實線），錯字只用灰色點線，紅色完全不出現。</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1020, &quot;height&quot;: 1120}, &quot;mood&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;一般&quot;, &quot;高壓&quot;, &quot;敏感&quot;], &quot;default&quot;: &quot;高壓&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;浮層卡片&quot;}}">
+const MOODS = {
+  normal: {
+    label: "一般", show: false, strip: "#111214", strategy: "",
+    replies: [
+      "王經理午安，報價已完成：A 規格 NT$248／pcs，B 規格 NT$276／pcs，交期同為 14 天。稍後寄 PDF 給您，明天開會直接用這版。",
+      "王經理午安。A 規格 NT$248／pcs、B 規格 NT$276／pcs，交期都是 14 天，等下把 PDF 寄過去。"
+    ],
+    reason: "他只是要數字，這樣他一眼就能複製到明天的會議資料裡。",
+    tags: ["#Q-2410", "交期 14 天", "偏好 · 先給結論"]
+  },
+  tense: {
+    label: "高壓", show: true, strip: "#452324",
+    strategy: "他已經問第二次 · 這時候他要的是有人接住",
+    replies: [
+      "王經理，抱歉讓您問到第二次，這是我這邊的疏漏。報價今天下午三點前給您，含 A／B 兩種規格與交期。明天開會若要簡報版本，我一併整理好。",
+      "王經理，第二次才回覆是我的問題，抱歉。今天下午三點前給您完整報價（A／B 規格與交期），並附一份可直接開會用的一頁版。"
+    ],
+    reason: "他讀到的是有人認了、有時間點；沒有解釋延遲，所以不會像在找理由。",
+    tags: ["#Q-2410", "催問 ×2", "交期 14 天", "偏好 · 條列"]
+  },
+  sensitive: {
+    label: "敏感", show: true, strip: "#452324",
+    strategy: "話題已碰到價格 · 這裡多說一個數字就會被當成承諾",
+    replies: [
+      "王經理，抱歉讓您等。完整報價今天下午三點前給您；價格條件我需要先與主管確認，今天下班前正式回覆，不會讓您明天開會前空著。",
+      "王經理，抱歉。報價今天下午三點前送到；折讓條件涉及內部核准，我今天下班前正式回覆您，開會前一定給確定的數字。"
+    ],
+    reason: "他會覺得你在幫他爭取，而不是拒絕他；折讓幅度沒有提前露出去。",
+    tags: ["#Q-2410", "折讓需核准", "敏感詞 · 降價"]
+  }
+};
+
+const EVIDENCE = [
+  { src: "#Q-2410", val: "A 規格 NT$248／pcs、B 規格 NT$276／pcs（2026-08-27 版）" },
+  { src: "#P-118", val: "標準交期 14 天，本週產線無滿載" },
+  { src: "對象偏好", val: "王經理：先結論、條列、避免長段落" }
+];
+
+const K = (c, bg) => ({ label: c, flex: 1, bg: bg || "#ffffff" });
+const KEY_ROWS = [
+  { keys: "ㄅㄉˇˋㄓˊ˙ㄚㄞㄢ".split("").map(c => K(c)) },
+  { keys: "ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ".split("").map(c => K(c)) },
+  { keys: "ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ".split("").map(c => K(c)) },
+  { keys: [{ label: "⇧", flex: 1.4, bg: "#d4d4d5" }, ...["ㄈ", "ㄌ", "ㄏ", "ㄒ", "ㄖ", "ㄙ"].map(c => K(c)), { label: "⌫", flex: 1.4, bg: "#d4d4d5" }] },
+  { keys: [{ label: "?123", flex: 1.6, bg: "#d4d4d5" }, K("，"), { label: "", flex: 4.4, bg: "#ffffff" }, K("。"), { label: "↵", flex: 1.6, bg: "#d4d4d5" }] }
+];
+
+class Component extends DCLogic {
+  state = { mood: null, variant: 0, evidenceOpen: false, barOpen: false };
+
+  tab(active) {
+    return "font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 1; letter-spacing: 0.3px; padding: 8px 12px; border-radius: 8px; cursor: pointer; background: " +
+      (active ? "#e6e6e6; color: #454647; border: 1px solid #e6e6e6"
+              : "transparent; color: #6a6b6c; border: 1px solid #363739");
+  }
+
+  renderVals() {
+    const key = this.state.mood || ({ "一般": "normal", "高壓": "tense", "敏感": "sensitive" }[this.props.mood] || "tense");
+    const m = MOODS[key];
+    return {
+      reply: m.replies[this.state.variant % m.replies.length],
+      reason: m.reason,
+      tags: m.tags,
+      moodLabel: m.label,
+      moodShow: m.show,
+      stripBg: m.strip,
+      strategy: m.strategy,
+      evidence: EVIDENCE,
+      evidenceOpen: this.state.evidenceOpen,
+      evidenceLabel: this.state.evidenceOpen ? "收起依據" : "看依據",
+      toggleEvidence: () => this.setState(s => ({ evidenceOpen: !s.evidenceOpen })),
+      reroll: () => this.setState(s => ({ variant: s.variant + 1 })),
+      setNormal: () => this.setState({ mood: "normal", variant: 0 }),
+      setTense: () => this.setState({ mood: "tense", variant: 0 }),
+      setSensitive: () => this.setState({ mood: "sensitive", variant: 0 }),
+      tabNormal: this.tab(key === "normal"),
+      tabTense: this.tab(key === "tense"),
+      tabSensitive: this.tab(key === "sensitive"),
+      tabEvidence: this.tab(this.state.evidenceOpen),
+      barTitle: "他讀起來會像被推回去自己想辦法",
+      barOpen: this.state.barOpen,
+      chevron: this.state.barOpen ? "▾" : "▴",
+      toggleBar: () => this.setState(s => ({ barOpen: !s.barOpen })),
+      expandBar: () => this.setState({ barOpen: true }),
+      collapseBar: () => this.setState({ barOpen: false }),
+      tabCollapsed: this.tab(!this.state.barOpen),
+      tabExpanded: this.tab(this.state.barOpen),
+      keyRows: KEY_ROWS
+    };
+  }
+}
+</script>
+</body>
+</html>
