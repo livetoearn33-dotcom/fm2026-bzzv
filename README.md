@@ -67,6 +67,7 @@ Meta 在 Business Suite 上線了「連結 Google 雲端硬碟讓 AI 學會回�
 |---|---|
 | [docs/demo-script.md](docs/demo-script.md) | Demo 腳本、要做出來的畫面與狀態、真實度分層 |
 | [docs/spec.md](docs/spec.md) | 架構、三個機制、API 契約、知識庫格式、分工模組 |
+| [docs/ui-brief.md](docs/ui-brief.md) | 視覺方向包：定調、工具、AI 味檢查清單、今晚要交什麼 |
 
 **先讀 demo-script，再讀 spec。** demo 腳本是 spec 的上游——功能沒出現在腳本裡，就不是這次的優先項。
 
