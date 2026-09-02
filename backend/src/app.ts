@@ -3,7 +3,7 @@ import { createAnalyzeRouter } from "@/features/analyze/api";
 import { createAnalyzeServices } from "@/features/analyze/services";
 import { createGuardRouter } from "@/features/guard/api";
 import { createGuardServices } from "@/features/guard/services";
-import indexRouter from "@/features/index/api";
+import healthRouter from "@/features/health/api";
 import { createPersonaRouter } from "@/features/persona/api";
 import { createPersonaServices } from "@/features/persona/services";
 import { createTaskRouter } from "@/features/task/api";
@@ -38,13 +38,13 @@ const personaServices = createPersonaServices({ model });
 const personaRouter = createPersonaRouter(personaServices);
 
 const v1Routes = [
-  indexRouter,
   taskRouter,
   analyzeRouter,
   guardRouter,
   personaRouter,
 ] as const;
 
+app.route("/", healthRouter);
 v1Routes.forEach(route => app.route("/v1", route));
 
 export type AppType = typeof v1Routes[number];

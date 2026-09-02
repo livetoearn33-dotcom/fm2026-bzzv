@@ -9,7 +9,8 @@ export default function configureOpenAPI(app: AppOpenAPI) {
     openapi: "3.0.0",
     info: {
       version: packageJSON.version,
-      title: "Tasks API",
+      title: "fm2026-bzzv Backend API",
+      description: "讀空氣 /v1/analyze、防自爆 /v1/guard、角色改寫 /v1/persona。Demo 劇本句子走 golden path 快取，其餘走 LLM。",
     },
   });
 
