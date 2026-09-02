@@ -1,0 +1,18 @@
+/* 本機字型：離線可跑，取代 Google Fonts 線上載入（2026-09-02）
+   來源：google/fonts GitHub（OFL 授權），可變字重版一檔涵蓋 400/500 */
+
+@font-face {
+  font-family: "Noto Sans TC";
+  src: url("NotoSansTC.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("JetBrainsMono.ttf") format("truetype");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
