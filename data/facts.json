@@ -1,0 +1,67 @@
+[
+  {
+    "id": "quote-standard-2026",
+    "label": "2026 標準報價",
+    "tags": ["報價", "價格", "方案"],
+    "content": "基礎方案 12 萬，含企劃、拍攝、剪輯三項。加購空拍 2 萬。",
+    "updatedAt": "2026-08-01",
+    "volatility": "high"
+  },
+  {
+    "id": "quote-floor-internal",
+    "label": "折扣底線（內部）",
+    "tags": ["報價", "折扣", "議價"],
+    "content": "基礎方案最低可讓到 10.5 萬，需搭配季度合作；單案不折。",
+    "updatedAt": "2026-08-01",
+    "volatility": "high",
+    "usage": "internal"
+  },
+  {
+    "id": "plan-y-budget",
+    "label": "Y 方案（精簡版）",
+    "tags": ["報價", "方案", "預算"],
+    "content": "Y 方案 8 萬：企劃＋單日拍攝＋基礎剪輯，不含空拍與二次修改。",
+    "updatedAt": "2026-08-01",
+    "volatility": "low"
+  },
+  {
+    "id": "proj-a-status",
+    "label": "A 案進度",
+    "tags": ["進度", "A案", "合約"],
+    "content": "卡在客戶端還沒回簽合約，已於 9/4 追過一次。",
+    "updatedAt": "2026-09-05",
+    "volatility": "high"
+  },
+  {
+    "id": "delivery-standard",
+    "label": "標準交期",
+    "tags": ["交期", "時程"],
+    "content": "標準交期為簽約後三週；急件可壓兩週，需加 15% 急件費且不含二次修改。",
+    "updatedAt": "2026-07-15",
+    "volatility": "low"
+  },
+  {
+    "id": "_TODO-fact-06",
+    "label": "（等 Zeno：一筆真實規格類事實）",
+    "tags": [],
+    "content": "",
+    "updatedAt": "",
+    "volatility": "low"
+  },
+  {
+    "id": "_TODO-fact-07",
+    "label": "（等 Zeno：一筆真實案子進度）",
+    "tags": [],
+    "content": "",
+    "updatedAt": "",
+    "volatility": "high"
+  },
+  {
+    "id": "_TODO-fact-08",
+    "label": "（等 Zeno：一筆對象相關的合作歷史）",
+    "tags": [],
+    "content": "",
+    "updatedAt": "",
+    "volatility": "low"
+  }
+]

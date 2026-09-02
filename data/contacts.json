@@ -1,0 +1,34 @@
+[
+  {
+    "id": "boss-lin",
+    "name": "林經理",
+    "role": "主管",
+    "tone": "簡潔、先講結論、要具體時間",
+    "notes": "在意時程超過在意細節。回覆一定要給明確的時間點。",
+    "recentTopics": ["A 案進度", "Q4 預算"]
+  },
+  {
+    "id": "client-wang",
+    "name": "王先生",
+    "role": "客戶",
+    "tone": "禮貌、給選項、不要壓迫",
+    "notes": "價格敏感，比較過三家。給台階比給折扣有效。",
+    "recentTopics": ["報價", "交期"]
+  },
+  {
+    "id": "_TODO-contact-03",
+    "name": "（等 Zeno：一位真實合作窗口，去識別化）",
+    "role": "",
+    "tone": "",
+    "notes": "",
+    "recentTopics": []
+  },
+  {
+    "id": "_TODO-contact-04",
+    "name": "（等 Zeno：一位熟識的老客戶，去識別化）",
+    "role": "",
+    "tone": "",
+    "notes": "",
+    "recentTopics": []
+  }
+]
