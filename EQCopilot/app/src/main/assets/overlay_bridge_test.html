@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 8px 12px;
+            background: #111214;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #draft {
+            font-size: 13px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            height: 36px;
+            padding: 0 14px;
+            font-size: 13px;
+        }
+
+        #status {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="draft">
+    Draft: -
+</div>
+
+<div class="row">
+
+    <button onclick="replaceDraft()">
+        替換
+    </button>
+
+    <button onclick="attachScreenshot()">
+        附加
+    </button>
+
+</div>
+
+<div id="status">
+    Ready
+</div>
+
+<script>
+
+    window.onNativeDraftChanged = function(draft) {
+        document.getElementById("draft").innerText =
+            "Draft: " + (draft || "(empty)");
+    };
+
+    window.onScreenshotAttached = function(path) {
+        document.getElementById("status").innerText =
+            "✅ Screenshot attached";
+    };
+
+    window.onScreenshotError = function(message) {
+        document.getElementById("status").innerText =
+            "❌ " + message;
+    };
+
+    function replaceDraft() {
+
+        Android.replaceDraft(
+            "交期我來幫您確認，今天內回覆您確定日期。"
+        );
+    }
+
+    function attachScreenshot() {
+
+        document.getElementById("status").innerText =
+            "讀取中...";
+
+        Android.attachScreenshot();
+    }
+
+</script>
+
+</body>
+</html>
