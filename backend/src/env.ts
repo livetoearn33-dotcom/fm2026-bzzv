@@ -16,6 +16,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(9999),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]),
   DATABASE_URL: z.string(),
+  OPENAI_API_KEY: z.string().min(1),
 });
 
 export type env = z.infer<typeof EnvSchema>;
