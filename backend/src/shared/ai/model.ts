@@ -11,7 +11,7 @@ import env from "@/env";
  * 選它的理由：
  * - /analyze、/guard 都是「短輸入、短結構化輸出」的任務，不需要旗艦模型的推理深度
  * - mini 級距在延遲與價格上明顯優於 gpt-5 全尺寸，符合 demo 對 latencyMs 的要求
- * - 支援 generateObject 的結構化輸出
+ * - 支援 generateText + Output.object 的結構化輸出
  * 可用 `OPENAI_MODEL` 環境變數覆蓋。
  */
 export function createLanguageModel(): LanguageModel {

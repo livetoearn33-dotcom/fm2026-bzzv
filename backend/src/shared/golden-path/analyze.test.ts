@@ -19,6 +19,14 @@ describe("matchAnalyzeGoldenPath", () => {
     expect(match).toBeUndefined();
   });
 
+  it("正規化比對：頭尾夾帶空白、全形／半形標點統一後仍命中", () => {
+    const match = matchAnalyzeGoldenPath([
+      { speaker: "them", text: "  這個進度到底怎麼樣了?下午要跟客戶開會.  " },
+    ]);
+    expect(match).toBeDefined();
+    expect(match?.risk).toBe("pressure");
+  });
+
   it("看的是最後一則對方訊息，不是第一則", () => {
     const match = matchAnalyzeGoldenPath([
       { speaker: "them", text: "這個進度到底怎麼樣了？下午要跟客戶開會。" },

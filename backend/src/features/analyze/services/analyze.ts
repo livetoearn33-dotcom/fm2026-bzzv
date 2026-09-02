@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 
 import type { Fact } from "@/shared/knowledge";
 
@@ -67,20 +67,20 @@ export function createAnalyzeService(deps: AnalyzeServiceDeps): AnalyzeFn {
     const taskBlock = buildAnalyzeTaskBlock({ contact, facts, conversation, safeCard });
     const systemPrompt = buildAnalyzeSystemPrompt(promptLayers, taskBlock);
 
-    const callModel = () => generateObject({
+    const callModel = () => generateText({
       model,
-      schema: AnalyzeLlmOutputSchema,
+      output: Output.object({ schema: AnalyzeLlmOutputSchema }),
       system: systemPrompt,
       prompt: TASK_TRIGGER_PROMPT,
     });
 
     let llmOutput: AnalyzeLlmOutput;
     try {
-      llmOutput = (await callModel()).object;
+      llmOutput = (await callModel()).output;
     }
     catch {
       try {
-        llmOutput = (await callModel()).object;
+        llmOutput = (await callModel()).output;
       }
       catch (secondError) {
         const message = secondError instanceof Error ? secondError.message : String(secondError);
@@ -91,7 +91,7 @@ export function createAnalyzeService(deps: AnalyzeServiceDeps): AnalyzeFn {
     // 回包驗證：reply 必須以 safeCard 開頭，不符就重打一次，再不符就退回 safeCard 本身當 reply
     if (!llmOutput.reply.startsWith(safeCard)) {
       try {
-        const retryOutput = (await callModel()).object;
+        const retryOutput = (await callModel()).output;
         llmOutput = retryOutput.reply.startsWith(safeCard)
           ? retryOutput
           : { ...retryOutput, reply: safeCard };

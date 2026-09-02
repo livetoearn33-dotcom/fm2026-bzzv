@@ -1,11 +1,15 @@
 import type { ConversationMessageLike } from "@/shared/local-rules/safe-card";
 
+import { buildNormalizedGoldenPathMap, normalizeGoldenPathKey } from "./normalize";
+
 /**
  * demo 劇本的固定訊息直接回準備好的 JSON，不打 LLM（見 prompts/README-組裝說明.md
- * 「Golden path（已拍板）」）。比對用「訊息文字完全相符」，不做模糊比對。
+ * 「Golden path（已拍板）」）。比對用「正規化後訊息文字完全相符」——去頭尾空白、
+ * 全形／半形標點統一，不做語意上的模糊比對。
  *
- * 值取自 docs/spec.md「API 介面」段 /analyze 的範例 response——那是這支 API 唯一
- * 明文寫死的契約範例，上台／備援影片都靠它保證這一幕 100% 穩定。
+ * 值取自 docs/spec.md「API 介面」段 /analyze 的範例 response、docs/demo-script.md
+ * 第一幕——兩份文件對這句訊息與 reply 的描述逐字一致，上台／備援影片都靠它保證
+ * 這一幕 100% 穩定。
  */
 
 export interface AnalyzeGoldenPathMatch {
@@ -26,6 +30,8 @@ const ANALYZE_GOLDEN_PATHS: Record<string, AnalyzeGoldenPathMatch> = {
   },
 };
 
+const NORMALIZED_ANALYZE_GOLDEN_PATHS = buildNormalizedGoldenPathMap(ANALYZE_GOLDEN_PATHS);
+
 function pickLastThemText(conversation: ConversationMessageLike[]): string | undefined {
   for (let i = conversation.length - 1; i >= 0; i--) {
     if (conversation[i].speaker === "them") {
@@ -42,5 +48,6 @@ export function matchAnalyzeGoldenPath(
   if (lastThemText === undefined) {
     return undefined;
   }
-  return ANALYZE_GOLDEN_PATHS[lastThemText];
+  const { normalized } = normalizeGoldenPathKey(lastThemText);
+  return NORMALIZED_ANALYZE_GOLDEN_PATHS.get(normalized);
 }

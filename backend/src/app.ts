@@ -4,6 +4,8 @@ import { createAnalyzeServices } from "@/features/analyze/services";
 import { createGuardRouter } from "@/features/guard/api";
 import { createGuardServices } from "@/features/guard/services";
 import indexRouter from "@/features/index/api";
+import { createPersonaRouter } from "@/features/persona/api";
+import { createPersonaServices } from "@/features/persona/services";
 import { createTaskRouter } from "@/features/task/api";
 import { createTaskRepository } from "@/features/task/repositories";
 import { createTaskServices } from "@/features/task/services";
@@ -32,11 +34,15 @@ const analyzeRouter = createAnalyzeRouter(analyzeServices);
 const guardServices = createGuardServices({ model, knowledge, promptLayers });
 const guardRouter = createGuardRouter(guardServices);
 
+const personaServices = createPersonaServices({ model });
+const personaRouter = createPersonaRouter(personaServices);
+
 const v1Routes = [
   indexRouter,
   taskRouter,
   analyzeRouter,
   guardRouter,
+  personaRouter,
 ] as const;
 
 v1Routes.forEach(route => app.route("/v1", route));

@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 
 import { matchGuardGoldenPath } from "@/shared/golden-path";
 import { findContact } from "@/shared/knowledge";
@@ -39,20 +39,20 @@ export function createGuardService(deps: GuardServiceDeps): GuardFn {
     const taskBlock = buildGuardTaskBlock({ contact, conversation, draft });
     const systemPrompt = buildGuardSystemPrompt(promptLayers, taskBlock);
 
-    const callModel = () => generateObject({
+    const callModel = () => generateText({
       model,
-      schema: GuardLlmOutputSchema,
+      output: Output.object({ schema: GuardLlmOutputSchema }),
       system: systemPrompt,
       prompt: TASK_TRIGGER_PROMPT,
     });
 
     let llmOutput;
     try {
-      llmOutput = (await callModel()).object;
+      llmOutput = (await callModel()).output;
     }
     catch {
       try {
-        llmOutput = (await callModel()).object;
+        llmOutput = (await callModel()).output;
       }
       catch (secondError) {
         const message = secondError instanceof Error ? secondError.message : String(secondError);
