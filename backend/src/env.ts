@@ -17,6 +17,12 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]),
   DATABASE_URL: z.string(),
   OPENAI_API_KEY: z.string().min(1),
+  /** 便宜快速的 chat 模型；見 src/shared/ai/model.ts 的選型依據 */
+  OPENAI_MODEL: z.string().default("gpt-5-mini"),
+  /** data/facts.json、data/contacts.json 所在目錄；預設抓 repo 根目錄的 data/ */
+  DATA_DIR: z.string().optional(),
+  /** prompts/ 所在目錄；預設抓 repo 根目錄的 prompts/ */
+  PROMPTS_DIR: z.string().optional(),
 });
 
 export type env = z.infer<typeof EnvSchema>;

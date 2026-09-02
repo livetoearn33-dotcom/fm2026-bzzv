@@ -1,10 +1,17 @@
 import db from "@/db";
+import { createAnalyzeRouter } from "@/features/analyze/api";
+import { createAnalyzeServices } from "@/features/analyze/services";
+import { createGuardRouter } from "@/features/guard/api";
+import { createGuardServices } from "@/features/guard/services";
 import indexRouter from "@/features/index/api";
 import { createTaskRouter } from "@/features/task/api";
 import { createTaskRepository } from "@/features/task/repositories";
 import { createTaskServices } from "@/features/task/services";
 import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
+import { createLanguageModel } from "@/shared/ai/model";
+import { loadKnowledgeStore } from "@/shared/knowledge";
+import { loadPromptLayers } from "@/shared/prompts";
 
 const app = createApp();
 
@@ -15,9 +22,21 @@ const taskRepository = createTaskRepository(db);
 const taskServices = createTaskServices({ taskRepository });
 const taskRouter = createTaskRouter(taskServices);
 
+const model = createLanguageModel();
+const knowledge = loadKnowledgeStore();
+const promptLayers = loadPromptLayers();
+
+const analyzeServices = createAnalyzeServices({ model, knowledge, promptLayers });
+const analyzeRouter = createAnalyzeRouter(analyzeServices);
+
+const guardServices = createGuardServices({ model, knowledge, promptLayers });
+const guardRouter = createGuardRouter(guardServices);
+
 const v1Routes = [
   indexRouter,
   taskRouter,
+  analyzeRouter,
+  guardRouter,
 ] as const;
 
 v1Routes.forEach(route => app.route("/v1", route));
