@@ -1,67 +1,83 @@
 [
   {
-    "id": "quote-standard-2026",
-    "label": "2026 標準報價",
-    "tags": ["報價", "價格", "方案"],
-    "content": "基礎方案 12 萬，含企劃、拍攝、剪輯三項。加購空拍 2 萬。",
-    "updatedAt": "2026-08-01",
+    "id": "quote-anchor-standard",
+    "label": "代操服務標準報價",
+    "tags": ["報價", "價格", "方案", "月費"],
+    "content": "前置建置 USD 1,800（一次性，含品牌聲音建置、Bot 開通、團隊教學、首月磨合）。季度訂閱：基礎月費 USD 450（季付 1,350），官方帳號月瀏覽達標另計績效獎金 +120/月，目標每月由客戶設定。",
+    "updatedAt": "2026-05-27",
     "volatility": "high"
   },
   {
     "id": "quote-floor-internal",
-    "label": "折扣底線（內部）",
+    "label": "議價底線（內部）",
     "tags": ["報價", "折扣", "議價"],
-    "content": "基礎方案最低可讓到 10.5 萬，需搭配季度合作；單案不折。",
-    "updatedAt": "2026-08-01",
+    "content": "月費低於 380 不接，改談績效結構；建置費最多讓到 1,500，再低就砍首月磨合項目。",
+    "updatedAt": "2026-05-27",
     "volatility": "high",
     "usage": "internal"
   },
   {
-    "id": "plan-y-budget",
-    "label": "Y 方案（精簡版）",
-    "tags": ["報價", "方案", "預算"],
-    "content": "Y 方案 8 萬：企劃＋單日拍攝＋基礎剪輯，不含空拍與二次修改。",
-    "updatedAt": "2026-08-01",
-    "volatility": "low"
+    "id": "quote-campaign-two-tier",
+    "label": "檔期合作兩版報價",
+    "tags": ["報價", "方案", "預算", "檔期"],
+    "content": "完整版 NT$15,000：三品項實拍＋廣告授權前三個月贈送。精簡版 NT$12,000：不含廣告授權，次要品項僅文案帶過。價差用規格差異說明，不談折扣。",
+    "updatedAt": "2026-08-03",
+    "volatility": "high"
   },
   {
     "id": "proj-a-status",
     "label": "A 案進度",
     "tags": ["進度", "A案", "合約"],
-    "content": "卡在客戶端還沒回簽合約，已於 9/4 追過一次。",
-    "updatedAt": "2026-09-05",
+    "content": "試跑合作提案已送客戶端，卡在窗口內部核可還沒回簽，9/1 追過一次。",
+    "updatedAt": "2026-09-01",
     "volatility": "high"
   },
   {
-    "id": "delivery-standard",
-    "label": "標準交期",
-    "tags": ["交期", "時程"],
-    "content": "標準交期為簽約後三週；急件可壓兩週，需加 15% 急件費且不含二次修改。",
-    "updatedAt": "2026-07-15",
+    "id": "video-delivery-rhythm",
+    "label": "影片交付節奏",
+    "tags": ["交期", "影片", "時程"],
+    "content": "固定檔影片每月 5 支。熱點快剪流程三天：週一出角度、週二客戶提供素材、週三上片。",
+    "updatedAt": "2026-07-06",
     "volatility": "low"
   },
   {
-    "id": "_TODO-fact-06",
-    "label": "（等 Zeno：一筆真實規格類事實）",
-    "tags": [],
-    "content": "",
-    "updatedAt": "",
+    "id": "plan-monthly-video",
+    "label": "頻道代營運月方案",
+    "tags": ["報價", "方案", "影片"],
+    "content": "月方案 USD 1,800，合約基準每月 6-8 支影片；10-12 支是加碼優惠，前提是當月約成 2 次以上拍攝。",
+    "updatedAt": "2026-07-24",
     "volatility": "low"
   },
   {
-    "id": "_TODO-fact-07",
-    "label": "（等 Zeno：一筆真實案子進度）",
-    "tags": [],
-    "content": "",
-    "updatedAt": "",
+    "id": "price-itemized",
+    "label": "逐項計價表",
+    "tags": ["報價", "計價", "比價"],
+    "content": "單買計價：腳本 3 支 USD 900、拍攝日 400、切片 5 支 600、選題規劃 200——合計約 2,100，高於月方案，用於說明包月價值。",
+    "updatedAt": "2026-07-24",
+    "volatility": "low"
+  },
+  {
+    "id": "campaign-may-result",
+    "label": "五月檔期成效",
+    "tags": ["成效", "合作歷史", "案例"],
+    "content": "五月與檔期店家採成效共擔：達 52,000 觀看，實付 NT$12,000 觸頂。可作為新檔期的信任依據。",
+    "updatedAt": "2026-06-01",
+    "volatility": "low"
+  },
+  {
+    "id": "campaign-deadline-sep",
+    "label": "十週年檔期時程",
+    "tags": ["時程", "檔期", "死線"],
+    "content": "檔期硬死線：9/12（五）18:00 前上片，配合全台 80 組 KOL 同步發文，錯過即失去整波聲量。",
+    "updatedAt": "2026-08-03",
     "volatility": "high"
   },
   {
-    "id": "_TODO-fact-08",
-    "label": "（等 Zeno：一筆對象相關的合作歷史）",
-    "tags": [],
-    "content": "",
-    "updatedAt": "",
+    "id": "partner-w-history",
+    "label": "W 品牌合作歷史",
+    "tags": ["合作歷史", "窗口", "影片"],
+    "content": "6 月起合作短影音增量方案。窗口自己會提內容想法、行動快，但產出要靠固定時程卡位，否則會停在等素材。",
+    "updatedAt": "2026-07-09",
     "volatility": "low"
   }
 ]
