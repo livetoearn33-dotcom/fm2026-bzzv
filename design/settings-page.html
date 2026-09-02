@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · 知識庫設定頁 — 三個方向並排</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   幕僚 · 畫面 5 知識庫設定頁 — 三個方向並排（給 Zeno 挑）
+   靜態頁，評審問「資料是真的嗎」才開。
+   資料照抄 data/facts.json（10 條）與 data/contacts.json（4 人）。
+   設計語言沿用 refined.html：六階表面色、17/13/12/10 四字級、
+   hairline 不用陰影、amber 只給敏感／內部、紅色不出現。
+   這一頁是幕僚自己的 surface，所以整面是深色系（不是宿主 App 淺色）。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+  --coral: #ff6363;
+  --ember: #452324;
+  --amber: #4a3a1f;
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:48px; }
+.intro{ display:flex; flex-direction:column; gap:16px; max-width:680px; }
+.brandline{ display:flex; align-items:center; gap:8px; }
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:10px; line-height:1;
+  letter-spacing:.8px; text-transform:uppercase; color: var(--smoke);
+}
+.eyebrow.lg{ font-size:11px; }
+h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
+.lede{ font-size:16px; line-height:1.6; color: var(--ash); text-wrap:pretty; margin:0; }
+.decks{ display:flex; gap:48px; flex-wrap:wrap; align-items:flex-start; }
+.deck{ display:flex; flex-direction:column; gap:20px; }
+.caption{ width:390px; font-size:12px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
+.caption b{ color: var(--ash); font-weight:500; }
+
+/* ---------- 手機外框（同 refined，螢幕內部可捲） ---------- */
+.phone{
+  position:relative; width:390px; height:800px; flex:none;
+  border-radius:40px; background: var(--ink); padding:8px;
+  box-shadow: var(--keyline-soft);
+}
+.screen{
+  position:relative; width:374px; height:784px; border-radius:33px;
+  overflow:hidden; background: var(--void);
+  display:flex; flex-direction:column;
+}
+.statusbar{
+  height:24px; flex:none; display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px; font-family: var(--mono); font-size:10px; letter-spacing:.5px; color: var(--smoke);
+}
+.apphead{
+  flex:none; display:flex; align-items:center; gap:8px; padding:12px 16px 8px;
+}
+.apphead .ttl{ font-size:13px; font-weight:500; line-height:1.3; color: var(--white); }
+.apphead .cnt{ margin-left:auto; font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); }
+.scroll{ flex:1; min-height:0; overflow-y:auto; padding:8px 16px 24px; display:flex; flex-direction:column; gap:8px; }
+.scroll::-webkit-scrollbar{ width:0; }
+
+.sect{ display:flex; align-items:center; gap:8px; padding:16px 0 4px; }
+.sect .eyebrow{ color: var(--smoke); }
+.sect .ln{ flex:1; height:1px; background: rgba(255,255,255,0.06); }
+
+.chip{
+  font-family: var(--mono); font-size:10px; line-height:1.6; letter-spacing:.3px;
+  border-radius:6px; padding:3px 6px; white-space:nowrap;
+  background: var(--graph); color: var(--ash);
+}
+.chip.amber{ background: var(--amber); color: var(--mist); }
+.chip.ghost{ background:transparent; border:1px solid var(--slate); }
+.datep{ font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); white-space:nowrap; }
+
+/* ---------- 方向 A：列表列 ---------- */
+.rowitem{ display:flex; flex-direction:column; gap:6px; padding:10px 0; }
+.rowtop{ display:flex; align-items:baseline; gap:8px; }
+.rowtop .lb{ flex:1; min-width:0; font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
+.tagline{ display:flex; gap:6px; flex-wrap:wrap; }
+
+/* ---------- 方向 B：卡片 ---------- */
+.card{
+  background: var(--obsid); border-radius:16px; padding:16px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.card.internal{ box-shadow: 0 0 0 1px var(--amber); }
+.card .lb{ font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
+.card .meta{ display:flex; align-items:center; gap:8px; }
+.card .meta .tagline{ flex:1; }
+
+/* ---------- 方向 C：分組高密度 ---------- */
+.denserow{ display:flex; align-items:center; gap:8px; height:36px; }
+.denserow .lb{
+  flex:1; min-width:0; font-size:13px; font-weight:400; line-height:1.4; color: var(--mist);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.groupbox{ background: var(--ink); border-radius:12px; padding:4px 12px; display:flex; flex-direction:column; }
+.groupbox.internal{ background: var(--obsid); }
+
+/* ---------- 對象卡（三方向共用骨架，密度不同） ---------- */
+.pcard{
+  background: var(--obsid); border-radius:16px; padding:16px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.pcard .nmrow{ display:flex; align-items:center; gap:8px; }
+.pcard .avatar{
+  width:28px; height:28px; border-radius:9999px; background: var(--graph); flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; color: var(--ash);
+}
+.pcard .nm{ font-size:13px; font-weight:500; line-height:1.3; color: var(--white); }
+.pcard .role{ font-size:11px; line-height:1.3; color: var(--smoke); }
+.pcard .tone{ font-size:12px; line-height:1.5; color: var(--ash); text-wrap:pretty; }
+.pcard .note{
+  font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.pcard.slim{ padding:12px 16px; border-radius:12px; }
+.pgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pgrid .pcard{ padding:12px; border-radius:12px; }
+.pgrid .note{ -webkit-line-clamp:3; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="intro">
+    <div class="brandline">
+      <i class="diamond" style="width:8px;height:8px"></i>
+      <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 三方向並排</span>
+    </div>
+    <h1>評審問「資料是真的嗎」，開這一頁</h1>
+    <p class="lede">靜態頁、不用互動，回答一個問題：回覆裡的數字從哪來。資料照抄 data/ 的 10 條知識與 4 張對象檔案，「議價底線」那條是內部參考——引擎讀得到、永遠不會寫進回覆，三個方向用三種方式把這條界線畫出來。屏內可以捲動。</p>
+  </div>
+
+  <div class="decks">
+
+    <!-- ============ 方向 A ============ -->
+    <div class="deck">
+      <span class="eyebrow lg">方向 A · 列表列（建議預設）</span>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
+        <div class="apphead">
+          <i class="diamond" style="width:8px;height:8px"></i>
+          <span class="ttl">知識庫</span>
+          <span class="cnt" data-cnt="A"></span>
+        </div>
+        <div class="scroll" data-deck="A"></div>
+      </div></div>
+      <p class="caption"><b>Linear 式列表：一條知識一列，零分隔線，層次靠間距。</b>標籤跟著各自的條目走，內部參考只靠一顆 amber chip 區隔——跟面板上「敏感」用同一個顏色、同一個意思：這裡有條線不能過。對象檔案在下方一人一卡。<b>代價</b>：掃起來最素，評審若只瞄一眼，可能看不出「內部/外部」是這頁的重點。</p>
+    </div>
+
+    <!-- ============ 方向 B ============ -->
+    <div class="deck">
+      <span class="eyebrow lg">方向 B · 卡片</span>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
+        <div class="apphead">
+          <i class="diamond" style="width:8px;height:8px"></i>
+          <span class="ttl">知識庫</span>
+          <span class="cnt" data-cnt="B"></span>
+        </div>
+        <div class="scroll" data-deck="B"></div>
+      </div></div>
+      <p class="caption"><b>一條知識一張卡（obsid 表面浮在 void 上），跟展開面板同一種分層邏輯。</b>內部參考除了 chip，整張卡多一圈 1px amber hairline——遠看就知道這張不一樣。<b>代價</b>：10 張卡捲起來比列表長一截，而且卡片版「每張都被框起來」的重量感，跟面板那邊「靠留白不靠框」的原則稍微打架。</p>
+    </div>
+
+    <!-- ============ 方向 C ============ -->
+    <div class="deck">
+      <span class="eyebrow lg">方向 C · 分組高密度</span>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
+        <div class="apphead">
+          <i class="diamond" style="width:8px;height:8px"></i>
+          <span class="ttl">知識庫</span>
+          <span class="cnt" data-cnt="C"></span>
+        </div>
+        <div class="scroll" data-deck="C"></div>
+      </div></div>
+      <p class="caption"><b>按主題分組（報價／案子與交付／檔期時程），內部參考獨立成組、組名直接寫「引擎可讀 · 不外流」。</b>一列 36dp、標籤收到只剩日期和效期，一屏能看完最多條——資訊密度最像「真的有在用的工具」。<b>代價</b>：分組是這頁自己發明的階層（facts.json 裡沒有），評審追問「分組怎麼來的」要多答一句。</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- 資料：照抄 data/facts.json 與 data/contacts.json ---------- */
+const FACTS = [
+  { label:"代操服務標準報價",   tags:["報價","價格","方案","月費"], date:"2026-05-27", vol:"high", group:"報價" },
+  { label:"議價底線（內部）",   tags:["報價","折扣","議價"],       date:"2026-05-27", vol:"high", group:"內部", internal:true },
+  { label:"檔期合作兩版報價",   tags:["報價","方案","預算","檔期"], date:"2026-08-03", vol:"high", group:"報價" },
+  { label:"A 案進度",           tags:["進度","A案","合約"],         date:"2026-09-01", vol:"high", group:"案子" },
+  { label:"影片交付節奏",       tags:["交期","影片","時程"],       date:"2026-07-06", vol:"low",  group:"案子" },
+  { label:"頻道代營運月方案",   tags:["報價","方案","影片"],       date:"2026-07-24", vol:"low",  group:"報價" },
+  { label:"逐項計價表",         tags:["報價","計價","比價"],       date:"2026-07-24", vol:"low",  group:"報價" },
+  { label:"五月檔期成效",       tags:["成效","合作歷史","案例"],   date:"2026-06-01", vol:"low",  group:"檔期" },
+  { label:"十週年檔期時程",     tags:["時程","檔期","死線"],       date:"2026-08-03", vol:"high", group:"檔期" },
+  { label:"W 品牌合作歷史",     tags:["合作歷史","窗口","影片"],   date:"2026-07-09", vol:"low",  group:"案子" }
+];
+const CONTACTS = [
+  { name:"林經理", role:"主管",               tone:"簡潔、先講結論、要具體時間",
+    note:"在意時程超過在意細節。回覆一定要給明確的時間點。" },
+  { name:"王先生", role:"客戶",               tone:"禮貌、給選項、不要壓迫",
+    note:"價格敏感，比較過三家。給台階比給折扣有效。" },
+  { name:"陳姐",   role:"品牌窗口（行銷主管）", tone:"直接、行動快；給具體選項和時段她就動",
+    note:"開放式問句會石沉大海——訊息要帶具體選項與時段。" },
+  { name:"凱文",   role:"老客戶（頻道經營）",   tone:"對帳的平靜：先講基準與事實、再講結論",
+    note:"慢回、會用已讀不回施壓。回覆順序固定：基準→做了什麼→交付→結論。" }
+];
+
+const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const chips = (f) =>
+  (f.internal ? '<span class="chip amber">內部參考</span>' : "") +
+  f.tags.map(t => '<span class="chip">' + esc(t) + '</span>').join("");
+const sect = (t) => '<div class="sect"><span class="eyebrow">' + esc(t) + '</span><span class="ln"></span></div>';
+const pcard = (c, cls) => `
+  <div class="pcard ${cls}">
+    <div class="nmrow">
+      <span class="avatar">${esc(c.name[0])}</span>
+      <span class="nm">${esc(c.name)}</span>
+      <span class="role">${esc(c.role)}</span>
+    </div>
+    <div class="tone">${esc(c.tone)}</div>
+    <div class="note">${esc(c.note)}</div>
+  </div>`;
+
+/* ---------- 方向 A：列表列 ---------- */
+document.querySelector('[data-deck="A"]').innerHTML =
+  sect("知識 · " + FACTS.length + " 條") +
+  FACTS.map(f => `
+    <div class="rowitem">
+      <div class="rowtop">
+        <span class="lb">${esc(f.label)}</span>
+        <span class="datep">${esc(f.date)}</span>
+      </div>
+      <div class="tagline">${chips(f)}</div>
+    </div>`).join("") +
+  sect("對象檔案 · " + CONTACTS.length + " 人") +
+  CONTACTS.map(c => pcard(c, "slim")).join("");
+
+/* ---------- 方向 B：卡片 ---------- */
+document.querySelector('[data-deck="B"]').innerHTML =
+  sect("知識 · " + FACTS.length + " 條") +
+  FACTS.map(f => `
+    <div class="card${f.internal ? " internal" : ""}">
+      <div class="lb">${esc(f.label)}</div>
+      <div class="meta">
+        <div class="tagline">${chips(f)}</div>
+        <span class="datep">${esc(f.date)}</span>
+      </div>
+    </div>`).join("") +
+  sect("對象檔案 · " + CONTACTS.length + " 人") +
+  CONTACTS.map(c => pcard(c, "")).join("");
+
+/* ---------- 方向 C：分組高密度 ---------- */
+const GROUPS = [
+  ["報價",  "報價"],
+  ["案子",  "案子與交付"],
+  ["檔期",  "檔期時程"],
+  ["內部",  "內部參考 · 引擎可讀 · 不外流"]
+];
+document.querySelector('[data-deck="C"]').innerHTML =
+  GROUPS.map(([g, title]) => {
+    const rows = FACTS.filter(f => f.group === g);
+    if (!rows.length) return "";
+    return sect(title) +
+      '<div class="groupbox' + (g === "內部" ? " internal" : "") + '">' +
+      rows.map(f => `
+        <div class="denserow">
+          <span class="lb">${esc(f.label)}</span>
+          ${f.vol === "high" ? '<span class="chip ghost">效期短</span>' : ""}
+          ${f.internal ? '<span class="chip amber">內部</span>' : ""}
+          <span class="datep">${esc(f.date)}</span>
+        </div>`).join("") +
+      '</div>';
+  }).join("") +
+  sect("對象檔案 · " + CONTACTS.length + " 人") +
+  '<div class="pgrid">' + CONTACTS.map(c => pcard(c, "")).join("") + '</div>';
+
+/* 條數統計 */
+document.querySelectorAll("[data-cnt]").forEach(el => {
+  el.textContent = FACTS.length + " 條 · " + CONTACTS.length + " 人";
+});
+</script>
+</body>
+</html>
