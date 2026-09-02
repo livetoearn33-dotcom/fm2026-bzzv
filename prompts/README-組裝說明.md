@@ -1,0 +1,91 @@
+# 組裝說明（給 Brian）
+
+> 這個資料夾是 /analyze 與 /guard 提示詞的唯一真源。程式從這裡讀檔組裝，不要在程式碼裡寫死 prompt——Zeno 改檔即生效，不用等你。
+
+## /analyze 的 system prompt 組裝
+
+四層，照順序串接成一個 system prompt：
+
+```
+1. 引擎-analyze.md          （固定）
+2. 語氣-Zeno.md             （固定）
+3. 範例庫-回覆.md            （固定，全檔塞入，不抽樣——量小）
+4. 〈本次任務〉               （每次請求動態組，見下）
+```
+
+### 第 4 層〈本次任務〉的組法
+
+從 request 的 `contactId` 與 `conversation` 組出：
+
+```
+〈本次任務〉
+對象：{contacts.json 該筆的 name}（{role}）
+　語氣偏好：{tone}
+　註記：{notes}
+
+〈相關事實〉
+- id: {fact.id}｜{fact.label}｜{fact.content}
+- …（用 conversation 關鍵字對 facts.json 的 tags/label 粗篩，塞 3-5 筆；零命中就寫「（無相關事實）」）
+
+〈對話〉
+{conversation 逐則：speaker + text}
+
+〈安全牌〉（已在畫面上顯示）
+{safeCard 文字}
+你的 reply 必須以這句原文開頭，接著往下寫。
+```
+
+### 契約重點
+
+1. **safeCard 是輸入不是輸出**：由分流本地規則產生（0.2 秒先上畫面），再塞進 prompt。LLM 只回 reply。
+2. **回包驗證**：檢查 `reply.startsWith(safeCard)`，不符就重打一次（最多一次）。
+3. **sources 對映**：LLM 只回 fact id 陣列；response 的 `sources[{id,label}]` 由後端拿 facts.json 的 label 補齊。
+4. **Golden path（已拍板）**：demo 劇本的固定訊息（見 demo-script 兩幕）直接回準備好的 JSON，不打 LLM。其他輸入走真 LLM。比對建議用「訊息文字完全相符」就好，不要模糊比對。
+5. 輸出要求 JSON-only 已寫在引擎層；解析失敗重打一次，再失敗回 fallback（safeCard 本身當 reply）。
+
+## /guard 的 system prompt 組裝
+
+三層（比 /analyze 少一層——guard 的 few-shot 直接寫在引擎檔裡）：
+
+```
+1. 引擎-guard.md    （固定）
+2. 語氣-Zeno.md     （固定）
+3. 〈本次任務〉      （動態：對象檔案＋對話最後 1-3 則＋草稿原文）
+```
+
+### 契約重點
+
+1. **觸發時機由前端／Accessibility 控**：建議 debounce（停止打字約 800ms 才送），不要每個字都打 API。
+2. **flagged: false 是常態**，直接不顯示任何東西；只有 true 才長出建議條。
+3. `spans` 是**草稿原文的字元索引**（0 起算、含頭不含尾）——後端要原封不動把草稿傳給前端做標記，不要 trim 或改字，索引會歪。
+4. `type` 值：defensive｜blame｜heat。
+5. **Golden path（已拍板）**：demo 第二幕那句「我們的品質跟別人不一樣，你可以去比較看看。」直接回準備好的 JSON（引擎檔 few-shot 例 1 就是答案），完全比對即可。
+6. `usage: "internal"` 的事實（見 data/README-知識庫.md）**兩個引擎通用規則**：可以進 prompt 當背景，但引擎已禁止把它寫進回覆；組裝時在該筆後面加一行「（內部參考，不得寫入回覆）」。
+
+## 角色改寫（persona，9/2 定案）
+
+使用者拿到正常回覆後，可以點角色 chip 把回覆**改寫**成角色口吻。是第二次呼叫，不動 /analyze 本體。
+
+```
+POST /persona
+Request:  { "reply": "<已生成的回覆原文>", "conversation": [...], "persona": "zhuge" }
+Response: { "reply": "<角色版回覆>" }
+```
+
+組裝（三層）：
+
+```
+1. 引擎極簡版（就三句，直接寫死在程式即可）：
+   「把〈原回覆〉改寫成下方角色的口吻。事實、承諾、時間點不掉不加。只輸出改寫後的文字。」
+2. 角色卡-{persona}.md（zhuge=諸葛亮｜ceo=霸道總裁｜charmer=情場達人）
+3. 〈原回覆〉＋〈對話〉（對話給最後 1-2 則當語境就好）
+```
+
+- **上台版 golden path**：demo 劇本那句回覆 + persona=zhuge 的改寫結果也先快取（上台要演這一下，不能賭）
+- 角色卡檔案是真源，新角色＝加一個 .md，程式不用改
+
+## 分工
+
+- prompts/ 與 data/ 的內容：Zeno 負責，改完會說一聲
+- 組裝程式、粗篩邏輯、golden path 快取：Brian 負責
+- 有衝突或覺得契約不合理：直接找 Zeno 對，不要繞過這份文件自己改
