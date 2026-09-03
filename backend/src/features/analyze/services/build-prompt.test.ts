@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Contact, Fact } from "@/shared/knowledge";
 
-import { buildAnalyzeSystemPrompt, buildAnalyzeTaskBlock } from "./build-prompt";
+import { buildAnalyzeScreenshotTaskBlock, buildAnalyzeSystemPrompt, buildAnalyzeTaskBlock } from "./build-prompt";
 
 const contact: Contact = {
   id: "boss-lin",
@@ -81,12 +81,18 @@ describe("buildAnalyzeTaskBlock", () => {
   });
 });
 
+const baseLayers = {
+  analyzeEngine: "ENGINE",
+  guardEngine: "GUARD",
+  tone: "TONE",
+  toneLayers: { empathy: "TONE_EMPATHY", concise: "TONE_CONCISE", affirmative: "TONE_AFFIRMATIVE" },
+  examples: "EXAMPLES",
+  extractPdfEngine: "EXTRACT_PDF",
+};
+
 describe("buildAnalyzeSystemPrompt", () => {
   it("依序串接引擎、語氣、範例庫、本次任務四層", () => {
-    const prompt = buildAnalyzeSystemPrompt(
-      { analyzeEngine: "ENGINE", guardEngine: "GUARD", tone: "TONE", examples: "EXAMPLES" },
-      "TASK_BLOCK",
-    );
+    const prompt = buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK");
     const engineIndex = prompt.indexOf("ENGINE");
     const toneIndex = prompt.indexOf("TONE");
     const examplesIndex = prompt.indexOf("EXAMPLES");
@@ -94,5 +100,51 @@ describe("buildAnalyzeSystemPrompt", () => {
     expect(engineIndex).toBeLessThan(toneIndex);
     expect(toneIndex).toBeLessThan(examplesIndex);
     expect(examplesIndex).toBeLessThan(taskIndex);
+  });
+
+  it("帶 tone 時改用對應的 toneLayers，而不是預設語氣-Zeno.md", () => {
+    const empathyPrompt = buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK", "empathy");
+    expect(empathyPrompt).toContain("TONE_EMPATHY");
+    expect(empathyPrompt).not.toContain("TONE_CONCISE");
+    // 沒帶 tone 時仍是預設層，不受新欄位影響
+    expect(buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK")).toContain("TONE");
+  });
+
+  it("三種 tone 各自載入不同的語氣層", () => {
+    const empathy = buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK", "empathy");
+    const concise = buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK", "concise");
+    const affirmative = buildAnalyzeSystemPrompt(baseLayers, "TASK_BLOCK", "affirmative");
+    expect(empathy).not.toBe(concise);
+    expect(concise).not.toBe(affirmative);
+    expect(empathy).not.toBe(affirmative);
+  });
+});
+
+describe("buildAnalyzeScreenshotTaskBlock", () => {
+  it("組出對象與事實段落，並指示 LLM 讀圖與輸出 conversationText 的格式", () => {
+    const block = buildAnalyzeScreenshotTaskBlock({
+      contact,
+      facts,
+      now: new Date(2026, 8, 6),
+    });
+    expect(block).toContain("對象：林經理（主管）");
+    expect(block).toContain("id: proj-a-status｜A 案進度｜卡在客戶端還沒回簽合約。");
+    expect(block).toContain("（內部參考，不得寫入回覆）");
+    expect(block).toContain("conversationText");
+    expect(block).toContain("them: 內容");
+    // 截圖模式沒有〈對話〉〈安全牌〉區塊（沒有文字可以先算安全牌）
+    expect(block).not.toContain("〈安全牌〉");
+  });
+
+  it("沒有 contact 時 fallback 為「未知（無檔案）」", () => {
+    const block = buildAnalyzeScreenshotTaskBlock({ contact: undefined, facts: [] });
+    expect(block).toContain("對象：未知（無檔案）");
+    expect(block).toContain("（無相關事實）");
+  });
+
+  it("帶 draft 時加入〈使用者已打的草稿〉段落", () => {
+    const block = buildAnalyzeScreenshotTaskBlock({ contact: undefined, facts: [], draft: "我再確認一下" });
+    expect(block).toContain("〈使用者已打的草稿〉");
+    expect(block).toContain("我再確認一下");
   });
 });

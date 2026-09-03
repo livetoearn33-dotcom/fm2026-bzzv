@@ -22,6 +22,8 @@ const EnvSchema = z.object({
   DATA_DIR: z.preprocess(v => (v === "" ? undefined : v), z.string().optional()),
   /** prompts/ 所在目錄；預設抓 repo 根目錄的 prompts/ */
   PROMPTS_DIR: z.preprocess(v => (v === "" ? undefined : v), z.string().optional()),
+  /** Postgres 連線字串（知識庫儲存層）；未設時 createDb() 會丟出明確錯誤。 */
+  DATABASE_URL: z.preprocess(v => (v === "" ? undefined : v), z.string().optional()),
 });
 
 export type env = z.infer<typeof EnvSchema>;

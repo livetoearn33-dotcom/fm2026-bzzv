@@ -5,13 +5,13 @@ import { testClient } from "hono/testing";
 import { describe, expect, it } from "vitest";
 
 import { createTestApp } from "@/lib/create-app";
-import { loadKnowledgeStore } from "@/shared/knowledge";
+import { loadContacts, loadFacts, staticKnowledgeReader } from "@/shared/knowledge";
 import { formatTodayLine, loadPromptLayers } from "@/shared/prompts";
 
 import { createGuardServices } from "../services";
 import { createGuardRouter } from "./index";
 
-const knowledge = loadKnowledgeStore();
+const knowledge = staticKnowledgeReader(loadFacts(), loadContacts());
 const promptLayers = loadPromptLayers();
 
 function textResult(json: unknown) {

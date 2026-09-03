@@ -5,7 +5,7 @@ import type { AppRouteHandler } from "@/shared/types";
 import type { AnalyzeServices } from "../services";
 import type { AnalyzeRoute } from "./routes";
 
-import { AnalyzeGenerationError } from "../domain/errors";
+import { AnalyzeGenerationError, InvalidScreenshotError } from "../domain/errors";
 
 export function createAnalyzeHandler(services: AnalyzeServices): AppRouteHandler<AnalyzeRoute> {
   return async (c) => {
@@ -18,6 +18,9 @@ export function createAnalyzeHandler(services: AnalyzeServices): AppRouteHandler
     catch (error) {
       if (error instanceof AnalyzeGenerationError) {
         return c.json({ message: error.message }, HttpStatusCodes.BAD_GATEWAY);
+      }
+      if (error instanceof InvalidScreenshotError) {
+        return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
       }
       throw error;
     }

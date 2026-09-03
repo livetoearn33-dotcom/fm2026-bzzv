@@ -43,6 +43,21 @@ function pickLastThemMessage(conversation: ConversationMessageLike[]): Conversat
 }
 
 /**
+ * 對一段文字做關鍵字比對，選一張安全牌；落不進任何規則就回預設值。
+ * 抽出成獨立函式供截圖模式使用——那裡沒有 ConversationMessageLike[]，
+ * 只有 LLM 讀圖後回傳的 conversationText（見 features/analyze/domain/llm-output.schema.ts）。
+ */
+export function computeSafeCardForText(text: string): string {
+  for (const rule of SAFE_CARD_RULES) {
+    if (rule.keywords.some(keyword => text.includes(keyword))) {
+      return rule.card;
+    }
+  }
+
+  return DEFAULT_CARD;
+}
+
+/**
  * 依對話最後一則「對方」訊息的關鍵字，選一張安全牌。
  * 落不進任何規則就回預設值——分流表裡「要查資料」的那一類最終還是靠 LLM 的 reply 補完整。
  */
@@ -52,11 +67,5 @@ export function computeSafeCard(conversation: ConversationMessageLike[]): string
     return DEFAULT_CARD;
   }
 
-  for (const rule of SAFE_CARD_RULES) {
-    if (rule.keywords.some(keyword => target.text.includes(keyword))) {
-      return rule.card;
-    }
-  }
-
-  return DEFAULT_CARD;
+  return computeSafeCardForText(target.text);
 }

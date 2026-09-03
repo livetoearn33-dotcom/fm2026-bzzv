@@ -1,11 +1,11 @@
-import type { LiveKnowledgeStore } from "@/shared/knowledge";
+import type { KnowledgeRepository } from "@/shared/knowledge";
 
 import { createRouter } from "@/lib/create-app";
 
 import * as handlers from "./handlers";
 import * as routes from "./routes";
 
-export function createKnowledgeRouter(store: LiveKnowledgeStore) {
+export function createKnowledgeRouter(store: KnowledgeRepository) {
   return createRouter()
     .openapi(routes.listContacts, handlers.createListContactsHandler(store))
     .openapi(routes.upsertContact, handlers.createUpsertContactHandler(store))

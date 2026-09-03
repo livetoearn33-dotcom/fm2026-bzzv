@@ -1,6 +1,6 @@
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import type { LiveKnowledgeStore } from "@/shared/knowledge";
+import type { KnowledgeRepository } from "@/shared/knowledge";
 import type { AppRouteHandler } from "@/shared/types";
 
 import { ValidationError } from "@/shared/errors";
@@ -14,19 +14,19 @@ import type {
   UpsertFactRoute,
 } from "./routes";
 
-export function createListContactsHandler(store: LiveKnowledgeStore): AppRouteHandler<ListContactsRoute> {
+export function createListContactsHandler(store: KnowledgeRepository): AppRouteHandler<ListContactsRoute> {
   return async (c) => {
-    return c.json(store.listContacts(), HttpStatusCodes.OK);
+    return c.json(await store.listContacts(), HttpStatusCodes.OK);
   };
 }
 
-export function createUpsertContactHandler(store: LiveKnowledgeStore): AppRouteHandler<UpsertContactRoute> {
+export function createUpsertContactHandler(store: KnowledgeRepository): AppRouteHandler<UpsertContactRoute> {
   return async (c) => {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
 
     try {
-      const contact = store.upsertContact(id, body);
+      const contact = await store.upsertContact(id, body);
       return c.json(contact, HttpStatusCodes.OK);
     }
     catch (error) {
@@ -38,10 +38,10 @@ export function createUpsertContactHandler(store: LiveKnowledgeStore): AppRouteH
   };
 }
 
-export function createDeleteContactHandler(store: LiveKnowledgeStore): AppRouteHandler<DeleteContactRoute> {
+export function createDeleteContactHandler(store: KnowledgeRepository): AppRouteHandler<DeleteContactRoute> {
   return async (c) => {
     const { id } = c.req.valid("param");
-    const deleted = store.deleteContact(id);
+    const deleted = await store.deleteContact(id);
     if (!deleted) {
       return c.json({ message: `找不到對象檔案：${id}` }, HttpStatusCodes.NOT_FOUND);
     }
@@ -49,19 +49,19 @@ export function createDeleteContactHandler(store: LiveKnowledgeStore): AppRouteH
   };
 }
 
-export function createListFactsHandler(store: LiveKnowledgeStore): AppRouteHandler<ListFactsRoute> {
+export function createListFactsHandler(store: KnowledgeRepository): AppRouteHandler<ListFactsRoute> {
   return async (c) => {
-    return c.json(store.listFacts(), HttpStatusCodes.OK);
+    return c.json(await store.listFacts(), HttpStatusCodes.OK);
   };
 }
 
-export function createUpsertFactHandler(store: LiveKnowledgeStore): AppRouteHandler<UpsertFactRoute> {
+export function createUpsertFactHandler(store: KnowledgeRepository): AppRouteHandler<UpsertFactRoute> {
   return async (c) => {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
 
     try {
-      const fact = store.upsertFact(id, body);
+      const fact = await store.upsertFact(id, body);
       return c.json(fact, HttpStatusCodes.OK);
     }
     catch (error) {
@@ -73,10 +73,10 @@ export function createUpsertFactHandler(store: LiveKnowledgeStore): AppRouteHand
   };
 }
 
-export function createDeleteFactHandler(store: LiveKnowledgeStore): AppRouteHandler<DeleteFactRoute> {
+export function createDeleteFactHandler(store: KnowledgeRepository): AppRouteHandler<DeleteFactRoute> {
   return async (c) => {
     const { id } = c.req.valid("param");
-    const deleted = store.deleteFact(id);
+    const deleted = await store.deleteFact(id);
     if (!deleted) {
       return c.json({ message: `找不到事實：${id}` }, HttpStatusCodes.NOT_FOUND);
     }

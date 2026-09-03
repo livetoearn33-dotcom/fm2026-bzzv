@@ -53,7 +53,7 @@ describe("buildGuardTaskBlock", () => {
 describe("buildGuardSystemPrompt", () => {
   it("依序串接引擎、語氣、本次任務三層（比 analyze 少一層）", () => {
     const prompt = buildGuardSystemPrompt(
-      { analyzeEngine: "X", guardEngine: "ENGINE", tone: "TONE", examples: "X" },
+      { analyzeEngine: "X", guardEngine: "ENGINE", tone: "TONE", toneLayers: { empathy: "X", concise: "X", affirmative: "X" }, examples: "X", extractPdfEngine: "X" },
       "TASK_BLOCK",
     );
     expect(prompt.indexOf("ENGINE")).toBeLessThan(prompt.indexOf("TONE"));
