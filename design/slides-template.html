@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · Round 2 簡報底（4 頁模板）</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   幕僚 · Round 2 簡報底 — 4 頁模板
+   與 refined.html 同一套語言：六階表面色、珊瑚菱形只當品牌標記、
+   mono 眉標、hairline 不用陰影、expo-out 不彈跳。
+
+   操作：點畫面或按 → 下一頁；← 上一頁；1-4 跳頁。
+   滑鼠停 2.5 秒右下角頁碼自動隱藏（投影乾淨）。
+
+   改內容：每頁是一個 <section class="slide">，文字直接改；
+   要加頁就複製一整個 section，頁碼會自動重算。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+  --coral: #ff6363;
+  --ember: #452324;
+  --amber: #4a3a1f;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+html{ scroll-snap-type: y mandatory; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide{
+  position:relative; width:100vw; height:100vh; overflow:hidden;
+  scroll-snap-align:start;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:96px 120px; gap:40px;
+}
+
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:13px; line-height:1;
+  letter-spacing:3px; text-transform:uppercase; color: var(--smoke);
+}
+.brandline{ display:flex; align-items:center; gap:12px; }
+
+h1{ font-size:72px; font-weight:300; line-height:1.25; margin:0; letter-spacing:.5px; text-wrap:balance; }
+h2{ font-size:48px; font-weight:300; line-height:1.35; margin:0; text-wrap:balance; }
+.lede{ font-size:22px; line-height:1.7; color: var(--ash); text-wrap:pretty; margin:0; max-width:880px; }
+.note{ font-size:16px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
+.mono-sm{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
+
+/* 頁碼（滑鼠停 2.5 秒自動隱藏） */
+.chrome{
+  position:fixed; right:24px; bottom:20px; z-index:9;
+  font-family: var(--mono); font-size:10px; letter-spacing:.8px; color: var(--smoke);
+  transition: opacity 300ms var(--ease); pointer-events:none;
+}
+body.quiet .chrome{ opacity:0; }
+
+/* 三欄要點 */
+.cols{ display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; }
+.col{
+  background: var(--ink); border-radius:16px; padding:32px 28px;
+  display:flex; flex-direction:column; gap:12px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+.col .k{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
+.col .t{ font-size:22px; font-weight:400; line-height:1.4; color: var(--white); }
+.col .d{ font-size:15px; line-height:1.7; color: var(--ash); text-wrap:pretty; }
+
+/* Demo 佔位框 */
+.demo-grid{ display:grid; grid-template-columns:2fr 1fr; gap:32px; align-items:stretch; }
+.demo-frame{
+  aspect-ratio:16/9; border-radius:16px; background: var(--ink);
+  box-shadow: rgba(255,255,255,0.14) 0 0 0 1px;
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px;
+}
+.demo-frame .mono-sm{ color: var(--iron); }
+.sidelist{ display:flex; flex-direction:column; gap:16px; justify-content:center; }
+.sideitem{ display:flex; flex-direction:column; gap:6px; padding:16px 20px; border-radius:12px; background: var(--ink); }
+.sideitem .t{ font-size:18px; font-weight:500; line-height:1.4; }
+.sideitem .d{ font-size:13px; line-height:1.6; color: var(--smoke); }
+
+/* 四層架構堆疊：一層一階表面色，層級用色階講，不畫箭頭 */
+.stack{ display:flex; flex-direction:column; gap:8px; max-width:880px; }
+.layer{
+  display:flex; align-items:center; gap:16px;
+  border-radius:12px; padding:20px 24px;
+}
+.layer .k{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); width:120px; flex:none; }
+.layer .t{ font-size:18px; font-weight:400; color: var(--white); }
+.layer .d{ margin-left:auto; font-size:13px; color: var(--smoke); text-align:right; }
+.chip{
+  font-family: var(--mono); font-size:10px; line-height:1.6; letter-spacing:.3px;
+  border-radius:6px; padding:3px 6px; white-space:nowrap;
+  background: var(--graph); color: var(--ash);
+}
+.chip.warm{ background: var(--ember); color: var(--mist); }
+
+.foot{ position:absolute; left:120px; right:120px; bottom:48px; display:flex; align-items:center; gap:12px; }
+.foot .mono-sm{ letter-spacing:1.5px; }
+</style>
+</head>
+<body>
+
+<!-- ============ 頁 1 · 封面 ============ -->
+<section class="slide">
+  <div class="brandline">
+    <i class="diamond" style="width:12px;height:12px"></i>
+    <span class="eyebrow">幕僚 · Chief of Staff</span>
+  </div>
+  <h1 style="font-size:96px">幕僚</h1>
+  <p class="lede">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</p>
+  <div class="foot">
+    <span class="mono-sm">全村的希望就是真真</span>
+    <span class="mono-sm" style="margin-left:auto">Futuremode × SITCON Buildmode · Future of Work</span>
+  </div>
+</section>
+
+<!-- ============ 頁 2 · 痛點 ============ -->
+<section class="slide">
+  <span class="eyebrow">01 · 問題</span>
+  <h2>不是我不想回，是我怕回錯。</h2>
+  <div class="cols">
+    <div class="col">
+      <span class="k">痛 1</span>
+      <span class="t">打字很痛苦</span>
+      <span class="d">不是不想回，是懶得打。每天幾十則工作訊息，每一則都要組織一次語言。</span>
+    </div>
+    <div class="col">
+      <span class="k">痛 2</span>
+      <span class="t">怕回不好</span>
+      <span class="d">對主管和客戶，一句話回錯比不回更貴。所以訊息一直拖著。</span>
+    </div>
+    <div class="col">
+      <span class="k">痛 3</span>
+      <span class="t">拖著會虧錢</span>
+      <span class="d">客戶願意回訊息，代表他現在有空。窗口關了，下次要等明天、下週，或再也沒有。</span>
+    </div>
+  </div>
+  <p class="note">成功不是「你回得快」，是「對方更願意回你」。</p>
+</section>
+
+<!-- ============ 頁 3 · Demo ============ -->
+<section class="slide">
+  <span class="eyebrow">02 · Demo</span>
+  <h2>讀空氣 · 查自己的資料 · 防自爆</h2>
+  <div class="demo-grid">
+    <div class="demo-frame">
+      <i class="diamond" style="width:10px;height:10px"></i>
+      <span class="mono-sm">Live Demo ／ 影片</span>
+    </div>
+    <div class="sidelist">
+      <div class="sideitem">
+        <span class="t">讀空氣</span>
+        <span class="d">先判斷氣氛（一般／高壓／敏感），高壓時它知道不能只回「收到」。</span>
+      </div>
+      <div class="sideitem">
+        <span class="t">自己的知識庫</span>
+        <span class="d">報價、進度、對象偏好，回覆帶來源標註——還有一筆議價底線它知道但永遠不說。</span>
+      </div>
+      <div class="sideitem">
+        <span class="t">防自爆</span>
+        <span class="d">你自己打的字帶火氣時，它描述「對方會怎麼讀」，不判你對錯。</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 頁 4 · 架構＋收尾 ============ -->
+<section class="slide">
+  <span class="eyebrow">03 · 為什麼能換臉不換腦</span>
+  <h2>引擎沒變、資料沒變——只是換了一張卡。</h2>
+  <div class="stack">
+    <div class="layer" style="background:var(--graph)">
+      <span class="k">Layer 1</span><span class="t">引擎紅線</span>
+      <span class="d">事實只能來自資料，不代答新條件</span>
+    </div>
+    <div class="layer" style="background:var(--obsid)">
+      <span class="k">Layer 2</span><span class="t">語氣 · 角色卡</span>
+      <span class="d">可整張抽換：本色／諸葛亮／顧北辰</span>
+    </div>
+    <div class="layer" style="background:var(--ink)">
+      <span class="k">Layer 3</span><span class="t">範例庫</span>
+      <span class="d">真實回覆的樣子，不是規則的樣子</span>
+    </div>
+    <div class="layer" style="background:var(--ink); box-shadow: rgba(255,255,255,0.10) 0 0 0 1px">
+      <span class="k">Runtime</span><span class="t">知識庫 ＋ 對象檔案</span>
+      <span class="d">回覆的每個數字都有出處</span>
+    </div>
+  </div>
+  <p class="note">Meta 幫你回 Messenger，Apple 幫你回 iMessage——但我的工作在五個 App 裡。</p>
+  <div class="foot">
+    <i class="diamond" style="width:8px;height:8px"></i>
+    <span class="mono-sm">幕僚 · 全村的希望就是真真</span>
+    <span class="mono-sm" style="margin-left:auto;text-transform:none">github.com/livetoearn33-dotcom/fm2026-bzzv</span>
+  </div>
+</section>
+
+<div class="chrome" id="pageNo">1 / 4</div>
+
+<script>
+"use strict";
+const slides = Array.from(document.querySelectorAll(".slide"));
+let idx = 0;
+history.scrollRestoration = "manual";
+addEventListener("load", () => goTo(0));
+
+function goTo(i) {
+  idx = Math.max(0, Math.min(slides.length - 1, i));
+  slides[idx].scrollIntoView({ behavior: "instant", block: "start" });
+  document.getElementById("pageNo").textContent = (idx + 1) + " / " + slides.length;
+}
+
+addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " " || e.key === "PageDown") { e.preventDefault(); goTo(idx + 1); }
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); goTo(idx - 1); }
+  else { const n = parseInt(e.key, 10); if (n >= 1 && n <= slides.length) goTo(n - 1); }
+});
+slides.forEach(s => s.addEventListener("click", () => goTo(idx + 1)));
+
+/* 手動捲動時同步頁碼 */
+let st = null;
+addEventListener("scroll", () => {
+  clearTimeout(st);
+  st = setTimeout(() => {
+    const mid = scrollY + innerHeight / 2;
+    slides.forEach((s, i) => { if (s.offsetTop <= mid && mid < s.offsetTop + s.offsetHeight) idx = i; });
+    document.getElementById("pageNo").textContent = (idx + 1) + " / " + slides.length;
+  }, 120);
+});
+
+/* 滑鼠停 2.5 秒 → 頁碼隱藏 */
+let quietTimer = null;
+function poke() {
+  document.body.classList.remove("quiet");
+  clearTimeout(quietTimer);
+  quietTimer = setTimeout(() => document.body.classList.add("quiet"), 2500);
+}
+addEventListener("mousemove", poke);
+poke();
+</script>
+</body>
+</html>
