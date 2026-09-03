@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 片頭第二輪 — 三個高製作構圖</title>
+<title>幕聊 · 片頭第二輪 — 三個高製作構圖</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
@@ -103,7 +103,7 @@ body.quiet .chrome{ opacity:0; }
 .frag.in{ opacity: var(--o, 0.4); }
 @keyframes drift{ from{ margin-top:0 } to{ margin-top:-14px } }
 
-/* 碎片 a：幕僚面板（收合列） */
+/* 碎片 a：幕聊面板（收合列） */
 .frag-panel{
   width:340px; background: var(--ink); border-radius:12px; padding:14px 16px;
   box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset, rgba(255,255,255,0.07) 0 0 0 1px;
@@ -255,7 +255,7 @@ body.quiet .chrome{ opacity:0; }
     <div id="rwComposer"><span id="rwText"></span><span class="rwcaret"></span></div>
     <div id="rwPanel"><div><div class="row">
       <i class="diamond" style="width:7px;height:7px"></i>
-      <span class="eyebrow" style="font-size:10px;letter-spacing:.8px">幕僚 · 對方會怎麼讀</span>
+      <span class="eyebrow" style="font-size:10px;letter-spacing:.8px">幕聊 · 對方會怎麼讀</span>
       <span class="ti">他讀起來會像被下戰帖</span>
       <button id="rwBtn">替換</button>
     </div></div></div>
@@ -263,7 +263,7 @@ body.quiet .chrome{ opacity:0; }
   <div id="rwFinal">
     <div class="brand" id="rwBrand"><span class="ch">幕</span><span class="ch">僚</span></div>
     <div class="eyebrow fadein" id="rwEye">Chief of Staff</div>
-    <div class="tagline fadein" id="rwTag" style="font-size:17px;color:var(--ash)">送出之前，先過一個幕僚。</div>
+    <div class="tagline fadein" id="rwTag" style="font-size:17px;color:var(--ash)">送出之前，先過一個幕聊。</div>
   </div>
   <div class="grain"></div>
 </section>
@@ -273,14 +273,14 @@ body.quiet .chrome{ opacity:0; }
   <div class="darkroom"></div>
   <div id="mega">
     <div class="megawrap">
-      <span class="mega-stroke">幕僚</span>
-      <span class="mega-fill" aria-hidden="true">幕僚</span>
+      <span class="mega-stroke">幕聊</span>
+      <span class="mega-fill" aria-hidden="true">幕聊</span>
     </div>
     <div id="scanbar"><span class="vlabel">Chief of Staff</span></div>
     <div id="megaMeta">
       <div class="eyerow fadein" id="mEye">
         <i class="diamond" style="width:8px;height:8px"></i>
-        <span class="eyebrow" style="font-size:11px;letter-spacing:2px">幕僚 · Chief of Staff</span>
+        <span class="eyebrow" style="font-size:11px;letter-spacing:2px">幕聊 · Chief of Staff</span>
       </div>
       <div class="tagline fadein" id="mTag">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
     </div>
@@ -302,11 +302,11 @@ const $ = (id) => document.getElementById(id);
    碎片全部來自產品世界觀：面板、chip、訊息泡。
    位置手排（不用亂數，每次播一樣，方便錄影）。 */
 const FRAGS = [
-  { t:"panel", eb:"幕僚", ti:"他已經問第二次 · 要的是有人接住", btn:"填入",
+  { t:"panel", eb:"幕聊", ti:"他已經問第二次 · 要的是有人接住", btn:"填入",
     x:"6%",  y:"14%", z:-420, ry:14,  o:0.5,  d:0 },
-  { t:"panel", eb:"幕僚 · 對方會怎麼讀", ti:"他讀起來會像被推回去自己想辦法", btn:"替換",
+  { t:"panel", eb:"幕聊 · 對方會怎麼讀", ti:"他讀起來會像被推回去自己想辦法", btn:"替換",
     x:"66%", y:"70%", z:-260, ry:-12, o:0.55, d:2.1 },
-  { t:"panel", eb:"幕僚", ti:"下午要開會 · 他要一句能回報的話", btn:"填入",
+  { t:"panel", eb:"幕聊", ti:"下午要開會 · 他要一句能回報的話", btn:"填入",
     x:"70%", y:"10%", z:-560, ry:-18, o:0.38, d:1.2 },
   { t:"bub", tx:"這個進度到底怎麼樣了？下午要跟客戶開會。",
     x:"12%", y:"66%", z:-500, ry:16,  o:0.42, d:0.8 },

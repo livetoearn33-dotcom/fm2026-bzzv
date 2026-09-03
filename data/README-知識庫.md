@@ -22,6 +22,14 @@
 照 spec 原 schema：`id`、`name`、`role`、`tone`（語氣偏好）、`notes`（註記）、`recentTopics`。
 組裝時整筆注入第 4 層〈本次任務〉，位階高於 Zeno 語氣預設。
 
+## 專案自身的事實（dogfooding，2026-09-03 新增）
+
+`product-*`、`team-info`、`hackathon-schedule` 這 7 筆是**幕聊 EQ Copilot 自己的資料**——團隊在用自己的產品處理黑客松期間的溝通，這些就是它知道的東西。
+
+規則：**只放可查證的事實**（架構、引擎、賽程、分工、測試結果），不放自我評價。「四層 prompt 架構」可以，「最創新的作品」不行——後者 repo 裡沒東西支撐，寫了反而是誠實底線的反例。
+
+用途：評審可以直接問它「幕聊是什麼」「你們怎麼測的」，它會從知識庫答，帶來源標註。
+
 ## 目前狀態（2026-09-02）
 
 facts 10 筆、contacts 4 位，依上述 B 案完成。demo 兩幕的 golden path 依賴 `proj-a-status`、`quote-campaign-two-tier`，改動這兩筆要同步檢查 demo 快取回覆。口播措辭：「這些資料是照我真實的 BD 工作長出來的」——套路是真的，人和數字是合成的。

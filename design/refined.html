@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · Chief of Staff — refined v0.4（鍵盤形態 · 質感版）</title>
+<title>幕聊 · Chief of Staff — refined v0.4（鍵盤形態 · 質感版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑（原 Google Fonts 線上載入已移除 2026-09-02） -->
 <style>
 /* ============================================================
-   幕僚 · refined v0.3 — 鍵盤（IME）形態
+   幕聊 · refined v0.3 — 鍵盤（IME）形態
    純 HTML / CSS / vanilla JS。可直接開瀏覽器，也可放進 WebView。
 
    設計語言：Raycast
@@ -29,7 +29,7 @@
   --iron:  #454647;
   --smoke: #6a6b6c;
   --ash:   #9c9c9d;
-  --mist:  #e6e6e6;   /* 唯一的填色動作 = 幕僚手上有東西給你 */
+  --mist:  #e6e6e6;   /* 唯一的填色動作 = 幕聊手上有東西給你 */
   --white: #ffffff;
 
   --coral: #ff6363;   /* 品牌菱形，只出現在品牌標記 */
@@ -140,7 +140,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   width:36px; height:36px; flex:none; border-radius:8px; background: var(--host-bg);
   transition: background 200ms var(--ease);
 }
-/* 填入之後送出鍵才活起來 —— 幕僚只把字放進去，送不送是使用者按的 */
+/* 填入之後送出鍵才活起來 —— 幕聊只把字放進去，送不送是使用者按的 */
 .sendbtn.live{ background: var(--graph); }
 .caret{ display:inline-block; width:1.5px; height:16px; background: var(--iron); margin-left:2px; vertical-align:-3px; }
 
@@ -149,7 +149,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
 
 /* ============================================================
-   幕僚面板 —— 貼齊左右緣，從鍵盤上緣往上長
+   幕聊面板 —— 貼齊左右緣，從鍵盤上緣往上長
    ============================================================ */
 .panel{
   position:relative; flex:none; background: var(--ink);
@@ -191,7 +191,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .chip.amber{ background: var(--amber); color: var(--mist); }
 
 /* 主要動作：Mist 填色。整個系統只有這一種填色，
-   而且只有「幕僚手上真的有東西給你」時才會出現 */
+   而且只有「幕聊手上真的有東西給你」時才會出現 */
 .btn-adopt{
   flex:none; height:40px; padding:0 14px; border-radius:8px; border:0;
   background: var(--mist); color: var(--iron); font-size:13px; font-weight:500;
@@ -254,7 +254,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
    色票、字級、間距、骨架全部未動；動的是光影與宿主真實感。
    宿主側：H1 頭像有人／H2 時間戳＋已讀／H3 app 列／H4 鍵帽底影／
    　　　　H5 輸入框內縮線／C3 狀態列訊號電池／C4 手機側鍵
-   幕僚側：M1 收合列微漸層＋keyline／M2 填入鍵帽感／M3 游標呼吸／
+   幕聊側：M1 收合列微漸層＋keyline／M2 填入鍵帽感／M3 游標呼吸／
    　　　　M4 面板內亮線＋tabular-nums／M5 菱形讀取中慢轉／
    　　　　C1 標籤排降級成來源註腳／C2 內容錯拍浮入／C5 本文呼吸
    ============================================================ */
@@ -282,7 +282,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .backchev{ width:24px; height:24px; flex:none; display:flex; align-items:center; justify-content:center; color: var(--smoke); font-size:16px; font-weight:300; }
 .rolebadge{ font-size:9px; line-height:1; color:#8a8b8e; background:rgba(27,28,30,0.06); border-radius:4px; padding:3px 5px; margin-left:6px; }
 .headdots{ margin-left:auto; color:#a2a3a6; font-size:16px; letter-spacing:2px; }
-/* H1 · 頭像有人（宿主世界觀的暖色，不進幕僚 token 表） */
+/* H1 · 頭像有人（宿主世界觀的暖色，不進幕聊 token 表） */
 .avatar{ display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:500; color:#7a6f5d; background:#e8e0d0; }
 /* H2 · 訊息列：頭像＋泡泡＋時間戳/已讀 */
 .bubwrap{ display:flex; align-items:flex-end; gap:6px; max-width:86%; align-self:flex-start; }
@@ -376,17 +376,17 @@ body::after{
 </head>
 <body>
 <i class="qtick tl"></i><i class="qtick tr"></i><i class="qtick bl"></i><i class="qtick br"></i>
-<span class="qmeta tl">幕僚 · Refined v0.4</span>
+<span class="qmeta tl">幕聊 · Refined v0.4</span>
 <span class="qmeta br">Buildmode 2026</span>
 <div class="page">
 
   <div class="intro">
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
-      <span class="eyebrow lg">幕僚 / Chief of Staff · refined v0.3 · 鍵盤形態</span>
+      <span class="eyebrow lg">幕聊 / Chief of Staff · refined v0.3 · 鍵盤形態</span>
     </div>
     <h1>層級靠留白，不靠格線</h1>
-    <p class="lede">六個狀態共用一個元件：眉標／情境判讀／來源標籤／本文／理由，代寫和防自爆同一副骨架，只換內容。原本卡片裡的五條分隔線全部改成表面色階，動作從四個減到一個，字級從六種收回四種。Mist 白色填色被收攏成一個意思——只有幕僚手上真的有東西給你時才會出現，所以待命的「附加」刻意是次要樣式。所有桌機鍵盤提示（esc／⌘C／⌘R／⇥）移除：Android 輸入法沒有那些鍵，也不能替使用者按送出，所以動作是「填入」與「替換」。</p>
+    <p class="lede">六個狀態共用一個元件：眉標／情境判讀／來源標籤／本文／理由，代寫和防自爆同一副骨架，只換內容。原本卡片裡的五條分隔線全部改成表面色階，動作從四個減到一個，字級從六種收回四種。Mist 白色填色被收攏成一個意思——只有幕聊手上真的有東西給你時才會出現，所以待命的「附加」刻意是次要樣式。所有桌機鍵盤提示（esc／⌘C／⌘R／⇥）移除：Android 輸入法沒有那些鍵，也不能替使用者按送出，所以動作是「填入」與「替換」。</p>
   </div>
 
   <div class="decks">
@@ -467,7 +467,7 @@ body::after{
         </div>
       </div>
 
-      <p class="caption">待命時條上只有品牌菱形和「附加」，那顆按鈕就是這條 bar 存在的理由——幕僚不自己偷看，使用者點一下，它才截這一次的畫面。讀取中不做 spinner，只沿著條子上緣本來就有的那道 1px 亮線掃一道光。採用後條子收回待命：建議已經被用掉了，差別在輸入框而不在條上，而且送出鍵這時才活起來——幕僚只把字放進去，送不送是使用者按的。</p>
+      <p class="caption">待命時條上只有品牌菱形和「附加」，那顆按鈕就是這條 bar 存在的理由——幕聊不自己偷看，使用者點一下，它才截這一次的畫面。讀取中不做 spinner，只沿著條子上緣本來就有的那道 1px 亮線掃一道光。採用後條子收回待命：建議已經被用掉了，差別在輸入框而不在條上，而且送出鍵這時才活起來——幕聊只把字放進去，送不送是使用者按的。</p>
     </div>
 
     <!-- ============ 防自爆 ============ -->
@@ -528,7 +528,7 @@ body::after{
                 <span class="panel-txt">
                   <span class="panel-eyebrow">
                     <i class="diamond" style="width:6px;height:6px"></i>
-                    <span class="eyebrow">幕僚 · 對方會怎麼讀</span>
+                    <span class="eyebrow">幕聊 · 對方會怎麼讀</span>
                   </span>
                   <span class="panel-title">他讀起來會像被推回去自己想辦法</span>
                 </span>
@@ -616,7 +616,7 @@ function rowSuggest(m, title) {
     <span class="panel-txt">
       <span class="panel-eyebrow">
         <i class="diamond" style="width:6px;height:6px"></i>
-        <span class="eyebrow">幕僚</span>
+        <span class="eyebrow">幕聊</span>
         <span class="chip mood ${m.chip}">${esc(m.label)}</span>
       </span>
       <span class="panel-title">${esc(title)}</span>

@@ -1,4 +1,4 @@
-# fm2026-bzzv
+# 幕聊 EQ Copilot
 
 FUTUREMODE × SITCON BUILDMODE Hackathon 2026
 隊伍：全村的希望就是真真｜賽道：Future of Work
@@ -15,7 +15,53 @@ FUTUREMODE × SITCON BUILDMODE Hackathon 2026
 4. **分層 prompt 架構**：引擎／語氣／範例／runtime 四層可抽換——換一張角色卡，諸葛亮幫你回訊息，事實一個不掉
 5. **不挑 App**：只看螢幕、只在你按下時看，LINE／Lark／Gmail 通吃——Meta 永遠不會幫你回 LINE，我們會
 
-程式入口：[prompts/](prompts/)（三引擎 prompt 與組裝契約）｜[data/](data/)（知識庫）｜[docs/spec.md](docs/spec.md)（架構與 API）｜[docs/demo-script.md](docs/demo-script.md)（demo 敘事）
+---
+
+## 架構總覽
+
+三層，各自可獨立開發，靠 [prompts/README-組裝說明.md](prompts/README-組裝說明.md) 的契約對齊。
+
+```
+┌─ Android 原生殼（EQCopilot/）────────────────────────┐
+│  浮層／IME 殼｜Accessibility 讀畫面｜截圖｜填回輸入框    │
+│  只做原生非做不可的事，UI 一律交給 WebView              │
+└──────────────┬──────────────────────────────────────┘
+               │ base64 截圖 ＋（選填）使用者草稿
+┌──────────────▼──────────────────────────────────────┐
+│  WebView UI（design/*.html）                         │
+│  純 HTML+CSS，六個狀態共用一副骨架                     │
+└──────────────┬──────────────────────────────────────┘
+               │ HTTP
+┌──────────────▼──────────────────────────────────────┐
+│  後端 Hono（backend/）                                │
+│  讀 prompts/*.md 四層組裝 → LLM → 結構化回傳            │
+│  知識庫 CRUD、golden path 快取                         │
+└─────────────────────────────────────────────────────┘
+```
+
+### Prompt 四層（改 .md 即生效，不必動程式）
+
+| 層 | 檔案 | 內容 |
+|---|---|---|
+| 1 引擎 | `prompts/引擎-*.md` | 判準與紅線，全對象共用不可覆蓋 |
+| 2 語氣 | `prompts/語氣-Zeno.md` 或 `prompts/角色卡-*.md` | 說話的樣子，角色卡可整層抽換 |
+| 3 範例 | `prompts/範例庫-回覆.md` | 好回覆的手感，規則堆不出來的部分 |
+| 4 runtime | 後端動態組 | 對象檔案＋粗篩到的事實＋當下畫面 |
+
+### 三個引擎
+
+| 端點 | 引擎檔 | 做什麼 |
+|---|---|---|
+| `/analyze` | `prompts/引擎-analyze.md` | 讀截圖 → 判氣氛 → 查知識庫 → 產生回覆 |
+| `/guard` | `prompts/引擎-guard.md` | 偵測使用者草稿裡的防禦／推卸／火氣，描述「對方會怎麼讀」 |
+| `/extract` | `prompts/引擎-extract.md` | 貼上的文字 → 抽成知識庫條目草稿 |
+
+### 驗證記錄
+
+- Prompt 引擎 dry-run 靶子測試：13/13 通過（誠實底線、內部資訊隔離、誤報陷阱），報告在 [tests/](tests/)
+- 後端：84 個測試（LLM 用 mock model）
+
+**文件索引**：[docs/README.md](docs/README.md)
 
 ---
 

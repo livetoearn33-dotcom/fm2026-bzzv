@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 產品質感版 — 現況 vs 質感版並排</title>
+<title>幕聊 · 產品質感版 — 現況 vs 質感版並排</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
@@ -18,7 +18,7 @@
      H3 app 列：返回鍵、對象徽章、右側動作點
      H4 鍵盤鍵帽加 1px 底影（真實 IME 都有）
      H5 輸入框內縮 hairline
-   幕僚側（機械鍵帽感）——
+   幕聊側（機械鍵帽感）——
      M1 收合列単色明度微漸層＋keyline 三層內陰影
      M2 「填入」按鈕加 inset 底影、按下會縮（demo 點得出回饋）
      M3 游標呼吸（1.1s 眨動）
@@ -271,11 +271,11 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   <div class="intro">
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
-      <span class="eyebrow">幕僚 / Chief of Staff · 產品質感 A/B</span>
+      <span class="eyebrow">幕聊 / Chief of Staff · 產品質感 A/B</span>
       <span class="ln"></span>
     </div>
     <h1>同一格產品畫面：現況 vs 質感版</h1>
-    <p class="lede">回應「整體產品視覺陽春」。左邊是 refined.html 現況；右邊動了 10 個地方——宿主側 5 個（頭像有人、時間戳＋已讀、app 列、鍵帽底影、輸入框內縮線；日期條「今天」留給收合狀態用），幕僚側 5 個（收合列微漸層＋keyline、按鈕鍵帽感——右邊的「填入」可以按按看、游標會呼吸、面板上緣內亮線、菱形滑過面板會慢轉一圈）。色票、字級、間距全部沒動，動的是光影和「宿主的真實感」。你點頭我就套回 refined.html 產品本體與 chip 原型。</p>
+    <p class="lede">回應「整體產品視覺陽春」。左邊是 refined.html 現況；右邊動了 10 個地方——宿主側 5 個（頭像有人、時間戳＋已讀、app 列、鍵帽底影、輸入框內縮線；日期條「今天」留給收合狀態用），幕聊側 5 個（收合列微漸層＋keyline、按鈕鍵帽感——右邊的「填入」可以按按看、游標會呼吸、面板上緣內亮線、菱形滑過面板會慢轉一圈）。色票、字級、間距全部沒動，動的是光影和「宿主的真實感」。你點頭我就套回 refined.html 產品本體與 chip 原型。</p>
   </div>
 
   <div class="decks">
@@ -303,7 +303,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
               <span class="panel-txt">
                 <span class="panel-eyebrow">
                   <i class="diamond" style="width:6px;height:6px"></i>
-                  <span class="eyebrow">幕僚</span>
+                  <span class="eyebrow">幕聊</span>
                   <span class="chip mood warm">高壓</span>
                 </span>
                 <span class="panel-title">他已經問第二次 · 要的是有人接住</span>
@@ -370,7 +370,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
               <span class="panel-txt">
                 <span class="panel-eyebrow">
                   <i class="diamond" style="width:6px;height:6px"></i>
-                  <span class="eyebrow">幕僚</span>
+                  <span class="eyebrow">幕聊</span>
                   <span class="chip mood warm">高壓</span>
                 </span>
                 <span class="panel-title">他已經問第二次 · 要的是有人接住</span>
@@ -443,7 +443,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
               <span class="panel-txt">
                 <span class="panel-eyebrow">
                   <i class="diamond" style="width:6px;height:6px"></i>
-                  <span class="eyebrow">幕僚</span>
+                  <span class="eyebrow">幕聊</span>
                   <span class="chip mood warm">高壓</span>
                 </span>
                 <span class="panel-title">他已經問第二次 · 要的是有人接住</span>
@@ -467,7 +467,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 
   </div>
 
-  <p class="caption" style="width:auto;max-width:828px"><b>C 版的收斂邏輯</b>：紅框那排四顆 chip 裡，「催問 ×2」跟標題「他已經問第二次」是同一件事講兩次，「偏好 · 條列」是內部知識、用戶不需要看——這兩顆直接刪。真正值錢的是「這句話引用了哪筆資料」，降級成本文下方一行 mono 註腳「引用 · 報價單 #Q-2410 · 交期 14 天」，可信度的故事還在，畫面卻只剩一個主角：那句 17px 的回覆。展開時三段內容錯拍浮入（重新整理頁面可以再看一次）。<br><br><b>沒動的東西</b>：色票、四種字級、8dp 網格、hairline 原則、紅色紀律、面板骨架——全部照舊，Zanna 接手不用重學。<b>動的東西</b>都是「光影」和「宿主真實感」兩類，clip 到 CSS 就能套回產品。宿主側的暖色頭像是 LINE 世界觀的顏色，不進幕僚的 token 表。</p>
+  <p class="caption" style="width:auto;max-width:828px"><b>C 版的收斂邏輯</b>：紅框那排四顆 chip 裡，「催問 ×2」跟標題「他已經問第二次」是同一件事講兩次，「偏好 · 條列」是內部知識、用戶不需要看——這兩顆直接刪。真正值錢的是「這句話引用了哪筆資料」，降級成本文下方一行 mono 註腳「引用 · 報價單 #Q-2410 · 交期 14 天」，可信度的故事還在，畫面卻只剩一個主角：那句 17px 的回覆。展開時三段內容錯拍浮入（重新整理頁面可以再看一次）。<br><br><b>沒動的東西</b>：色票、四種字級、8dp 網格、hairline 原則、紅色紀律、面板骨架——全部照舊，Zanna 接手不用重學。<b>動的東西</b>都是「光影」和「宿主真實感」兩類，clip 到 CSS 就能套回產品。宿主側的暖色頭像是 LINE 世界觀的顏色，不進幕聊的 token 表。</p>
 
 </div>
 
