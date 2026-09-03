@@ -1,1 +1,22 @@
 pm-作戰板.local.md
+# Android Studio
+.idea/
+*.iml
+
+# Gradle / Kotlin cache
+.gradle/
+.kotlin/
+**/build/
+
+# Local Android SDK path
+local.properties
+
+# Native build cache
+.externalNativeBuild/
+.cxx/
+
+# macOS
+.DS_Store
+._*
+__MACOSX/
+

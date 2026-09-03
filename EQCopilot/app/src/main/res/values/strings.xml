@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">幕僚</string>
+
+    <!--
+      CTO / backend integration:
+      Set this to the POST /compose endpoint.
+      Emulator -> backend running on the same Mac commonly uses:
+      http://10.0.2.2:8000/compose
+    -->
+    <string name="compose_endpoint" translatable="false"></string>
+</resources>

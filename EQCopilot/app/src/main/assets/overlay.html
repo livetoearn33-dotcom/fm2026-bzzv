@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <style>
+        :root{
+          --void:#040506;
+          --ink:#07080a;
+          --obsid:#111214;
+          --graph:#1b1c1e;
+          --slate:#363739;
+          --iron:#454647;
+          --smoke:#6a6b6c;
+          --ash:#9c9c9d;
+          --mist:#e6e6e6;
+          --white:#ffffff;
+          --coral:#ff6363;
+          --ember:#452324;
+          --amber:#4a3a1f;
+          --ease:cubic-bezier(0.16,1,0.3,1);
+          --mono:ui-monospace,Menlo,Monaco,monospace;
+        }
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+        body{
+          font-family:"Noto Sans TC",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+          -webkit-font-smoothing:antialiased;
+          user-select:none;-webkit-user-select:none;
+        }
+        button{font-family:inherit;cursor:pointer}
+        .panel{
+          position:relative;width:100%;height:64px;
+          background:linear-gradient(180deg,#0a0b0d 0%,var(--ink) 100%);
+          border-radius:16px 16px 0 0;overflow:hidden;
+          box-shadow:rgba(255,255,255,.28) 0 1px 0 0 inset,
+                     rgba(255,255,255,.06) 0 0 0 1px;
+        }
+        .panel.reading::after{
+          content:"";position:absolute;left:0;top:0;height:1px;width:35%;
+          background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);
+          animation:sweep 1100ms linear infinite;
+        }
+        @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(286%)}}
+        .panel.reading .diamond{animation:spin 1400ms var(--ease) infinite}
+        @keyframes spin{from{transform:rotate(45deg)}to{transform:rotate(405deg)}}
+        .row{height:64px;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px}
+        .brand{display:flex;align-items:center;gap:8px;flex:none;margin-right:2px}
+        .diamond{width:7px;height:7px;background:var(--coral);transform:rotate(45deg);flex:none}
+        .eyebrow{
+          font-family:var(--mono);font-size:10px;line-height:1;letter-spacing:.8px;
+          text-transform:uppercase;color:var(--smoke);white-space:nowrap;
+        }
+        .actions{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
+        .tone{
+          flex:1;min-width:0;height:44px;border-radius:8px;border:1px solid var(--slate);
+          background:var(--obsid);color:var(--mist);font-size:14px;font-weight:500;
+          box-shadow:rgba(255,255,255,.035) 0 1px 0 inset;
+          transition:transform 110ms var(--ease),background 110ms var(--ease),border-color 110ms var(--ease),opacity 150ms var(--ease);
+        }
+        .tone:active{transform:translateY(1px) scale(.98);background:var(--graph);border-color:var(--iron)}
+        .tone:disabled{opacity:.42;cursor:default}
+        .status{flex:1;min-width:0;display:none;align-items:center;gap:10px;padding:0 8px}
+        .status-main{font-size:13px;font-weight:500;line-height:1.3;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status-sub{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.3px;color:var(--smoke);white-space:nowrap}
+    </style>
+</head>
+<body>
+<div class="panel" id="panel">
+    <div class="row">
+        <div class="brand">
+            <i class="diamond"></i>
+            <span class="eyebrow">幕僚</span>
+        </div>
+
+        <div class="actions" id="actions">
+            <button class="tone" data-style="empathy">同理</button>
+            <button class="tone" data-style="concise">簡潔</button>
+            <button class="tone" data-style="affirmative">肯定</button>
+        </div>
+
+        <div class="status" id="status">
+            <span class="status-main" id="statusMain">讀取中</span>
+            <span class="status-sub" id="statusSub"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    "use strict";
+    const panel = document.getElementById("panel");
+    const actions = document.getElementById("actions");
+    const status = document.getElementById("status");
+    const statusMain = document.getElementById("statusMain");
+    const statusSub = document.getElementById("statusSub");
+    const buttons = Array.from(document.querySelectorAll("[data-style]"));
+    const LABELS = { empathy:"同理", concise:"簡潔", affirmative:"肯定" };
+
+    function showActions(){
+      panel.classList.remove("reading");
+      actions.style.display="flex";
+      status.style.display="none";
+      buttons.forEach(b=>b.disabled=false);
+    }
+    function showStatus(main,sub,reading){
+      buttons.forEach(b=>b.disabled=true);
+      actions.style.display="none";
+      status.style.display="flex";
+      statusMain.textContent=main||"";
+      statusSub.textContent=sub||"";
+      panel.classList.toggle("reading",!!reading);
+    }
+    function compose(style){
+      if(!window.Android || !Android.compose){
+        window.onComposeError("Android bridge unavailable");
+        return;
+      }
+      Android.compose(style);
+    }
+    buttons.forEach(btn=>btn.addEventListener("click",()=>compose(btn.dataset.style)));
+
+    window.onComposeStarted=function(style){
+      showStatus("正在理解聊天室",LABELS[style]||style,true);
+    };
+    window.onComposeFinished=function(){
+      showStatus("已填入輸入框","完成",false);
+      setTimeout(showActions,850);
+    };
+    window.onComposeError=function(message){
+      showStatus(message||"處理失敗","請重試",false);
+      setTimeout(showActions,1600);
+    };
+</script>
+</body>
+</html>

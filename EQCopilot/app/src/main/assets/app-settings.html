@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>幕僚 · 知識庫</title>
+    <style>
+        :root{
+          --void:#040506;
+          --ink:#07080a;
+          --obsid:#111214;
+          --graph:#1b1c1e;
+          --slate:#363739;
+          --iron:#454647;
+          --smoke:#6a6b6c;
+          --ash:#9c9c9d;
+          --mist:#e6e6e6;
+          --white:#ffffff;
+          --coral:#ff6363;
+          --ember:#452324;
+          --amber:#4a3a1f;
+          --ease:cubic-bezier(0.16,1,0.3,1);
+          --mono:'JetBrains Mono',ui-monospace,Menlo,Monaco,monospace;
+          --vh:1vh;
+        }
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        html,body{margin:0;height:100%;overscroll-behavior:none}
+        body{
+          height:calc(var(--vh,1vh)*100);
+          background:var(--void);
+          color:var(--white);
+          font-family:"Noto Sans TC",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+          -webkit-font-smoothing:antialiased;
+          overflow:hidden;
+        }
+        button,input{font-family:inherit}
+        button{cursor:pointer}
+        .screen{
+          width:100%;height:100%;display:flex;flex-direction:column;background:var(--void);
+          padding-top:env(safe-area-inset-top,0px);
+          padding-left:env(safe-area-inset-left,0px);
+          padding-right:env(safe-area-inset-right,0px);
+        }
+        .apphead{
+          flex:none;display:flex;align-items:center;gap:8px;padding:12px 16px 8px;
+        }
+        .diamond{width:8px;height:8px;background:var(--coral);transform:rotate(45deg);flex:none}
+        .ttl{font-size:15px;font-weight:500;line-height:1.3}
+        .cnt{
+          margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.3px;color:var(--smoke)
+        }
+        .accessbtn{
+          flex:none;min-height:36px;padding:7px 10px;border-radius:8px;border:1px solid var(--slate);
+          background:transparent;color:var(--ash);font-family:var(--mono);font-size:10px;letter-spacing:.3px
+        }
+        .accessbtn:active{background:var(--graph);color:var(--mist)}
+        .scroll{
+          flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+          padding:10px 16px 28px;
+          padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+        }
+        .intro{
+          padding:8px 0 18px;
+        }
+        .eyebrow{
+          font-family:var(--mono);font-size:10px;line-height:1;letter-spacing:.8px;text-transform:uppercase;color:var(--smoke)
+        }
+        .intro h1{
+          margin:10px 0 6px;font-size:24px;line-height:1.28;font-weight:500;letter-spacing:-.02em
+        }
+        .intro p{
+          margin:0;color:var(--smoke);font-size:13px;line-height:1.6
+        }
+        .primary{
+          width:100%;height:48px;border:0;border-radius:10px;
+          background:var(--mist);color:var(--iron);font-size:14px;font-weight:500;
+          box-shadow:rgba(255,255,255,.85) 0 1px 0 0 inset,rgba(0,0,0,.30) 0 -1.5px 0 0 inset;
+          transition:transform 110ms var(--ease),background 110ms var(--ease)
+        }
+        .primary:active{transform:translateY(1px) scale(.99);background:var(--white)}
+        .primary:disabled{opacity:.4;cursor:default}
+        .sect{display:flex;align-items:center;gap:8px;padding:22px 0 8px}
+        .sect .ln{flex:1;height:1px;background:rgba(255,255,255,.06)}
+        .project-list{display:flex;flex-direction:column;gap:10px}
+        .project{
+          background:var(--obsid);border-radius:14px;padding:14px 14px 13px;
+          box-shadow:rgba(255,255,255,.04) 0 1px 0 0 inset;
+        }
+        .project-top{display:flex;align-items:flex-start;gap:12px}
+        .project-mark{
+          width:32px;height:32px;border-radius:9px;background:var(--graph);
+          display:flex;align-items:center;justify-content:center;flex:none;
+        }
+        .project-mark i{width:7px;height:7px;background:var(--coral);transform:rotate(45deg)}
+        .project-main{flex:1;min-width:0}
+        .project-name{font-size:15px;font-weight:500;line-height:1.4;color:var(--white)}
+        .project-meta{
+          margin-top:4px;font-family:var(--mono);font-size:10px;line-height:1.5;letter-spacing:.25px;color:var(--smoke)
+        }
+        .fileline{
+          margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.05);
+          display:flex;align-items:center;gap:8px
+        }
+        .file-names{
+          flex:1;min-width:0;color:var(--ash);font-size:12px;line-height:1.5;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+        }
+        .updatebtn{
+          flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--slate);
+          background:transparent;color:var(--mist);font-size:12px;font-weight:500
+        }
+        .updatebtn:active{background:var(--graph)}
+        .empty{
+          padding:28px 16px;border:1px dashed var(--slate);border-radius:14px;text-align:center;color:var(--smoke)
+        }
+        .empty strong{display:block;color:var(--ash);font-size:14px;font-weight:500;margin-bottom:5px}
+        .empty span{font-size:12px;line-height:1.6}
+        .backdrop{
+          position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.64);
+          display:none;align-items:flex-end
+        }
+        .backdrop.show{display:flex}
+        .sheet{
+          width:100%;max-height:88vh;overflow:auto;background:linear-gradient(180deg,#0a0b0d 0%,var(--ink) 100%);
+          border-radius:18px 18px 0 0;padding:18px 16px;
+          padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+          box-shadow:rgba(255,255,255,.18) 0 1px 0 0 inset;
+          animation:sheetup 240ms var(--ease) both
+        }
+        @keyframes sheetup{from{transform:translateY(18px);opacity:.6}to{transform:none;opacity:1}}
+        .sheet-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px}
+        .sheet-head .text{flex:1;min-width:0}
+        .sheet-title{font-size:18px;font-weight:500;line-height:1.35}
+        .sheet-sub{margin-top:4px;font-size:12px;line-height:1.55;color:var(--smoke)}
+        .closebtn{
+          width:38px;height:38px;border:0;background:transparent;color:var(--smoke);font-size:22px;border-radius:8px
+        }
+        .closebtn:active{background:var(--graph)}
+        .label{
+          display:block;margin:0 0 7px;font-family:var(--mono);font-size:10px;letter-spacing:.6px;color:var(--smoke)
+        }
+        .textinput{
+          width:100%;height:46px;border:0;outline:0;border-radius:9px;background:var(--obsid);
+          color:var(--mist);font-size:15px;padding:0 13px;
+          box-shadow:rgba(255,255,255,.06) 0 0 0 1px inset
+        }
+        .textinput::placeholder{color:var(--smoke)}
+        .fieldblock{margin-bottom:16px}
+        .file-picker{
+          width:100%;min-height:94px;border:1px dashed var(--slate);border-radius:12px;background:var(--obsid);
+          padding:14px;display:flex;align-items:center;gap:12px;text-align:left;color:var(--mist)
+        }
+        .file-picker:active{background:var(--graph)}
+        .file-icon{
+          width:38px;height:38px;border-radius:10px;background:var(--graph);flex:none;
+          display:flex;align-items:center;justify-content:center;color:var(--ash);font-family:var(--mono);font-size:11px
+        }
+        .file-copy{flex:1;min-width:0}
+        .file-copy strong{display:block;font-size:14px;font-weight:500;line-height:1.4}
+        .file-copy span{display:block;margin-top:3px;color:var(--smoke);font-size:11px;line-height:1.5}
+        .selected{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+        .selected-row{
+          display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;background:var(--obsid)
+        }
+        .pdfbadge{
+          flex:none;font-family:var(--mono);font-size:9px;letter-spacing:.4px;color:var(--mist);
+          background:var(--ember);border-radius:5px;padding:4px 6px
+        }
+        .selected-name{
+          flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ash);font-size:12px
+        }
+        .selected-size{flex:none;font-family:var(--mono);font-size:9px;color:var(--smoke)}
+        .replace-note{
+          margin-top:8px;padding:10px 11px;border-radius:8px;background:var(--amber);color:var(--mist);
+          font-size:11px;line-height:1.55;display:none
+        }
+        .actions{display:flex;gap:8px;margin-top:18px}
+        .secondary{
+          flex:none;height:46px;padding:0 15px;border-radius:9px;border:1px solid var(--slate);
+          background:transparent;color:var(--ash);font-size:13px
+        }
+        .submit{flex:1}
+        .status{
+          display:none;margin-top:12px;font-family:var(--mono);font-size:10px;line-height:1.5;color:var(--smoke)
+        }
+        .status.show{display:block}
+    </style>
+</head>
+<body>
+<div class="screen">
+    <header class="apphead">
+        <i class="diamond"></i>
+        <span class="ttl">知識庫</span>
+        <span class="cnt" id="count"></span>
+        <button class="accessbtn" id="accessBtn">輸入輔助</button>
+    </header>
+
+    <main class="scroll">
+        <section class="intro">
+            <span class="eyebrow">幕僚 · knowledge</span>
+            <h1>把專案資料交給幕僚</h1>
+            <p>每個知識庫以專案為單位。新增時輸入專案名稱並上傳 PDF；更新時直接用新的 PDF 整批取代。</p>
+        </section>
+
+        <button class="primary" id="addBtn">＋ 新增知識庫</button>
+
+        <div class="sect">
+            <span class="eyebrow">專案</span>
+            <span class="ln"></span>
+        </div>
+
+        <section class="project-list" id="projectList"></section>
+    </main>
+</div>
+
+<div class="backdrop" id="backdrop">
+    <section class="sheet" role="dialog" aria-modal="true">
+        <div class="sheet-head">
+            <i class="diamond" style="margin-top:8px"></i>
+            <div class="text">
+                <div class="sheet-title" id="sheetTitle">新增知識庫</div>
+                <div class="sheet-sub" id="sheetSub">輸入專案名稱，並選擇一個或多個 PDF。</div>
+            </div>
+            <button class="closebtn" id="closeBtn" aria-label="關閉">×</button>
+        </div>
+
+        <div class="fieldblock" id="nameBlock">
+            <label class="label" for="projectName">專案名稱</label>
+            <input class="textinput" id="projectName" type="text" autocomplete="off" placeholder="例如：宏碩 Q4 報價案">
+        </div>
+
+        <div class="fieldblock">
+            <span class="label">PDF 檔案</span>
+            <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden>
+            <button class="file-picker" id="pickFilesBtn" type="button">
+                <span class="file-icon">PDF</span>
+                <span class="file-copy">
+          <strong id="pickTitle">選擇 PDF</strong>
+          <span>可一次選擇多個檔案</span>
+        </span>
+                <span style="color:var(--smoke);font-size:18px">›</span>
+            </button>
+            <div class="selected" id="selectedFiles"></div>
+            <div class="replace-note" id="replaceNote">更新後會以這次選擇的 PDF 整批取代此專案目前的檔案。</div>
+        </div>
+
+        <div class="actions">
+            <button class="secondary" id="cancelBtn" type="button">取消</button>
+            <button class="primary submit" id="submitBtn" type="button" disabled>建立知識庫</button>
+        </div>
+        <div class="status" id="status"></div>
+    </section>
+</div>
+
+<script>
+    "use strict";
+
+    function setVH(){
+      document.documentElement.style.setProperty("--vh",(window.innerHeight*.01)+"px");
+    }
+    setVH();
+    addEventListener("resize",setVH);
+    addEventListener("orientationchange",setVH);
+
+    const STORAGE_KEY = "eqcopilot.knowledgeProjects.v2";
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+    let projects = [];
+    let mode = "create";
+    let editingId = null;
+    let selectedFiles = [];
+
+    function nowLabel(){
+      return new Intl.DateTimeFormat("zh-TW",{
+        year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"
+      }).format(new Date());
+    }
+
+    function loadProjects(){
+      let raw = "";
+      try {
+        if(window.AndroidApp && AndroidApp.loadKnowledgeBase){
+          raw = AndroidApp.loadKnowledgeBase() || "";
+        }
+      } catch(_){}
+      if(!raw){
+        try{ raw = localStorage.getItem(STORAGE_KEY) || ""; }catch(_){}
+      }
+      if(!raw) return;
+      try{
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed.projects)) projects = parsed.projects;
+      }catch(_){}
+    }
+
+    function persistProjects(){
+      const json = JSON.stringify({projects});
+      try{ localStorage.setItem(STORAGE_KEY,json); }catch(_){}
+      try{
+        if(window.AndroidApp && AndroidApp.saveKnowledgeBase){
+          AndroidApp.saveKnowledgeBase(json);
+        }
+      }catch(_){}
+    }
+
+    function render(){
+      $("count").textContent = projects.length ? projects.length + " 個專案" : "";
+      const root = $("projectList");
+
+      if(!projects.length){
+        root.innerHTML = `
+          <div class="empty">
+            <strong>還沒有知識庫</strong>
+            <span>新增第一個專案，之後幕僚就能用其中的 PDF 作為回覆依據。</span>
+          </div>`;
+        return;
+      }
+
+      root.innerHTML = projects.map(p => {
+        const names = (p.files || []).map(f=>f.name).join(" · ");
+        return `
+          <article class="project">
+            <div class="project-top">
+              <span class="project-mark"><i></i></span>
+              <div class="project-main">
+                <div class="project-name">${esc(p.name)}</div>
+                <div class="project-meta">${(p.files||[]).length} PDF · 更新 ${esc(p.updatedAt||"")}</div>
+              </div>
+            </div>
+            <div class="fileline">
+              <div class="file-names">${esc(names || "尚無檔案")}</div>
+              <button class="updatebtn" data-update="${esc(p.id)}">更新</button>
+            </div>
+          </article>`;
+      }).join("");
+
+      root.querySelectorAll("[data-update]").forEach(btn=>{
+        btn.addEventListener("click",()=>openUpdate(btn.dataset.update));
+      });
+    }
+
+    function resetSheet(){
+      selectedFiles = [];
+      $("pdfInput").value = "";
+      $("selectedFiles").innerHTML = "";
+      $("status").classList.remove("show");
+      $("status").textContent = "";
+    }
+
+    function openCreate(){
+      mode = "create";
+      editingId = null;
+      resetSheet();
+      $("nameBlock").style.display = "block";
+      $("projectName").value = "";
+      $("sheetTitle").textContent = "新增知識庫";
+      $("sheetSub").textContent = "輸入專案名稱，並選擇一個或多個 PDF。";
+      $("pickTitle").textContent = "選擇 PDF";
+      $("replaceNote").style.display = "none";
+      $("submitBtn").textContent = "建立知識庫";
+      updateSubmitState();
+      $("backdrop").classList.add("show");
+      setTimeout(()=>$("projectName").focus(),180);
+    }
+
+    function openUpdate(id){
+      const p = projects.find(x=>x.id===id);
+      if(!p) return;
+      mode = "update";
+      editingId = id;
+      resetSheet();
+      $("nameBlock").style.display = "none";
+      $("sheetTitle").textContent = "更新 · " + p.name;
+      $("sheetSub").textContent = "重新選擇這個專案要使用的 PDF。";
+      $("pickTitle").textContent = "選擇新的 PDF";
+      $("replaceNote").style.display = "block";
+      $("submitBtn").textContent = "替換 PDF";
+      updateSubmitState();
+      $("backdrop").classList.add("show");
+    }
+
+    function closeSheet(){
+      $("backdrop").classList.remove("show");
+    }
+
+    function formatBytes(bytes){
+      if(bytes < 1024) return bytes + " B";
+      if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + " KB";
+      return (bytes/(1024*1024)).toFixed(1) + " MB";
+    }
+
+    function renderSelected(){
+      $("selectedFiles").innerHTML = selectedFiles.map(f=>`
+        <div class="selected-row">
+          <span class="pdfbadge">PDF</span>
+          <span class="selected-name">${esc(f.name)}</span>
+          <span class="selected-size">${formatBytes(f.size)}</span>
+        </div>`).join("");
+      $("pickTitle").textContent = selectedFiles.length
+        ? "已選 " + selectedFiles.length + " 個 PDF"
+        : (mode === "update" ? "選擇新的 PDF" : "選擇 PDF");
+      updateSubmitState();
+    }
+
+    function updateSubmitState(){
+      const hasFiles = selectedFiles.length > 0;
+      const hasName = mode === "update" || $("projectName").value.trim().length > 0;
+      $("submitBtn").disabled = !(hasFiles && hasName);
+    }
+
+    $("pdfInput").addEventListener("change",e=>{
+      const files = Array.from(e.target.files || []);
+      const invalid = files.some(f => !(f.type === "application/pdf" || /\.pdf$/i.test(f.name)));
+      if(invalid){
+        $("status").textContent = "只能選擇 PDF 檔案。";
+        $("status").classList.add("show");
+        e.target.value = "";
+        selectedFiles = [];
+      }else{
+        $("status").classList.remove("show");
+        selectedFiles = files;
+      }
+      renderSelected();
+    });
+
+    $("projectName").addEventListener("input",updateSubmitState);
+    $("pickFilesBtn").addEventListener("click",()=>$("pdfInput").click());
+    $("addBtn").addEventListener("click",openCreate);
+    $("closeBtn").addEventListener("click",closeSheet);
+    $("cancelBtn").addEventListener("click",closeSheet);
+    $("backdrop").addEventListener("click",e=>{ if(e.target === $("backdrop")) closeSheet(); });
+
+    /*
+     * Backend integration hook
+     *
+     * 之後 CTO 可直接把這個 function 改成 FormData upload：
+     *
+     * const fd = new FormData();
+     * fd.append("project_name", projectName);
+     * files.forEach(f => fd.append("files", f, f.name));
+     * await fetch("/knowledge-base", { method: mode === "create" ? "POST" : "PUT", body: fd });
+     *
+     * 更新時 projectName 可改傳 project_id；後端應將舊 PDF 整批替換。
+     */
+    async function uploadKnowledgeBase(action, projectName, projectId, files){
+      console.log("KB upload hook", {
+        action,
+        projectName,
+        projectId,
+        files: files.map(f=>({name:f.name,size:f.size,type:f.type}))
+      });
+
+      // 目前先讓 UI/demo 可跑；真正上傳由 CTO 接 API 後替換此處。
+      await new Promise(resolve=>setTimeout(resolve,350));
+      return { ok:true };
+    }
+
+    $("submitBtn").addEventListener("click",async()=>{
+      if($("submitBtn").disabled) return;
+
+      const projectName = mode === "create"
+        ? $("projectName").value.trim()
+        : (projects.find(p=>p.id===editingId)?.name || "");
+
+      $("submitBtn").disabled = true;
+      $("status").textContent = mode === "create" ? "建立中……" : "更新中……";
+      $("status").classList.add("show");
+
+      try{
+        const result = await uploadKnowledgeBase(mode, projectName, editingId, selectedFiles);
+        if(!result || result.ok === false) throw new Error("upload failed");
+
+        const fileMeta = selectedFiles.map(f=>({name:f.name,size:f.size,type:f.type}));
+
+        if(mode === "create"){
+          projects.unshift({
+            id:"kb_"+Date.now(),
+            name:projectName,
+            files:fileMeta,
+            updatedAt:nowLabel()
+          });
+        }else{
+          const p = projects.find(x=>x.id===editingId);
+          if(p){
+            p.files = fileMeta;       // 整批取代
+            p.updatedAt = nowLabel();
+          }
+        }
+
+        persistProjects();
+        render();
+        closeSheet();
+      }catch(err){
+        $("status").textContent = "操作失敗，請稍後再試。";
+        $("status").classList.add("show");
+        updateSubmitState();
+      }
+    });
+
+    $("accessBtn").addEventListener("click",()=>{
+      try{
+        if(window.AndroidApp && AndroidApp.openAccessibilitySettings){
+          AndroidApp.openAccessibilitySettings();
+        }
+      }catch(_){}
+    });
+
+    loadProjects();
+    render();
+</script>
+</body>
+</html>
