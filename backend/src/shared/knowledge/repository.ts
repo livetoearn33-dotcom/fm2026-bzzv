@@ -11,15 +11,15 @@ import { ContactSchema, FactSchema } from "./types";
  * `_TODO` 前綴＝等 Zeno 補真實資料的骨架筆，粗篩時要跳過。
  * 見 data/README-知識庫.md「目前狀態」段。
  */
-function isTodoId(id: string): boolean {
+export function isTodoId(id: string): boolean {
   return id.startsWith("_TODO");
 }
 
-function resolveDataDir(): string {
+export function resolveDataDir(): string {
   return env.DATA_DIR ?? path.resolve(process.cwd(), "../data");
 }
 
-function readJsonArray(filePath: string): unknown[] {
+export function readJsonArray(filePath: string): unknown[] {
   const raw = fs.readFileSync(filePath, "utf-8");
   const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed)) {

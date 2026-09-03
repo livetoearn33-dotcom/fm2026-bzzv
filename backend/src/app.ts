@@ -3,12 +3,13 @@ import { createAnalyzeServices } from "@/features/analyze/services";
 import { createGuardRouter } from "@/features/guard/api";
 import { createGuardServices } from "@/features/guard/services";
 import healthRouter from "@/features/health/api";
+import { createKnowledgeRouter } from "@/features/knowledge/api";
 import { createPersonaRouter } from "@/features/persona/api";
 import { createPersonaServices } from "@/features/persona/services";
 import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
 import { createLanguageModel } from "@/shared/ai/model";
-import { loadKnowledgeStore } from "@/shared/knowledge";
+import { LiveKnowledgeStore } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 const app = createApp();
@@ -17,7 +18,8 @@ configureOpenAPI(app);
 
 // DI 組裝
 const model = createLanguageModel();
-const knowledge = loadKnowledgeStore();
+// 可寫入版本：facts/contacts 是 getter，/analyze、/guard 每次存取都會拿到 PUT/DELETE 之後的最新資料。
+const knowledge = new LiveKnowledgeStore();
 const promptLayers = loadPromptLayers();
 
 const analyzeServices = createAnalyzeServices({ model, knowledge, promptLayers });
@@ -29,10 +31,13 @@ const guardRouter = createGuardRouter(guardServices);
 const personaServices = createPersonaServices({ model });
 const personaRouter = createPersonaRouter(personaServices);
 
+const knowledgeRouter = createKnowledgeRouter(knowledge);
+
 const v1Routes = [
   analyzeRouter,
   guardRouter,
   personaRouter,
+  knowledgeRouter,
 ] as const;
 
 app.route("/", healthRouter);
