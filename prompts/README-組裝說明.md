@@ -13,37 +13,61 @@
 4. 〈本次任務〉               （每次請求動態組，見下）
 ```
 
-### 第 4 層〈本次任務〉的組法
+### ⚠️ v0.2 重大變更（2026-09-03 三人討論定案）
 
-從 request 的 `contactId` 與 `conversation` 組出：
+1. **分流與 safeCard 整個功能砍掉**——不再有本地規則、不再有 0.2 秒安全牌。相關的驗證與 fallback 邏輯請一併拆除
+2. **輸入改為截圖**：`screenshot`（base64 data URL），不再收 `conversation` 陣列
+3. **golden path 改二段式**（見下）
+4. **persona 併進 /analyze 參數**，`/persona` 端點保留但 demo 不用
+
+### 新的 Request
+
+```json
+{
+  "screenshot": "data:image/png;base64,...",
+  "draft": "（選填）使用者已經打在輸入框的字",
+  "contactId": "（選填）",
+  "persona": "（選填）zhuge | ceo | charmer"
+}
+```
+
+### 第 4 層〈本次任務〉的組法
 
 ```
 〈本次任務〉
+今天是 {YYYY-MM-DD}（週X）
+
 對象：{contacts.json 該筆的 name}（{role}）
 　語氣偏好：{tone}
 　註記：{notes}
+（沒有 contactId 或查無此人時寫「對象：未知（無檔案）」）
 
 〈相關事實〉
 - id: {fact.id}｜{fact.label}｜{fact.content}
-- …（用 conversation 關鍵字對 facts.json 的 tags/label 粗篩，塞 3-5 筆；零命中就寫「（無相關事實）」）
+- …（零命中就寫「（無相關事實）」）
 
-〈對話〉
-{conversation 逐則：speaker + text}
+〈使用者已打的草稿〉  ← 只有 request 帶 draft 時才加這段
+{draft}
+使用者已經自己打了這段字，請以它為底改寫，保留他的原意與立場。
 
-〈安全牌〉（已在畫面上顯示）
-{safeCard 文字}
-你的 reply 必須以這句原文開頭，接著往下寫。
+〈指定角色〉  ← 只有 request 帶 persona 時才加這段
+{角色卡-{persona}.md 全文}
+
+〈畫面〉
+（截圖以 image content part 附上，不放在文字裡）
 ```
+
+**粗篩的雞生蛋問題**：截圖進來時後端還沒有對話文字，無法先粗篩。解法：**塞入全部事實**（目前 10 筆，量小塞得下）。日後條目變多再改成兩段式檢索。
 
 ### 契約重點
 
-1. **safeCard 是輸入不是輸出**：由分流本地規則產生（0.2 秒先上畫面），再塞進 prompt。LLM 只回 reply。
-2. **回包驗證**：檢查 `reply.startsWith(safeCard)`，不符就重打一次（最多一次）。
-3. **sources 對映**：LLM 只回 fact id 陣列；response 的 `sources[{id,label}]` 由後端拿 facts.json 的 label 補齊。
-4. **Golden path（已拍板）**：demo 劇本的固定訊息（見 demo-script 兩幕）直接回準備好的 JSON，不打 LLM。其他輸入走真 LLM。比對方式＝**標點正規化後完全相符**（全形半形統一＋trim，實作見 `backend/src/shared/golden-path/normalize.ts`）——不做語意模糊比對。新增 golden path 句子時要知道它不是嚴格逐字元比對。
-5. 輸出要求 JSON-only 已寫在引擎層。**失敗處理分兩層**（2026-09-03 對齊實作）：
-   - 模型呼叫或 schema 解析失敗 → 重打一次 → 仍失敗**回 502 錯誤**，不靜默退回假資料（刻意取捨：寧可讓前端知道壞了，也不要給使用者一個看起來正常但不是 AI 產的回覆）
-   - reply 沒有以 safeCard 開頭 → 重打一次 → 仍不符則**退回 safeCard 本身當 reply**（這層退回是安全的，因為 safeCard 本來就顯示在畫面上了）
+1. **golden path 改二段式**：LLM 回傳它從截圖讀到的 `conversationText` → 後端拿它比對劇本（沿用現有的標點正規化比對）→ 命中就用快取的回覆覆蓋 LLM 產出，不再打第二次生成。**速度沒變快，目的是上台兩輪講稿不飄。**
+2. **`conversationText` 的格式**：每則一行、`them: 內容` 或 `me: 內容`，順序照畫面由上到下。引擎層已寫死這個格式，golden path 的比對基準要照它建。
+3. **sources 對映**：LLM 只回 fact id 陣列；response 的 `sources[{id,label}]` 由後端拿 facts.json 的 label 補齊。**標 internal 的 fact 一律過濾掉**（既有邏輯保留）。
+4. **persona 帶入時**：LLM 會多回一個 `plainReply`（改寫前的正常版）。前端要不要顯示由前端決定，後端照傳。
+5. **draft 帶入時**：任務從「產生回覆」變成「改寫使用者的草稿」，引擎會保留他的原意與立場。這條路徑跟 `/guard` 不同——guard 是偵測要不要提醒，這裡是使用者主動要求改寫。
+6. 輸出要求 JSON-only 已寫在引擎層。失敗處理：模型呼叫或 schema 解析失敗 → 重打一次 → 仍失敗**回 502**，不靜默退回假資料。LLM 回 `{"error": "no_conversation"}` 時回 422，前端顯示「這張畫面我讀不到對話」。
+7. **讀圖與生成不要綁死在同一段程式**：過渡期用 DeepSeek 測試時看不了圖片（DeepSeek 對話模型無 vision），要能用「直接餵文字對話」的方式跑通後半段。明天換 OpenAI 才接得順。
 
 ## /guard 的 system prompt 組裝
 
