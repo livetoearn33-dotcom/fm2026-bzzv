@@ -94,6 +94,15 @@ body.quiet .chrome{ opacity:0; }
   font-size:12px; line-height:1.5; color: var(--iron); margin-top:2px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
+/* 主角通知：轟炸最後一張，置中放大、停一拍讓觀眾讀完再硬切黑場 */
+.notif.hero{
+  width:420px; left:50% !important; top:50% !important;
+  transform: translate(-50%,-50%) scale(0.96) rotate(0deg) !important;
+  border-color: var(--iron); z-index:2;
+}
+.notif.hero.in{ transform: translate(-50%,-50%) scale(1) rotate(0deg) !important; }
+.notif.hero .nm{ font-size:15px; }
+.notif.hero .msg{ font-size:14px; color: var(--host-ink); }
 #hookDark{ position:absolute; inset:0; background: var(--void); opacity:0; }
 #hookDark.on{ opacity:1; }
 .hookline{
@@ -229,38 +238,54 @@ const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 const clearAll = () => { while (timers.length) clearTimeout(timers.pop()); };
 const $ = (id) => document.getElementById(id);
 
-/* ---------- 段 1：通知轟炸 → 黑場出字 ----------
-   節奏：0–5.2s 通知從每 600ms 一張加速到每 70ms 一張、疊到蓋滿；
-   5.6s 硬切黑場（不淡出——「突然靜音」就是要硬切）；
-   6.4s 主句、7.6s 副句。總長約 9s。 */
+/* ---------- 段 1：通知轟炸 → 主角通知 → 黑場出字 ----------
+   壓到 6.5s（2:00 影片的鉤子不該超過 7s）：
+   0–3.9s 通知從每 420ms 加速到每 55ms、疊到蓋滿；
+   3.9s 主角通知（第 3 次寄送）置中放大，停 0.55s 讓人讀完；
+   4.6s 硬切黑場（不淡出——「突然靜音」就是要硬切）；
+   5.2s 主句、6.0s 副句。 */
+const HERO_NOTIF = ["客戶窗口", "Gmail", "Re: Re: 報價單（第 3 次寄送）"];
+
+function makeNotif(nm, app, msg, hero) {
+  const el = document.createElement("div");
+  el.className = hero ? "notif hero" : "notif";
+  if (!hero) {
+    el.style.left = (4 + Math.random() * (innerWidth - 356)) + "px";
+    el.style.top  = (4 + Math.random() * (innerHeight - 84)) + "px";
+    el.style.setProperty("--r", (Math.random() * 5 - 2.5).toFixed(1) + "deg");
+  }
+  el.innerHTML =
+    '<div class="av"></div><div class="tx"><div class="t1"><span class="nm">' + nm +
+    '</span><span class="app">' + app + '</span></div><div class="msg">' + msg + '</div></div>';
+  return el;
+}
+
 function playHook() {
   const rain = $("hookRain"), dark = $("hookDark");
   rain.innerHTML = ""; rain.style.display = "";
   dark.classList.remove("on");
   $("hl1").classList.remove("in"); $("hl2").classList.remove("in");
 
-  let t = 300, gap = 600, i = 0;
-  while (t < 5200) {
+  let t = 250, gap = 420, i = 0;
+  while (t < 3900) {
     const delay = t;
     later(() => {
       const [nm, app, msg] = NOTIFS[i++ % NOTIFS.length];
-      const el = document.createElement("div");
-      el.className = "notif";
-      el.style.left = (4 + Math.random() * (innerWidth - 356)) + "px";
-      el.style.top  = (4 + Math.random() * (innerHeight - 84)) + "px";
-      el.style.setProperty("--r", (Math.random() * 5 - 2.5).toFixed(1) + "deg");
-      el.innerHTML =
-        '<div class="av"></div><div class="tx"><div class="t1"><span class="nm">' + nm +
-        '</span><span class="app">' + app + '</span></div><div class="msg">' + msg + '</div></div>';
+      const el = makeNotif(nm, app, msg, false);
       rain.appendChild(el);
       requestAnimationFrame(() => el.classList.add("in"));
     }, delay);
     t += gap;
-    gap = Math.max(70, gap * 0.86);
+    gap = Math.max(55, gap * 0.84);
   }
-  later(() => { rain.style.display = "none"; dark.classList.add("on"); }, 5600);
-  later(() => $("hl1").classList.add("in"), 6400);
-  later(() => $("hl2").classList.add("in"), 7600);
+  later(() => {
+    const el = makeNotif(HERO_NOTIF[0], HERO_NOTIF[1], HERO_NOTIF[2], true);
+    rain.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("in"));
+  }, 3900);
+  later(() => { rain.style.display = "none"; dark.classList.add("on"); }, 4600);
+  later(() => $("hl1").classList.add("in"), 5200);
+  later(() => $("hl2").classList.add("in"), 6000);
 }
 
 /* ---------- 段 2：極簡菱形。菱形 → 名 → 眉標 → 定位句 ---------- */
