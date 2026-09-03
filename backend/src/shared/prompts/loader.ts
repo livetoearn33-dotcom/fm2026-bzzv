@@ -19,8 +19,20 @@ export interface PromptLayers {
   examples: string;
 }
 
+/**
+ * 沒設 PROMPTS_DIR 時的預設順序：先找 repo 根目錄的 `../prompts`（本機開發、
+ * build context 是 repo 根目錄時都在），不存在再退回 `assets/prompts`
+ * （build context 只有 backend/ 時的副本，見 scripts/sync-assets.mjs）。
+ */
 function resolvePromptsDir(): string {
-  return env.PROMPTS_DIR ?? path.resolve(process.cwd(), "../prompts");
+  if (env.PROMPTS_DIR) {
+    return env.PROMPTS_DIR;
+  }
+  const repoRootPromptsDir = path.resolve(process.cwd(), "../prompts");
+  if (fs.existsSync(repoRootPromptsDir)) {
+    return repoRootPromptsDir;
+  }
+  return path.resolve(process.cwd(), "assets/prompts");
 }
 
 function readPrompt(filename: string, promptsDir: string): string {

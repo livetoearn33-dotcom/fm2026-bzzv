@@ -1,0 +1,139 @@
+[
+  {
+    "id": "product-eqcopilot",
+    "label": "幕聊 EQ Copilot 是什麼",
+    "tags": ["幕聊", "EQ Copilot", "產品", "這是什麼", "介紹"],
+    "content": "幕聊 EQ Copilot：Android 上的工作訊息回覆助手。收到訊息按一下，它截這一次的畫面讀懂對話、判斷氣氛、查知識庫，把回覆寫好填進輸入框；送不送由使用者按。FUTUREMODE × SITCON BUILDMODE 2026 作品，賽道 Future of Work。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-three-engines",
+    "label": "三個引擎",
+    "tags": ["引擎", "功能", "架構", "怎麼運作", "prompt"],
+    "content": "/analyze 讀空氣：判斷一般／高壓／敏感三種氣氛再產生回覆。/guard 防自爆：偵測使用者自己打的字有沒有防禦、推卸、火氣，只描述對方會怎麼讀、不判對錯。/extract 知識萃取：貼一段文字抽成知識庫條目。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-architecture",
+    "label": "技術架構",
+    "tags": ["架構", "技術", "怎麼做的", "stack"],
+    "content": "三層：Android 原生殼只做浮層、Accessibility 讀畫面、截圖與填回輸入框；UI 是純 HTML 跑在 WebView；後端 Hono 讀 prompts 資料夾的 md 檔做四層組裝再打 LLM。prompt 分引擎／語氣／範例／runtime 四層，改 md 檔即生效不必動程式。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-honesty-line",
+    "label": "誠實底線的設計",
+    "tags": ["誠實", "會不會亂編", "幻覺", "紅線", "內部參考"],
+    "content": "事實（報價、進度、規格）只能來自知識庫，查不到就寫「我確認後回覆您」不編；承諾（今晚 8 點給）允許 AI 提，因為使用者按填入前會看過。標記為內部參考的事實 AI 讀得到、會拿來判斷，但一個字都不會寫進回覆，也不會出現在來源標註。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-verification",
+    "label": "驗證記錄",
+    "tags": ["測試", "驗證", "品質", "測過了嗎"],
+    "content": "Prompt 引擎跑過 dry-run 靶子測試 13 題全過，涵蓋誠實底線攻擊（問知識庫沒有的事）、內部資訊洩漏檢查、guard 誤報陷阱；報告在 tests/ 資料夾。後端 84 個測試通過，LLM 用 mock model。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "team-info",
+    "label": "團隊與分工",
+    "tags": ["團隊", "隊名", "分工", "誰做的"],
+    "content": "隊名「全村的希望就是真真」，四人：Zeno 負責 prompt 設計、知識庫內容與 demo 敘事；Vincent 負責 Android 原生殼；Brian 負責後端與整合；Zanna 負責前端 UI 與簡報視覺。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "hackathon-schedule",
+    "label": "賽程與交付",
+    "tags": ["賽程", "死線", "提交", "黑客松", "時間"],
+    "content": "9/4–9/6 台北花博爭艷館。Round 1 無現場 demo：交 2 分鐘內介紹影片＋介紹文字＋GitHub（專案必須開源），評審看繳交物選出十強，提交截止 9/6 上午 10:00。Round 2 十強上台 5 分鐘＝3 分簡報＋1 分提問＋1 分回答。",
+    "updatedAt": "2026-09-03",
+    "volatility": "high"
+  },
+  {
+    "id": "quote-anchor-standard",
+    "label": "代操服務標準報價",
+    "tags": ["報價", "價格", "方案", "月費"],
+    "content": "前置建置 USD 1,800（一次性，含品牌聲音建置、Bot 開通、團隊教學、首月磨合）。季度訂閱：基礎月費 USD 450（季付 1,350），官方帳號月瀏覽達標另計績效獎金 +120/月，目標每月由客戶設定。",
+    "updatedAt": "2026-05-27",
+    "volatility": "high"
+  },
+  {
+    "id": "quote-floor-internal",
+    "label": "議價底線（內部）",
+    "tags": ["報價", "折扣", "議價"],
+    "content": "月費低於 380 不接，改談績效結構；建置費最多讓到 1,500，再低就砍首月磨合項目。",
+    "updatedAt": "2026-05-27",
+    "volatility": "high",
+    "usage": "internal"
+  },
+  {
+    "id": "quote-campaign-two-tier",
+    "label": "檔期合作兩版報價",
+    "tags": ["報價", "方案", "預算", "檔期"],
+    "content": "完整版 NT$15,000：三品項實拍＋廣告授權前三個月贈送。精簡版 NT$12,000：不含廣告授權，次要品項僅文案帶過。價差用規格差異說明，不談折扣。",
+    "updatedAt": "2026-08-03",
+    "volatility": "high"
+  },
+  {
+    "id": "proj-a-status",
+    "label": "A 案進度",
+    "tags": ["進度", "A案", "合約"],
+    "content": "試跑合作提案已送客戶端，卡在窗口內部核可還沒回簽，9/1 追過一次。",
+    "updatedAt": "2026-09-01",
+    "volatility": "high"
+  },
+  {
+    "id": "video-delivery-rhythm",
+    "label": "影片交付節奏",
+    "tags": ["交期", "影片", "時程"],
+    "content": "固定檔影片每月 5 支。熱點快剪流程三天：週一出角度、週二客戶提供素材、週三上片。",
+    "updatedAt": "2026-07-06",
+    "volatility": "low"
+  },
+  {
+    "id": "plan-monthly-video",
+    "label": "頻道代營運月方案",
+    "tags": ["報價", "方案", "影片"],
+    "content": "月方案 USD 1,800，合約基準每月 6-8 支影片；10-12 支是加碼優惠，前提是當月約成 2 次以上拍攝。",
+    "updatedAt": "2026-07-24",
+    "volatility": "low"
+  },
+  {
+    "id": "price-itemized",
+    "label": "逐項計價表",
+    "tags": ["報價", "計價", "比價"],
+    "content": "單買計價：腳本 3 支 USD 900、拍攝日 400、切片 5 支 600、選題規劃 200——合計約 2,100，高於月方案，用於說明包月價值。",
+    "updatedAt": "2026-07-24",
+    "volatility": "low"
+  },
+  {
+    "id": "campaign-may-result",
+    "label": "五月檔期成效",
+    "tags": ["成效", "合作歷史", "案例"],
+    "content": "五月與檔期店家採成效共擔：達 52,000 觀看，實付 NT$12,000 觸頂。可作為新檔期的信任依據。",
+    "updatedAt": "2026-06-01",
+    "volatility": "low"
+  },
+  {
+    "id": "campaign-deadline-sep",
+    "label": "十週年檔期時程",
+    "tags": ["時程", "檔期", "死線"],
+    "content": "檔期硬死線：9/12（五）18:00 前上片，配合全台 80 組 KOL 同步發文，錯過即失去整波聲量。",
+    "updatedAt": "2026-08-03",
+    "volatility": "high"
+  },
+  {
+    "id": "partner-w-history",
+    "label": "W 品牌合作歷史",
+    "tags": ["合作歷史", "窗口", "影片"],
+    "content": "6 月起合作短影音增量方案。窗口自己會提內容想法、行動快，但產出要靠固定時程卡位，否則會停在等素材。",
+    "updatedAt": "2026-07-09",
+    "volatility": "low"
+  }
+]
