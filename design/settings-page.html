@@ -3,16 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 知識庫設定頁（定案 · 列表列）</title>
+<title>幕僚 · 知識庫設定頁（互動版 · 貼→抽→確認）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
-   幕僚 · 畫面 5 知識庫設定頁 — 三個方向並排（給 Zeno 挑）
-   靜態頁，評審問「資料是真的嗎」才開。
-   資料照抄 data/facts.json（10 條）與 data/contacts.json（4 人）。
-   設計語言沿用 refined.html：六階表面色、17/13/12/10 四字級、
-   hairline 不用陰影、amber 只給敏感／內部、紅色不出現。
-   這一頁是幕僚自己的 surface，所以整面是深色系（不是宿主 App 淺色）。
+   幕僚 · 畫面 5 知識庫設定頁 — 互動版（2026-09-03 Zeno 定案）
+   三步：貼上 → 抽取草稿（1-3 張）→ 確認寫入列表。
+   契約對齊 prompts/引擎-extract.md 與 README-組裝說明.md /extract 段：
+   - 欄位：label/tags/content/updatedAt/volatility(/usage/internalReason)
+   - 最多 3 筆；extracted:false 時顯示 reason 原文＋原文照登不改寫
+   - 連結一律走「讀不到」路徑（原型無後端；真 API 接上即換）
+   - 不做編輯與刪除 UI（API 有，這次不接）
+   主角元件：internal 開關——「知道但不說」唯一看得見的地方。
+   amber ＝ 收進保險櫃的優勢，不是警告；紅色照舊不出現。
+   列表呈現沿用定案 A 列表列；質感三層照舊全套。
    ============================================================ */
 
 :root{
@@ -43,9 +47,10 @@ body{
   font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+button{ font-family: inherit; cursor: pointer; }
 
-.page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:48px; }
-.intro{ display:flex; flex-direction:column; gap:16px; max-width:680px; }
+.page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:40px; }
+.intro{ display:flex; flex-direction:column; gap:16px; max-width:720px; }
 .brandline{ display:flex; align-items:center; gap:8px; }
 .brandline .ln{ flex:1; height:1px; background: rgba(255,255,255,0.08); }
 .diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
@@ -61,11 +66,21 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .caption{ width:390px; font-size:12px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
 .caption b{ color: var(--ash); font-weight:500; }
 
-/* ---------- 手機外框（同 refined，螢幕內部可捲） ---------- */
+/* ---------- 手機外框 ---------- */
 .phone{
   position:relative; width:390px; height:800px; flex:none;
   border-radius:40px; background: var(--ink); padding:8px;
   box-shadow: var(--keyline-soft);
+}
+.phone::before{
+  content:''; position:absolute; right:-2.5px; top:180px; width:3px; height:92px;
+  background: var(--ink); border-radius:0 2px 2px 0;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+.phone::after{
+  content:''; position:absolute; left:-2.5px; top:150px; width:3px; height:56px;
+  background: var(--ink); border-radius:2px 0 0 2px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
 }
 .screen{
   position:relative; width:374px; height:784px; border-radius:33px;
@@ -76,6 +91,12 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   height:24px; flex:none; display:flex; align-items:center; justify-content:space-between;
   padding:0 24px; font-family: var(--mono); font-size:10px; letter-spacing:.5px; color: var(--smoke);
 }
+.stat-r{ display:flex; align-items:center; gap:5px; }
+.sig{ display:flex; align-items:flex-end; gap:1.5px; height:9px; }
+.sig i{ width:2.5px; background: var(--iron); border-radius:1px; }
+.batt{ width:20px; height:9px; border:1px solid var(--iron); border-radius:2.5px; position:relative; margin-left:2px; }
+.batt::before{ content:''; position:absolute; left:1px; top:1px; bottom:1px; width:70%; background: var(--iron); border-radius:1px; }
+.batt::after{ content:''; position:absolute; right:-3px; top:2px; width:1.5px; height:3px; background: var(--iron); border-radius:0 1px 1px 0; }
 .apphead{
   flex:none; display:flex; align-items:center; gap:8px; padding:12px 16px 8px;
 }
@@ -91,23 +112,140 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .chip{
   font-family: var(--mono); font-size:10px; line-height:1.6; letter-spacing:.3px;
   border-radius:6px; padding:3px 6px; white-space:nowrap;
-  background: var(--graph); color: var(--ash);
+  background: var(--graph); color: var(--ash); font-variant-numeric: tabular-nums;
 }
-.chip.amber{ background: var(--amber); color: var(--mist); }
+.chip.amber{ background: var(--amber); color: var(--mist); box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset; }
 .chip.ghost{ background:transparent; border:1px solid var(--slate); }
 .datep{ font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); white-space:nowrap; }
 
-/* ---------- 方向 A：列表列 ---------- */
+/* ============================================================
+   第 1 步 · 餵入區（單一加入口）
+   ============================================================ */
+.feeder{
+  position:relative; background: var(--obsid); border-radius:16px; padding:16px;
+  display:flex; flex-direction:column; gap:12px; overflow:hidden;
+  box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset;
+}
+/* 讀取中：沿上緣掃光（產品「讀取中」同一語彙，不做 spinner） */
+.feeder::before{
+  content:''; position:absolute; left:0; top:0; height:1px; width:35%; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
+}
+.feeder.reading::before{ opacity:1; animation: sweep 900ms linear infinite; }
+@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
+.feeder textarea{
+  width:100%; min-height:72px; resize:none; border:0; outline:0;
+  background: var(--ink); border-radius:8px; padding:10px 12px;
+  font-family: inherit; font-size:14px; line-height:1.6; color: var(--mist);
+  box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset;
+}
+.feeder textarea::placeholder{ color: var(--smoke); }
+.feedrow{ display:flex; align-items:center; gap:8px; }
+.feedhint{ flex:1; font-size:11px; line-height:1.5; color: var(--smoke); }
+.btn-extract{
+  flex:none; height:40px; padding:0 16px; border-radius:8px; border:0;
+  background: var(--mist); color: var(--iron); font-size:13px; font-weight:500;
+  box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
+  transition: transform 110ms var(--ease), background 110ms var(--ease), opacity 150ms var(--ease);
+}
+.btn-extract:active{ transform: translateY(1px) scale(0.98); background: var(--white); }
+.btn-extract:disabled{ opacity:.4; cursor:default; }
+/* 試貼範例（原型限定的示範捷徑） */
+.samples{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.samples .lb{ font-family: var(--mono); font-size:9px; letter-spacing:.8px; text-transform:uppercase; color: var(--iron); }
+.sample{
+  font-size:11px; line-height:1; padding:7px 10px; border-radius:8px;
+  background:transparent; color: var(--ash); border:1px solid var(--slate);
+  transition: color 150ms var(--ease), border-color 150ms var(--ease);
+}
+.sample:hover{ color: var(--mist); border-color: var(--iron); }
+
+/* ============================================================
+   第 2 步 · 草稿卡（主角：internal 開關）
+   ============================================================ */
+.draft{
+  background: var(--obsid); border-radius:16px; padding:16px;
+  display:flex; flex-direction:column; gap:10px;
+  box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset;
+  transition: box-shadow 200ms var(--ease);
+  animation: rise 420ms var(--ease) both;
+}
+@keyframes rise{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
+/* internal 開啟：一圈 amber hairline——收進保險櫃，不是警告 */
+.draft.internal{
+  box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset, 0 0 0 1px var(--amber);
+}
+.draft .top{ display:flex; align-items:baseline; gap:8px; }
+.draft .lb{ flex:1; min-width:0; font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
+.draft .content{ font-size:12px; line-height:1.6; color: var(--ash); text-wrap:pretty; }
+.draft .tagline{ display:flex; gap:6px; flex-wrap:wrap; }
+/* internal 開關列 */
+.introw{
+  display:flex; align-items:center; gap:12px;
+  margin-top:2px; padding-top:12px;
+  box-shadow: rgba(255,255,255,0.05) 0 1px 0 0 inset;
+}
+.introw .tx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.introw .t1{
+  font-size:11px; font-weight:500; line-height:1.4; color: var(--smoke);
+  transition: color 200ms var(--ease);
+}
+.draft.internal .introw .t1{ color: var(--mist); }
+.introw .t2{ font-size:11px; line-height:1.5; color: var(--smoke); text-wrap:pretty; }
+.switch{
+  flex:none; width:40px; height:22px; border-radius:9999px; border:0; padding:2px;
+  background: var(--graph); display:flex; justify-content:flex-start;
+  box-shadow: rgba(0,0,0,0.30) 0 1px 2px 0 inset;
+  transition: background 200ms var(--ease);
+}
+.switch .knob{
+  width:18px; height:18px; border-radius:9999px; background: var(--iron);
+  transition: transform 200ms var(--ease), background 200ms var(--ease);
+}
+.switch[aria-checked="true"]{ background: var(--amber); }
+.switch[aria-checked="true"] .knob{ transform: translateX(18px); background: var(--mist); }
+/* 確認列 */
+.confirmrow{ display:flex; align-items:center; gap:12px; padding-top:4px; }
+.btn-confirm{
+  flex:1; height:40px; border-radius:8px; border:0;
+  background: var(--mist); color: var(--iron); font-size:13px; font-weight:500;
+  box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
+  transition: transform 110ms var(--ease), background 110ms var(--ease);
+}
+.btn-confirm:active{ transform: translateY(1px) scale(0.99); background: var(--white); }
+.linkbtn{
+  flex:none; border:0; background:transparent; padding:0 4px;
+  font-family: var(--mono); font-size:10px; letter-spacing:.3px; line-height:1.6; color: var(--smoke);
+  transition: color 150ms var(--ease);
+}
+.linkbtn:hover{ color: var(--mist); }
+/* 抽不到：安靜的說明卡，不是錯誤 */
+.nores{
+  background: var(--obsid); border-radius:16px; padding:16px;
+  display:flex; flex-direction:column; gap:10px;
+  box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset;
+  animation: rise 420ms var(--ease) both;
+}
+.nores .why{ font-size:13px; line-height:1.6; color: var(--mist); text-wrap:pretty; }
+.nores .orig{
+  background: var(--ink); border-radius:8px; padding:10px 12px;
+  font-size:12px; line-height:1.6; color: var(--smoke); white-space:pre-wrap;
+  box-shadow: rgba(255,255,255,0.05) 0 0 0 1px inset;
+}
+
+/* ---------- 第 3 步之後 · 列表列（定案 A，沿用） ---------- */
 .rowitem{ display:flex; flex-direction:column; gap:6px; padding:10px 0; }
+.rowitem.fresh{ animation: rise 420ms var(--ease) both; }
 .rowtop{ display:flex; align-items:baseline; gap:8px; }
 .rowtop .lb{ flex:1; min-width:0; font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
 .tagline{ display:flex; gap:6px; flex-wrap:wrap; }
 
 /* ---------- 對象卡 ---------- */
 .pcard{
-  background: var(--obsid); border-radius:16px; padding:16px;
+  background: var(--obsid); border-radius:12px; padding:12px 16px;
   display:flex; flex-direction:column; gap:6px;
 }
+.pcard.fresh{ animation: rise 420ms var(--ease) both; }
 .pcard .nmrow{ display:flex; align-items:center; gap:8px; }
 .pcard .avatar{
   width:28px; height:28px; border-radius:9999px; background: var(--graph); flex:none;
@@ -121,7 +259,6 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
-.pcard.slim{ padding:12px 16px; border-radius:12px; }
 
 /* ============================================================
    質感三層（2026-09-03 Zeno 裁定 A+B+C 全疊，五檔統一）
@@ -159,48 +296,77 @@ body::after{
   <div class="intro">
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
-      <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 定案版</span>
+      <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 互動版</span>
       <span class="ln"></span>
     </div>
-    <h1>評審問「資料是真的嗎」，開這一頁</h1>
-    <p class="lede">靜態頁、不用互動，回答一個問題：回覆裡的數字從哪來。資料照抄 data/ 的 10 條知識與 4 張對象檔案，「議價底線」那條是內部參考——引擎讀得到、永遠不會寫進回覆，靠一顆 amber chip 把這條界線畫出來。定案為列表列（2026-09-03 Zeno 裁定，原三方向見 git 歷史）。屏內可以捲動。</p>
+    <h1>貼上、看它抽成卡、按確認</h1>
+    <p class="lede">知識庫餵入的三步流程，契約對齊 /extract：貼文字或連結 → AI 抽成最多 3 張草稿卡 → 確認才寫入，寫入後立刻出現在下方列表。主角是每張草稿上的「內部參考」開關——標成內部的事實引擎讀得到、永遠不寫進回覆，amber 一圈是收進保險櫃的意思，不是警告。抽取是原型內建的假引擎（規則版），真 API 接上 /extract 即換，畫面與欄位不動。用「試貼」四顆鍵可以走完全部狀態，含抽不到與連結讀不到。</p>
   </div>
 
   <div class="decks">
-
-    <!-- ============ 方向 A ============ -->
     <div class="deck">
-      <span class="eyebrow lg">定案 · 列表列</span>
+      <span class="eyebrow lg">定案 · 貼 → 抽 → 確認（列表列承接）</span>
       <div class="phone"><div class="screen">
-        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
+        <div class="statusbar">
+          <span>13:47</span>
+          <span class="stat-r">
+            <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
+            <span style="font-family:var(--mono);font-size:9px">LTE</span>
+            <span class="batt"></span>
+          </span>
+        </div>
         <div class="apphead">
           <i class="diamond" style="width:8px;height:8px"></i>
           <span class="ttl">知識庫</span>
-          <span class="cnt" data-cnt="A"></span>
+          <span class="cnt" id="cnt"></span>
         </div>
-        <div class="scroll" data-deck="A"></div>
-      </div></div>
-      <p class="caption"><b>Linear 式列表：一條知識一列，零分隔線，層次靠間距。</b>標籤跟著各自的條目走，內部參考只靠一顆 amber chip 區隔——跟面板上「敏感」用同一個顏色、同一個意思：這裡有條線不能過。對象檔案在下方一人一卡。<b>代價</b>：掃起來最素，評審若只瞄一眼，可能看不出「內部/外部」是這頁的重點。</p>
-    </div>
+        <div class="scroll" id="scroll">
 
+          <!-- 第 1 步 · 餵入 -->
+          <div class="feeder" id="feeder">
+            <textarea id="feedText" rows="3" placeholder="貼上文字或連結——報價信、對話、備忘都行"></textarea>
+            <div class="feedrow">
+              <span class="feedhint" id="feedHint">抽出來的是草稿，你確認了才會寫入。</span>
+              <button class="btn-extract" id="btnExtract">抽取</button>
+            </div>
+            <div class="samples">
+              <span class="lb">試貼</span>
+              <button class="sample" data-sample="quote">報價信</button>
+              <button class="sample" data-sample="contact">對象備註</button>
+              <button class="sample" data-sample="link">連結</button>
+              <button class="sample" data-sample="chat">閒聊</button>
+            </div>
+          </div>
+
+          <!-- 第 2 步 · 草稿區（JS 填入） -->
+          <div id="draftArea" style="display:contents"></div>
+
+          <!-- 第 3 步之後 · 列表 -->
+          <div id="listArea" style="display:contents"></div>
+
+        </div>
+      </div></div>
+
+      <p class="caption"><b>internal 開關的三個設計決定</b>：①AI 先建議、附一句白話理由（「這是你的讓價空間，寫進回覆等於先自砍一刀」），使用者可改——因為標錯的代價不對等，判不準時引擎預設標內部；②開啟時整張卡多一圈 amber hairline＋開關轉 amber，跟列表裡的「內部參考」chip、面板上的「敏感」同一個顏色系統——它是刻意保留的優勢，不是危險品，所以沒有紅色、沒有驚嘆號；③抽不到不是錯誤：安靜地給一句原因＋原文照登，連結讀不到就請你直接貼文字。</p>
+    </div>
   </div>
 </div>
 
 <script>
 "use strict";
 
-/* ---------- 資料：照抄 data/facts.json 與 data/contacts.json ---------- */
+/* ============ 既有資料（照抄 data/facts.json 與 contacts.json） ============ */
 const FACTS = [
-  { label:"代操服務標準報價",   tags:["報價","價格","方案","月費"], date:"2026-05-27", vol:"high", group:"報價" },
-  { label:"議價底線（內部）",   tags:["報價","折扣","議價"],       date:"2026-05-27", vol:"high", group:"內部", internal:true },
-  { label:"檔期合作兩版報價",   tags:["報價","方案","預算","檔期"], date:"2026-08-03", vol:"high", group:"報價" },
-  { label:"A 案進度",           tags:["進度","A案","合約"],         date:"2026-09-01", vol:"high", group:"案子" },
-  { label:"影片交付節奏",       tags:["交期","影片","時程"],       date:"2026-07-06", vol:"low",  group:"案子" },
-  { label:"頻道代營運月方案",   tags:["報價","方案","影片"],       date:"2026-07-24", vol:"low",  group:"報價" },
-  { label:"逐項計價表",         tags:["報價","計價","比價"],       date:"2026-07-24", vol:"low",  group:"報價" },
-  { label:"五月檔期成效",       tags:["成效","合作歷史","案例"],   date:"2026-06-01", vol:"low",  group:"檔期" },
-  { label:"十週年檔期時程",     tags:["時程","檔期","死線"],       date:"2026-08-03", vol:"high", group:"檔期" },
-  { label:"W 品牌合作歷史",     tags:["合作歷史","窗口","影片"],   date:"2026-07-09", vol:"low",  group:"案子" }
+  { label:"代操服務標準報價",   tags:["報價","價格","方案","月費"], date:"2026-05-27", internal:false },
+  { label:"議價底線（內部）",   tags:["報價","折扣","議價"],       date:"2026-05-27", internal:true },
+  { label:"檔期合作兩版報價",   tags:["報價","方案","預算","檔期"], date:"2026-08-03", internal:false },
+  { label:"A 案進度",           tags:["進度","A案","合約"],         date:"2026-09-01", internal:false },
+  { label:"影片交付節奏",       tags:["交期","影片","時程"],       date:"2026-07-06", internal:false },
+  { label:"頻道代營運月方案",   tags:["報價","方案","影片"],       date:"2026-07-24", internal:false },
+  { label:"逐項計價表",         tags:["報價","計價","比價"],       date:"2026-07-24", internal:false },
+  { label:"五月檔期成效",       tags:["成效","合作歷史","案例"],   date:"2026-06-01", internal:false },
+  { label:"十週年檔期時程",     tags:["時程","檔期","死線"],       date:"2026-08-03", internal:false },
+  { label:"W 品牌合作歷史",     tags:["合作歷史","窗口","影片"],   date:"2026-07-09", internal:false }
 ];
 const CONTACTS = [
   { name:"林經理", role:"主管",               tone:"簡潔、先講結論、要具體時間",
@@ -213,40 +379,203 @@ const CONTACTS = [
     note:"慢回、會用已讀不回施壓。回覆順序固定：基準→做了什麼→交付→結論。" }
 ];
 
-const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
-const chips = (f) =>
-  (f.internal ? '<span class="chip amber">內部參考</span>' : "") +
-  f.tags.map(t => '<span class="chip">' + esc(t) + '</span>').join("");
+/* ============ 試貼樣本（走完四種狀態） ============ */
+const SAMPLES = {
+  quote: "跟你確認 Y 方案：8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。內部先知道就好——最低可以讓到 7 萬，但要搭配季度合作。",
+  contact: "李副理今天口頭提的：他不看長訊息，重點放前三行；約時間直接給他兩個時段二選一，開放式問他有空嗎不會回。最近在追短影音企劃。",
+  link: "https://example.com/pricing-2026",
+  chat: "今天開會開到快吐，晚點再說"
+};
+
+/* ============ 原型假引擎（規則版；真 API 接 /extract 即換，欄位相同） ============ */
+const TODAY = "2026-09-03";
+function mockExtract(raw) {
+  const t = raw.trim();
+  if (/^https?:\/\/|https?:\/\/\S+$/.test(t) && !/\s[^h]/.test(t))
+    return { extracted:false, reason:"這個連結我讀不到內容，可以直接把文字貼給我" };
+  if (t.length < 15 || !/[0-9０-９]|方案|報價|交期|進度|檔期|偏好|時段|不看|在意|雷點/.test(t))
+    return { extracted:false, reason:"這段沒有具體的數字或條件，我抽不出可以引用的事實" };
+
+  /* 對象備註樣態 */
+  if (/不看|重點放|二選一|不會回|吃什麼語氣|偏好/.test(t) && /理|經理|窗口|先生|小姐|姐|哥/.test(t)) {
+    const name = (t.match(/^([一-龥]{1,3}(?:副理|經理|協理|主任|先生|小姐))/) || [,"對象"])[1];
+    return { extracted:true, items:[{
+      type:"contact", name, role:"窗口",
+      tone:"短訊息、重點前置；給具體時段二選一",
+      notes:"不看長訊息，重點放前三行；開放式問句不會回。",
+      recentTopics:["短影音企劃"]
+    }]};
+  }
+
+  /* 事實樣態：含內部訊號就多抽一張 internal */
+  const items = [{
+    type:"fact", label:"Y 方案報價",
+    tags:["報價","價格","多少錢","方案","預算"],
+    content:"Y 方案 8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。",
+    updatedAt:TODAY, volatility:"high", internal:false
+  }];
+  if (/底線|最低|讓到|成本|利潤|內部/.test(t)) {
+    items.push({
+      type:"fact", label:"Y 方案底線",
+      tags:["報價","折扣","議價","底線"],
+      content:"Y 方案最低可讓到 7 萬，需搭配季度合作。",
+      updatedAt:TODAY, volatility:"high",
+      internal:true, internalReason:"這是你的讓價空間，寫進回覆等於先自砍一刀"
+    });
+  }
+  return { extracted:true, items };
+}
+
+/* ============ 畫面 ============ */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const sect = (t) => '<div class="sect"><span class="eyebrow">' + esc(t) + '</span><span class="ln"></span></div>';
-const pcard = (c, cls) => `
-  <div class="pcard ${cls}">
-    <div class="nmrow">
-      <span class="avatar">${esc(c.name[0])}</span>
-      <span class="nm">${esc(c.name)}</span>
-      <span class="role">${esc(c.role)}</span>
-    </div>
-    <div class="tone">${esc(c.tone)}</div>
-    <div class="note">${esc(c.note)}</div>
-  </div>`;
 
-/* ---------- 方向 A：列表列 ---------- */
-document.querySelector('[data-deck="A"]').innerHTML =
-  sect("知識 · " + FACTS.length + " 條") +
-  FACTS.map(f => `
-    <div class="rowitem">
-      <div class="rowtop">
-        <span class="lb">${esc(f.label)}</span>
-        <span class="datep">${esc(f.date)}</span>
+let drafts = [];          // 目前的草稿（含使用者改過的 internal 狀態）
+let noResult = null;      // { reason, orig }
+
+function renderCount() {
+  $("cnt").textContent = FACTS.length + " 條 · " + CONTACTS.length + " 人";
+}
+
+function renderList(freshCount) {
+  $("listArea").innerHTML =
+    sect("知識 · " + FACTS.length + " 條") +
+    FACTS.map((f, i) => `
+      <div class="rowitem${i < (freshCount||0) && f._fresh ? " fresh" : ""}">
+        <div class="rowtop">
+          <span class="lb">${esc(f.label)}</span>
+          <span class="datep">${esc(f.date)}</span>
+        </div>
+        <div class="tagline">
+          ${f.internal ? '<span class="chip amber">內部參考</span>' : ""}
+          ${f.tags.map(t => '<span class="chip">' + esc(t) + '</span>').join("")}
+        </div>
+      </div>`).join("") +
+    sect("對象檔案 · " + CONTACTS.length + " 人") +
+    CONTACTS.map(c => `
+      <div class="pcard${c._fresh ? " fresh" : ""}">
+        <div class="nmrow">
+          <span class="avatar">${esc(c.name[0])}</span>
+          <span class="nm">${esc(c.name)}</span>
+          <span class="role">${esc(c.role)}</span>
+        </div>
+        <div class="tone">${esc(c.tone)}</div>
+        <div class="note">${esc(c.note)}</div>
+      </div>`).join("");
+  FACTS.forEach(f => delete f._fresh);
+  CONTACTS.forEach(c => delete c._fresh);
+  renderCount();
+}
+
+function draftCard(d, i) {
+  if (d.type === "contact") return `
+    <div class="draft" style="animation-delay:${i*120}ms">
+      <div class="top">
+        <span class="lb">${esc(d.name)}</span>
+        <span class="chip ghost">對象</span>
       </div>
-      <div class="tagline">${chips(f)}</div>
-    </div>`).join("") +
-  sect("對象檔案 · " + CONTACTS.length + " 人") +
-  CONTACTS.map(c => pcard(c, "slim")).join("");
+      <div class="content">${esc(d.tone)}／${esc(d.notes)}</div>
+      <div class="tagline">${(d.recentTopics||[]).map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
+    </div>`;
+  return `
+    <div class="draft${d.internal ? " internal" : ""}" data-draft="${i}" style="animation-delay:${i*120}ms">
+      <div class="top">
+        <span class="lb">${esc(d.label)}</span>
+        ${d.internal ? '<span class="chip amber">內部</span>' : ""}
+        ${d.volatility === "high" ? '<span class="chip ghost">效期短</span>' : ""}
+        <span class="datep">${esc(d.updatedAt)}</span>
+      </div>
+      <div class="content">${esc(d.content)}</div>
+      <div class="tagline">${d.tags.map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
+      <div class="introw">
+        <span class="tx">
+          <span class="t1">內部參考 · 知道但不說</span>
+          <span class="t2">${esc(d.internal ? (d.internalReason || "引擎讀得到，永遠不寫進回覆、不出現在來源標註。")
+                                             : (d.internalReason || "目前會照常引用；打開後只供引擎判斷，不寫進回覆。"))}</span>
+        </span>
+        <button class="switch" role="switch" aria-checked="${d.internal}" data-toggle="${i}" aria-label="內部參考">
+          <span class="knob"></span>
+        </button>
+      </div>
+    </div>`;
+}
 
-/* 條數統計 */
-document.querySelectorAll("[data-cnt]").forEach(el => {
-  el.textContent = FACTS.length + " 條 · " + CONTACTS.length + " 人";
-});
+function renderDrafts() {
+  const area = $("draftArea");
+  if (noResult) {
+    area.innerHTML =
+      sect("抽取結果") +
+      `<div class="nores">
+        <div class="why">${esc(noResult.reason)}</div>
+        <div class="orig">${esc(noResult.orig)}</div>
+        <div class="confirmrow"><button class="linkbtn" id="btnDismiss">知道了</button></div>
+      </div>`;
+    $("btnDismiss").addEventListener("click", () => { noResult = null; renderDrafts(); });
+    return;
+  }
+  if (!drafts.length) { area.innerHTML = ""; return; }
+  area.innerHTML =
+    sect("草稿 · 確認才寫入") +
+    drafts.map(draftCard).join("") +
+    `<div class="confirmrow">
+      <button class="btn-confirm" id="btnConfirm">確認寫入 ${drafts.length} 筆</button>
+      <button class="linkbtn" id="btnDiscard">捨棄草稿</button>
+    </div>`;
+
+  area.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", () => {
+    const d = drafts[Number(b.dataset.toggle)];
+    d.internal = !d.internal;
+    renderDrafts();
+  }));
+  $("btnDiscard").addEventListener("click", () => { drafts = []; renderDrafts(); });
+  $("btnConfirm").addEventListener("click", () => {
+    /* 確認 → 寫入列表最上方，回列表立刻能被引用 */
+    drafts.slice().reverse().forEach(d => {
+      if (d.type === "contact") CONTACTS.unshift({ name:d.name, role:d.role || "窗口", tone:d.tone, note:d.notes, _fresh:true });
+      else FACTS.unshift({ label:d.label, tags:d.tags, date:d.updatedAt, internal:d.internal, _fresh:true });
+    });
+    const n = drafts.length;
+    drafts = [];
+    renderDrafts();
+    renderList(n);
+    $("feedText").value = "";
+    $("feedHint").textContent = "已寫入 " + n + " 筆，回主畫面立刻能被引用。";
+  });
+}
+
+/* ============ 抽取流程 ============ */
+function runExtract() {
+  const raw = $("feedText").value;
+  if (!raw.trim()) return;
+  const feeder = $("feeder"), btn = $("btnExtract");
+  drafts = []; noResult = null; renderDrafts();
+  feeder.classList.add("reading");
+  btn.disabled = true;
+  $("feedHint").textContent = "讀取中……";
+  setTimeout(() => {   /* 原型固定 900ms；真 API 換成 fetch(/v1/extract) */
+    feeder.classList.remove("reading");
+    btn.disabled = false;
+    const res = mockExtract(raw);
+    if (res.extracted) {
+      drafts = res.items.map(d => ({ ...d, internal: !!(d.internal || d.usage === "internal") }));
+      $("feedHint").textContent = "抽出 " + drafts.length + " 筆草稿，看過再按確認。";
+    } else {
+      noResult = { reason: res.reason, orig: raw.trim() };
+      $("feedHint").textContent = "抽出來的是草稿，你確認了才會寫入。";
+    }
+    renderDrafts();
+  }, 900);
+}
+
+$("btnExtract").addEventListener("click", runExtract);
+document.querySelectorAll(".sample").forEach(b => b.addEventListener("click", () => {
+  $("feedText").value = SAMPLES[b.dataset.sample];
+  runExtract();
+}));
+
+renderList(0);
+renderDrafts();
 </script>
 </body>
 </html>
