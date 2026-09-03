@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · 質感檔位並排 — 同一格畫面四種處理</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   質感檔位並排（給 Zeno 挑，2026-09-03）
+   同一格畫面：定案的片頭（生長字卡）最後一幀。
+   四個檔位由淺入深，A/B/C 可疊加——回字母組合即可（例「B」「BC」）。
+
+   0 現況　　　＝ 這次質感 pass 之後的樣子（基準參照）
+   A 儀表細節　＝ 角落刻度＋mono 中繼資料（片場打板感）
+   B 電影暗房　＝ 中心微亮＋四周壓暗的景深（vignette）
+   C 底片噪點　＝ 極細顆粒疊在畫面上（消掉大面積純黑的數位塑膠感）
+
+   注意：C 的噪點是內嵌 SVG data URI，離線可跑，不抓任何線上資源。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+  --coral: #ff6363;
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:40px; }
+.intro{ display:flex; flex-direction:column; gap:16px; max-width:720px; }
+.brandline{ display:flex; align-items:center; gap:8px; }
+.brandline .ln{ flex:1; height:1px; background: rgba(255,255,255,0.08); }
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:11px; line-height:1;
+  letter-spacing:.8px; text-transform:uppercase; color: var(--smoke);
+}
+h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
+.lede{ font-size:16px; line-height:1.6; color: var(--ash); text-wrap:pretty; margin:0; }
+
+.grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(680px, 1fr)); gap:48px; max-width:1560px; }
+.item{ display:flex; flex-direction:column; gap:16px; }
+.item-head{ display:flex; align-items:baseline; gap:12px; }
+.item-head .tag{
+  font-family: var(--mono); font-size:12px; letter-spacing:1px; color: var(--mist);
+  background: var(--graph); border-radius:6px; padding:4px 8px;
+}
+.item-head .nm{ font-size:14px; font-weight:500; color: var(--white); }
+.caption{ font-size:12px; line-height:1.7; color: var(--smoke); text-wrap:pretty; max-width:720px; }
+.caption b{ color: var(--ash); font-weight:500; }
+
+/* ---------- 16:9 舞台：片頭最後一幀 ---------- */
+.frame{
+  position:relative; width:100%; aspect-ratio:16/9; overflow:hidden;
+  background: var(--void); border-radius:8px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+.frame-in{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.brandbig{ font-size:72px; font-weight:300; line-height:1.1; letter-spacing:12px; text-indent:12px; color: var(--white); }
+.eb{
+  font-family: var(--mono); font-size:10px; line-height:1; letter-spacing:3px;
+  text-transform:uppercase; color: var(--smoke);
+}
+.rule{ height:1px; width:56%; background: rgba(255,255,255,0.12); }
+.typed{ font-size:14px; line-height:1.7; color: var(--mist); }
+.caret{ display:inline-block; width:1.5px; height:15px; background: var(--iron); margin-left:3px; vertical-align:-2px; }
+
+/* ---------- A · 儀表細節：角落刻度＋mono 中繼資料 ---------- */
+.tick{ position:absolute; width:14px; height:14px; border:0 solid var(--slate); }
+.tick.tl{ left:20px; top:20px; border-left-width:1px; border-top-width:1px; }
+.tick.tr{ right:20px; top:20px; border-right-width:1px; border-top-width:1px; }
+.tick.bl{ left:20px; bottom:20px; border-left-width:1px; border-bottom-width:1px; }
+.tick.br{ right:20px; bottom:20px; border-right-width:1px; border-bottom-width:1px; }
+.meta{
+  position:absolute; font-family: var(--mono); font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; color: var(--iron);
+}
+.meta.tl{ left:44px; top:23px; }
+.meta.tr{ right:44px; top:23px; }
+.meta.bl{ left:44px; bottom:23px; }
+.meta.br{ right:44px; bottom:23px; }
+
+/* ---------- B · 電影暗房：中心微亮＋四周壓暗 ---------- */
+.vignette .frame-bg{
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 90% 75% at 50% 46%, #0c0d0f 0%, var(--void) 62%, #010102 100%);
+}
+
+/* ---------- C · 底片噪點：內嵌 SVG 顆粒，離線可跑 ---------- */
+.grain::after{
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:0.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="intro">
+    <div class="brandline">
+      <i class="diamond" style="width:8px;height:8px"></i>
+      <span class="eyebrow">幕僚 / Chief of Staff · 質感檔位並排</span>
+      <span class="ln"></span>
+    </div>
+    <h1>同一格畫面，四個質感檔位</h1>
+    <p class="lede">都是定案片頭（生長字卡）的最後一幀。0 是現況基準；A／B／C 是三種可以「疊加」的處理，不互斥。挑法：回字母組合就好——「B」＝只要暗房、「BC」＝暗房＋噪點、「ABC」＝全上。我的推薦是 <b style="color:#e6e6e6">BC</b>：暗房給深度、噪點消掉數位塑膠感，兩個都不增加畫面上的「東西」，最符合克制原則。</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 0 · 現況 -->
+    <div class="item">
+      <div class="item-head"><span class="tag">0</span><span class="nm">現況（基準參照）</span></div>
+      <div class="frame">
+        <div class="frame-in">
+          <div class="brandbig">幕　僚</div>
+          <div class="eb">Chief of Staff</div>
+          <div class="rule"></div>
+          <div class="typed">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。<span class="caret"></span></div>
+        </div>
+      </div>
+      <p class="caption">這次質感 pass 之後的樣子：髮絲線＋掃光＋分字進場。乾淨，但大面積純黑在大螢幕上會顯得「平」。</p>
+    </div>
+
+    <!-- A · 儀表細節 -->
+    <div class="item">
+      <div class="item-head"><span class="tag">A</span><span class="nm">儀表細節</span></div>
+      <div class="frame">
+        <div class="frame-in">
+          <div class="brandbig">幕　僚</div>
+          <div class="eb">Chief of Staff</div>
+          <div class="rule"></div>
+          <div class="typed">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。<span class="caret"></span></div>
+        </div>
+        <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+        <span class="meta tl">幕僚 · Title</span>
+        <span class="meta tr">Future of Work</span>
+        <span class="meta bl">Buildmode 2026</span>
+        <span class="meta br">16 : 9</span>
+      </div>
+      <p class="caption"><b>角落刻度＋mono 中繼資料，片場打板感。</b>資訊感、工具感最強，投影機最安全（都是實線實字）。<b>代價</b>：畫面上的「東西」變多了，跟極簡方向稍微抵觸；中繼文字是裝飾性的，被評審細看會問「這些字是什麼」。</p>
+    </div>
+
+    <!-- B · 電影暗房 -->
+    <div class="item">
+      <div class="item-head"><span class="tag">B</span><span class="nm">電影暗房</span></div>
+      <div class="frame vignette">
+        <div class="frame-bg"></div>
+        <div class="frame-in">
+          <div class="brandbig">幕　僚</div>
+          <div class="eb">Chief of Staff</div>
+          <div class="rule"></div>
+          <div class="typed">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。<span class="caret"></span></div>
+        </div>
+      </div>
+      <p class="caption"><b>中心微亮、四周壓暗——畫面立刻有了景深和「打光」。</b>字什麼都沒動，光是背景不再是死平的黑，高級感就出來一半。<b>代價</b>：canvas 從純黑 #040506 變成中心 #0c0d0f 的漸層，嚴格說微調了「純黑 canvas」原則（單色明度漸層，不是被禁的紫藍漸層；我認為值得）。</p>
+    </div>
+
+    <!-- C · 底片噪點 -->
+    <div class="item">
+      <div class="item-head"><span class="tag">C</span><span class="nm">底片噪點</span></div>
+      <div class="frame vignette grain">
+        <div class="frame-bg"></div>
+        <div class="frame-in">
+          <div class="brandbig">幕　僚</div>
+          <div class="eb">Chief of Staff</div>
+          <div class="rule"></div>
+          <div class="typed">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。<span class="caret"></span></div>
+        </div>
+      </div>
+      <p class="caption"><b>極細顆粒疊上去（這格是 B＋C 的疊加效果，方便直接看推薦組合）。</b>大面積深色的「數位塑膠感」被消掉，變成印刷品／底片的質地，Raycast 官網也用同一招。<b>代價</b>：低流明投影機上可能看起來髒——但這批素材是給「錄影」用的，螢幕錄影完全沒這個問題。噪點是內嵌 SVG，離線可跑。</p>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

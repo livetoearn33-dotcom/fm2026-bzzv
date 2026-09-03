@@ -78,6 +78,45 @@ h2{ font-size:56px; font-weight:300; line-height:1.3; margin:0; text-wrap:balanc
 .note{ font-size:16px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
 .mono-sm{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
 
+/* 封面 · 面板升起（2026-09-03 Zeno 定案：原影片片頭 C 挪來當簡報封面）
+   收合條先升起、上緣掃兩道光（產品「讀取中」的簽名動作）、向上長出品牌 */
+#panelCover{
+  position:absolute; left:50%; bottom:0; transform: translate(-50%, 100%);
+  width:min(880px, 72vw); background: var(--ink); border-radius:16px 16px 0 0;
+  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset;
+  transition: transform 250ms var(--ease);
+}
+#panelCover.up{ transform: translate(-50%, 0); }
+#panelCover::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:35%; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
+}
+#panelCover.lit::after{ opacity:1; animation: sweep 1100ms linear 2; }
+@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
+#panelCover .row{ height:72px; display:flex; align-items:center; gap:12px; padding:0 32px; }
+#panelCover .row .eyebrow{ font-size:11px; letter-spacing:2px; }
+#panelCover .body{ display:grid; grid-template-rows:0fr; transition: grid-template-rows 300ms var(--ease); }
+#panelCover.open .body{ grid-template-rows:1fr; }
+#panelCover .body > div{ overflow:hidden; }
+#panelCover .body-in{
+  background: var(--obsid); padding:80px 32px 96px;
+  display:flex; flex-direction:column; align-items:center; gap:28px;
+}
+.coverbrand{ font-size:104px; font-weight:300; line-height:1.1; letter-spacing:16px; text-indent:16px; color: var(--white); }
+.coverbrand .ch{
+  display:inline-block; opacity:0; transform: translateY(20px);
+  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+}
+.coverbrand.in .ch{ opacity:1; transform:none; }
+.coverbrand.in .ch:nth-child(2){ transition-delay:120ms; }
+.covertag{ font-size:20px; line-height:1.7; color: var(--ash); text-align:center; }
+.coverfoot{
+  position:absolute; left:120px; right:120px; top:64px;
+  display:flex; align-items:center; gap:12px;
+}
+.fadein{ opacity:0; transform: translateY(8px); transition: opacity 500ms var(--ease), transform 500ms var(--ease); }
+.fadein.in{ opacity:1; transform: translateY(0); }
+
 /* 頁碼（滑鼠停 2.5 秒自動隱藏） */
 .chrome{
   position:fixed; right:24px; bottom:20px; z-index:9;
@@ -133,18 +172,21 @@ body.quiet .chrome{ opacity:0; }
 </head>
 <body>
 
-<!-- ============ 頁 1 · 封面 ============ -->
+<!-- ============ 頁 1 · 封面：面板升起 ============ -->
 <section class="slide">
-  <div class="eyerow">
-    <i class="diamond" style="width:12px;height:12px"></i>
-    <span class="eyebrow">幕僚 · Chief of Staff</span>
-    <span class="ln"></span>
-  </div>
-  <h1 style="font-size:96px">幕僚</h1>
-  <p class="lede">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</p>
-  <div class="foot">
+  <div class="coverfoot fadein" id="coverFoot">
     <span class="mono-sm">全村的希望就是真真</span>
     <span class="mono-sm" style="margin-left:auto">Futuremode × SITCON Buildmode · Future of Work</span>
+  </div>
+  <div id="panelCover">
+    <div class="row">
+      <i class="diamond" style="width:10px;height:10px"></i>
+      <span class="eyebrow">幕僚 · Chief of Staff</span>
+    </div>
+    <div class="body"><div><div class="body-in">
+      <div class="coverbrand" id="coverBrand"><span class="ch">幕</span><span class="ch">僚</span></div>
+      <div class="covertag fadein" id="coverTag">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+    </div></div></div>
   </div>
 </section>
 
@@ -237,10 +279,26 @@ let idx = 0;
 history.scrollRestoration = "manual";
 addEventListener("load", () => goTo(0));
 
+/* 封面動畫時間軸（升起 → 掃光 → 展開 → 品牌分字 → 定位句 → 隊名列） */
+const coverTimers = [];
+function playCover() {
+  while (coverTimers.length) clearTimeout(coverTimers.pop());
+  const p = document.getElementById("panelCover");
+  p.classList.remove("up", "lit", "open");
+  ["coverBrand","coverTag","coverFoot"].forEach(id => document.getElementById(id).classList.remove("in"));
+  const t = (fn, ms) => coverTimers.push(setTimeout(fn, ms));
+  t(() => p.classList.add("up"), 400);
+  t(() => p.classList.add("lit"), 700);
+  t(() => p.classList.add("open"), 1600);
+  t(() => document.getElementById("coverBrand").classList.add("in"), 1900);
+  t(() => document.getElementById("coverTag").classList.add("in"), 2300);
+  t(() => document.getElementById("coverFoot").classList.add("in"), 2600);
+}
 function light() {
   slides.forEach(s => s.classList.remove("lit"));
   void slides[idx].offsetWidth;             /* 重觸發掃光動畫 */
   slides[idx].classList.add("lit");
+  if (idx === 0) playCover();
 }
 function goTo(i) {
   idx = Math.max(0, Math.min(slides.length - 1, i));

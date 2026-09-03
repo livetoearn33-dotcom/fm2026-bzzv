@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 影片字卡 — 鉤子＋片頭三方向＋片尾</title>
+<title>幕僚 · 影片字卡 — 鉤子＋片頭＋片尾（定案版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
@@ -11,12 +11,11 @@
    五段直向排列，捲到哪段就自動播那段；點畫面重播；按 1-5 跳段。
    滑鼠不動 2.5 秒後所有輔助文字自動隱藏——錄影時畫面上只有素材。
 
-   段落：
+   段落（2026-09-03 Zeno 定案收斂：片頭用 B 生長字卡；
+   　　　A 極簡菱形淘汰；C 面板升起挪去 slides-template.html 當簡報封面）：
      1 鉤子 · 通知轟炸 → 黑場出字
-     2 片頭 A · 極簡菱形
-     3 片頭 B · 生長字卡（建議預設，呼應第一幕文字生長）
-     4 片頭 C · 面板升起
-     5 片尾 · 隊名
+     2 片頭 · 生長字卡
+     3 片尾 · 菱形版隊名
 
    設計語言沿用 refined.html：#040506 canvas、珊瑚菱形只當品牌標記、
    expo-out 轉場、不彈跳、不發光、不漸層。
@@ -149,39 +148,9 @@ body.quiet .chrome{ opacity:0; }
 .rule.in::after{ animation: sweep-once 900ms linear 350ms both; }
 @keyframes sweep-once{ from{ transform:translateX(-100%); opacity:1 } to{ transform:translateX(460%); opacity:1 } }
 
-/* A · 極簡菱形 */
-#dA{ width:20px; height:20px; opacity:0; transform: rotate(45deg) scale(0.4); transition: opacity 300ms var(--ease), transform 300ms var(--ease); }
-#dA.in{ opacity:1; transform: rotate(45deg) scale(1); }
-
-/* B · 生長字卡 */
+/* 片頭 · 生長字卡 */
 #typeLine{ font-size:20px; line-height:1.7; color: var(--mist); min-height:34px; text-align:center; }
 .caret{ display:inline-block; width:2px; height:22px; background: var(--iron); margin-left:3px; vertical-align:-4px; }
-
-/* C · 面板升起 */
-#panelC{
-  position:absolute; left:50%; bottom:0; transform: translate(-50%, 100%);
-  width:min(720px, 86vw); background: var(--ink); border-radius:16px 16px 0 0;
-  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset;
-  transition: transform 250ms var(--ease);
-}
-#panelC.up{ transform: translate(-50%, 0); }
-/* 升起後沿上緣掃兩道光——產品「讀取中」的簽名動作 */
-#panelC::after{
-  content:''; position:absolute; left:0; top:0; height:1px; width:35%; opacity:0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
-}
-#panelC.lit::after{ opacity:1; animation: sweep 1100ms linear 2; }
-@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
-#panelC .row{ height:72px; display:flex; align-items:center; gap:12px; padding:0 24px; }
-#panelC .row .eyebrow{ font-size:11px; letter-spacing:2px; }
-#panelC .body{ display:grid; grid-template-rows:0fr; transition: grid-template-rows 300ms var(--ease); }
-#panelC.open .body{ grid-template-rows:1fr; }
-#panelC .body > div{ overflow:hidden; }
-#panelC .body-in{
-  background: var(--obsid); padding:64px 24px 72px;
-  display:flex; flex-direction:column; align-items:center; gap:24px;
-}
-#panelC .brandbig{ font-size:88px; }
 
 /* ---------- 5 · 片尾 ---------- */
 .endwrap{ display:flex; flex-direction:column; align-items:center; gap:20px; }
@@ -201,20 +170,8 @@ body.quiet .chrome{ opacity:0; }
   </div>
 </section>
 
-<!-- ============ 2 · 片頭 A：極簡菱形 ============ -->
-<section class="stage" id="s2" data-name="2 · 片頭 A 極簡菱形">
-  <div class="titlewrap">
-    <div class="rule" id="ruleA1"></div>
-    <i class="diamond" id="dA"></i>
-    <div class="brandbig" id="brandA"><span class="ch">幕</span><span class="ch">僚</span></div>
-    <div class="eyebrow fadein" id="eyeA">Chief of Staff</div>
-    <div class="rule" id="ruleA2"></div>
-    <div class="tagline fadein" id="tagA">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
-  </div>
-</section>
-
-<!-- ============ 3 · 片頭 B：生長字卡（建議預設） ============ -->
-<section class="stage" id="s3" data-name="3 · 片頭 B 生長字卡（建議預設）">
+<!-- ============ 2 · 片頭：生長字卡（定案） ============ -->
+<section class="stage" id="s2" data-name="2 · 片頭 生長字卡">
   <div class="titlewrap">
     <div class="brandbig" id="brandB"><span class="ch">幕</span><span class="ch">僚</span></div>
     <div class="eyebrow fadein" id="eyeB">Chief of Staff</div>
@@ -223,22 +180,8 @@ body.quiet .chrome{ opacity:0; }
   </div>
 </section>
 
-<!-- ============ 4 · 片頭 C：面板升起 ============ -->
-<section class="stage" id="s4" data-name="4 · 片頭 C 面板升起">
-  <div id="panelC">
-    <div class="row">
-      <i class="diamond" style="width:10px;height:10px"></i>
-      <span class="eyebrow">幕僚 · Chief of Staff</span>
-    </div>
-    <div class="body"><div><div class="body-in">
-      <div class="brandbig" id="brandC"><span class="ch">幕</span><span class="ch">僚</span></div>
-      <div class="tagline fadein" id="tagC">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
-    </div></div></div>
-  </div>
-</section>
-
-<!-- ============ 5 · 片尾：隊名 ============ -->
-<section class="stage" id="s5" data-name="5 · 片尾 隊名">
+<!-- ============ 3 · 片尾：菱形版隊名（定案） ============ -->
+<section class="stage" id="s3" data-name="3 · 片尾 菱形版隊名">
   <div class="endwrap">
     <div class="endbrand fadein" id="endBrand">
       <i class="diamond" style="width:10px;height:10px"></i>
@@ -251,7 +194,7 @@ body.quiet .chrome{ opacity:0; }
   </div>
 </section>
 
-<div class="chrome"><div class="bar" id="chromeBar">點畫面重播 · 按 1-5 跳段 · 滑鼠停 2.5 秒輔助字自動隱藏</div></div>
+<div class="chrome"><div class="bar" id="chromeBar">點畫面重播 · 按 1-3 跳段 · 滑鼠停 2.5 秒輔助字自動隱藏</div></div>
 
 <script>
 "use strict";
@@ -327,17 +270,7 @@ function playHook() {
   later(() => $("hl2").classList.add("in"), 6000);
 }
 
-/* ---------- 段 2：極簡菱形。線拉開 → 菱形 → 名（分字）→ 眉標 → 定位句 ---------- */
-function playA() {
-  ["ruleA1","ruleA2","dA","brandA","eyeA","tagA"].forEach(id => $(id).classList.remove("in"));
-  later(() => { $("ruleA1").classList.add("in"); $("ruleA2").classList.add("in"); }, 250);
-  later(() => $("dA").classList.add("in"), 600);
-  later(() => $("brandA").classList.add("in"), 850);
-  later(() => $("eyeA").classList.add("in"), 1250);
-  later(() => $("tagA").classList.add("in"), 1650);
-}
-
-/* ---------- 段 3：生長字卡。名先立，定位句逐字長出（同第一幕的文字生長） ---------- */
+/* ---------- 段 2：生長字卡。名先立，定位句逐字長出（同第一幕的文字生長） ---------- */
 const TYPE_LINE = "你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。";
 function playB() {
   ["brandB","eyeB","ruleB"].forEach(id => $(id).classList.remove("in"));
@@ -350,19 +283,7 @@ function playB() {
   });
 }
 
-/* ---------- 段 4：面板升起。收合條先上來（產品是 56dp，影片放大版用 72px），停一拍，向上長出品牌 ---------- */
-function playC() {
-  const p = $("panelC");
-  p.classList.remove("up", "open", "lit");
-  ["brandC","tagC"].forEach(id => $(id).classList.remove("in"));
-  later(() => p.classList.add("up"), 400);
-  later(() => p.classList.add("lit"), 700);   /* 讀取中掃光兩輪 */
-  later(() => p.classList.add("open"), 1600);
-  later(() => $("brandC").classList.add("in"), 1900);
-  later(() => $("tagC").classList.add("in"), 2300);
-}
-
-/* ---------- 段 5：片尾 ---------- */
+/* ---------- 段 3：片尾 ---------- */
 function playEnd() {
   ["endBrand","endTeam","ruleEnd","endMeta","endRepo"].forEach(id => $(id).classList.remove("in"));
   later(() => $("endBrand").classList.add("in"), 300);
@@ -372,7 +293,7 @@ function playEnd() {
   later(() => $("endRepo").classList.add("in"), 1600);
 }
 
-const PLAYERS = { s1: playHook, s2: playA, s3: playB, s4: playC, s5: playEnd };
+const PLAYERS = { s1: playHook, s2: playB, s3: playEnd };
 
 function play(id) {
   clearAll();
@@ -399,10 +320,10 @@ document.querySelectorAll(".stage").forEach(s => {
 });
 checkSection();
 
-/* 按 1-5 跳段 */
+/* 按 1-3 跳段 */
 addEventListener("keydown", e => {
   const n = parseInt(e.key, 10);
-  if (n >= 1 && n <= 5) document.querySelector("#s" + n).scrollIntoView({ behavior: "instant", block: "start" });
+  if (n >= 1 && n <= 3) document.querySelector("#s" + n).scrollIntoView({ behavior: "instant", block: "start" });
 });
 
 /* 滑鼠不動 2.5 秒 → 隱藏輔助層（錄影乾淨） */
