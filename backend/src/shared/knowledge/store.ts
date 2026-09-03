@@ -1,148 +1,187 @@
-import fs from "node:fs";
-import path from "node:path";
+import type { PgDatabase } from "drizzle-orm/pg-core";
 
+import { eq } from "drizzle-orm";
+
+import type * as schema from "@/db/schema";
+
+import { contacts as contactsTable, facts as factsTable } from "@/db/schema";
 import { ValidationError } from "@/shared/errors";
 
-import type { Contact, Fact, KnowledgeStore } from "./types";
+import type { Contact, Fact } from "./types";
 
-import { isTodoId, readJsonArray, resolveDataDir } from "./repository";
+import { isTodoId } from "./repository";
 import { ContactSchema, FactSchema } from "./types";
 
 /** PUT body 不含 id（id 取自路徑）；facts 額外允許省略 updatedAt，後端補今天日期。 */
 export type ContactUpsertInput = Omit<Contact, "id">;
 export type FactUpsertInput = Omit<Fact, "id" | "updatedAt"> & { updatedAt?: string };
 
-function todayDateString(): string {
+/**
+ * 任何 drizzle pg 風味的 db 實例都能用（node-postgres 或 pglite）——production 與測試共用同一份
+ * repository 邏輯。query result 的 HKT 用 any：兩種 driver 的 HKT 不同，只在乎 select/insert/
+ * delete 這些 query builder 方法，不在乎底層 raw result 的型別。
+ */
+export type AnyPgDatabase = PgDatabase<any, typeof schema>;
+
+/** 匯出給 document-store.ts 共用（commit 時的 fact.updatedAt 也補今天日期）。 */
+export function todayDateString(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function getEntryId(entry: unknown): string | undefined {
-  if (typeof entry === "object" && entry !== null && "id" in entry) {
-    const id = (entry as { id: unknown }).id;
-    return typeof id === "string" ? id : undefined;
-  }
-  return undefined;
+/** DB 的 timestamptz → 對外 API 契約的 YYYY-MM-DD 字串（不改變 Fact 的對外格式）。 */
+function toDateOnlyString(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
-/** 先寫暫存檔再 rename，避免寫到一半壞檔（rename 在同一個檔案系統內是原子操作）。 */
-function writeJsonArrayAtomic(filePath: string, data: unknown[]): void {
-  const dir = path.dirname(filePath);
-  const tmpPath = path.join(dir, `.${path.basename(filePath)}.${process.pid}-${Date.now()}.tmp`);
-  const content = `${JSON.stringify(data, null, 2)}\n`;
-  fs.writeFileSync(tmpPath, content, "utf-8");
-  fs.renameSync(tmpPath, filePath);
+type FactRow = typeof factsTable.$inferSelect;
+type ContactRow = typeof contactsTable.$inferSelect;
+
+/** 匯出給 document-store.ts 共用（commit 完 fact 後轉成對外 Fact 形狀）。 */
+export function factRowToFact(row: FactRow): Fact {
+  return FactSchema.parse({
+    id: row.id,
+    label: row.label,
+    tags: row.tags,
+    content: row.content,
+    updatedAt: toDateOnlyString(row.updatedAt),
+    volatility: row.volatility,
+    usage: row.usage ?? undefined,
+  });
+}
+
+function contactRowToContact(row: ContactRow): Contact {
+  return ContactSchema.parse({
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    tone: row.tone,
+    notes: row.notes,
+    recentTopics: row.recentTopics,
+  });
+}
+
+/** analyze/guard 只需要讀取，不需要整套 CRUD——依賴介面窄一點方便測試造假資料。 */
+export interface KnowledgeReader {
+  listFacts: () => Promise<Fact[]>;
+  listContacts: () => Promise<Contact[]>;
+}
+
+export interface KnowledgeRepository extends KnowledgeReader {
+  upsertFact: (id: string, body: FactUpsertInput) => Promise<Fact>;
+  deleteFact: (id: string) => Promise<boolean>;
+  upsertContact: (id: string, body: ContactUpsertInput) => Promise<Contact>;
+  deleteContact: (id: string) => Promise<boolean>;
 }
 
 /**
- * 知識庫的可寫入版本：記憶體為真源，每次寫入後 write-through 到磁碟。
+ * 知識庫儲存層的 Postgres／Drizzle 實作（取代原本 JSON write-through 的
+ * LiveKnowledgeStore）。真源在資料庫，不再寫任何檔案。
  *
- * `facts`／`contacts` 是 getter（不是啟動時算好的快照），所以任何持有這個物件參考的
- * 呼叫端（/analyze、/guard 的 services）每次存取都會拿到當下最新資料——不用額外接線。
- *
- * `_TODO` 前綴的骨架筆會原樣保留在磁碟上（不會被寫入操作洗掉），只是不會出現在
- * `facts`／`contacts`／list API 裡，也不能透過 PUT／DELETE 存取（見 data/README-知識庫.md）。
+ * `_TODO` 前綴的保留規則沿用舊版：PUT/DELETE 一律拒絕；但既有的 JSON 骨架筆
+ * 本來就不會被 seed 進資料庫（見 src/db/seed.ts 沿用 loadFacts/loadContacts
+ * 的過濾），所以這裡的 isTodoId 檢查只用來擋「client 想用 _TODO 開頭建新資料」。
  */
-export class LiveKnowledgeStore implements KnowledgeStore {
-  private rawFacts: unknown[];
-  private rawContacts: unknown[];
-  private readonly dataDir: string;
+export class DbKnowledgeStore implements KnowledgeRepository {
+  constructor(private readonly db: AnyPgDatabase) {}
 
-  constructor(dataDir: string = resolveDataDir()) {
-    this.dataDir = dataDir;
-    this.rawFacts = readJsonArray(this.factsFile);
-    this.rawContacts = readJsonArray(this.contactsFile);
+  async listFacts(): Promise<Fact[]> {
+    const rows = await this.db.select().from(factsTable);
+    return rows.map(factRowToFact);
   }
 
-  private get factsFile(): string {
-    return path.join(this.dataDir, "facts.json");
+  async listContacts(): Promise<Contact[]> {
+    const rows = await this.db.select().from(contactsTable);
+    return rows.map(contactRowToContact);
   }
 
-  private get contactsFile(): string {
-    return path.join(this.dataDir, "contacts.json");
-  }
-
-  get facts(): Fact[] {
-    return this.rawFacts
-      .filter((entry) => {
-        const id = getEntryId(entry);
-        return id !== undefined && !isTodoId(id);
-      })
-      .map(entry => FactSchema.parse(entry));
-  }
-
-  get contacts(): Contact[] {
-    return this.rawContacts
-      .filter((entry) => {
-        const id = getEntryId(entry);
-        return id !== undefined && !isTodoId(id);
-      })
-      .map(entry => ContactSchema.parse(entry));
-  }
-
-  listFacts(): Fact[] {
-    return this.facts;
-  }
-
-  listContacts(): Contact[] {
-    return this.contacts;
-  }
-
-  upsertFact(id: string, body: FactUpsertInput): Fact {
+  async upsertFact(id: string, body: FactUpsertInput): Promise<Fact> {
     if (isTodoId(id)) {
       throw new ValidationError(`id 不可為保留前綴 _TODO：${id}`);
     }
-    const updatedAt = body.updatedAt && body.updatedAt.length > 0 ? body.updatedAt : todayDateString();
-    const fact = FactSchema.parse({ ...body, id, updatedAt });
-    const index = this.rawFacts.findIndex(entry => getEntryId(entry) === id);
-    if (index >= 0) {
-      this.rawFacts[index] = fact;
-    }
-    else {
-      this.rawFacts.push(fact);
-    }
-    writeJsonArrayAtomic(this.factsFile, this.rawFacts);
-    return fact;
+    const updatedAtString = body.updatedAt && body.updatedAt.length > 0 ? body.updatedAt : todayDateString();
+    const parsed = FactSchema.parse({ ...body, id, updatedAt: updatedAtString });
+
+    const [row] = await this.db
+      .insert(factsTable)
+      .values({
+        id: parsed.id,
+        label: parsed.label,
+        content: parsed.content,
+        tags: parsed.tags,
+        volatility: parsed.volatility,
+        usage: parsed.usage,
+        updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
+      })
+      .onConflictDoUpdate({
+        target: factsTable.id,
+        set: {
+          label: parsed.label,
+          content: parsed.content,
+          tags: parsed.tags,
+          volatility: parsed.volatility,
+          usage: parsed.usage ?? null,
+          updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
+        },
+      })
+      .returning();
+
+    return factRowToFact(row);
   }
 
-  deleteFact(id: string): boolean {
+  async deleteFact(id: string): Promise<boolean> {
     if (isTodoId(id)) {
       return false;
     }
-    const index = this.rawFacts.findIndex(entry => getEntryId(entry) === id);
-    if (index < 0) {
-      return false;
-    }
-    this.rawFacts.splice(index, 1);
-    writeJsonArrayAtomic(this.factsFile, this.rawFacts);
-    return true;
+    const deleted = await this.db.delete(factsTable).where(eq(factsTable.id, id)).returning({ id: factsTable.id });
+    return deleted.length > 0;
   }
 
-  upsertContact(id: string, body: ContactUpsertInput): Contact {
+  async upsertContact(id: string, body: ContactUpsertInput): Promise<Contact> {
     if (isTodoId(id)) {
       throw new ValidationError(`id 不可為保留前綴 _TODO：${id}`);
     }
-    const contact = ContactSchema.parse({ ...body, id });
-    const index = this.rawContacts.findIndex(entry => getEntryId(entry) === id);
-    if (index >= 0) {
-      this.rawContacts[index] = contact;
-    }
-    else {
-      this.rawContacts.push(contact);
-    }
-    writeJsonArrayAtomic(this.contactsFile, this.rawContacts);
-    return contact;
+    const parsed = ContactSchema.parse({ ...body, id });
+
+    const [row] = await this.db
+      .insert(contactsTable)
+      .values({
+        id: parsed.id,
+        name: parsed.name,
+        role: parsed.role,
+        tone: parsed.tone,
+        notes: parsed.notes,
+        recentTopics: parsed.recentTopics,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: contactsTable.id,
+        set: {
+          name: parsed.name,
+          role: parsed.role,
+          tone: parsed.tone,
+          notes: parsed.notes,
+          recentTopics: parsed.recentTopics,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return contactRowToContact(row);
   }
 
-  deleteContact(id: string): boolean {
+  async deleteContact(id: string): Promise<boolean> {
     if (isTodoId(id)) {
       return false;
     }
-    const index = this.rawContacts.findIndex(entry => getEntryId(entry) === id);
-    if (index < 0) {
-      return false;
-    }
-    this.rawContacts.splice(index, 1);
-    writeJsonArrayAtomic(this.contactsFile, this.rawContacts);
-    return true;
+    const deleted = await this.db.delete(contactsTable).where(eq(contactsTable.id, id)).returning({ id: contactsTable.id });
+    return deleted.length > 0;
   }
+}
+
+/** 把靜態的 Fact[]/Contact[] 包成 KnowledgeReader，方便測試不用起 DB 就能餵 analyze/guard services。 */
+export function staticKnowledgeReader(facts: Fact[], contacts: Contact[]): KnowledgeReader {
+  return {
+    listFacts: async () => facts,
+    listContacts: async () => contacts,
+  };
 }

@@ -5,6 +5,10 @@ import { z } from "@hono/zod-openapi";
  * 注意跟對外的 AnalyzeResponseSchema 不同：
  * - 沒有 safeCard（後端分流規則產生，不是 LLM 輸出）
  * - sources 只是 fact id 字串陣列，label 由後端拿 facts.json 補齊
+ *
+ * `conversationText`：只有截圖模式會用到——LLM 讀圖後把辨識出的對話寫進這欄
+ * （格式「them: 內容」／「me: 內容」，每則一行），後端拿它做本地安全牌的關鍵字比對
+ * （見 shared/local-rules/safe-card.ts 的 computeSafeCardForText）。文字模式忽略此欄位。
  */
 export const AnalyzeLlmOutputSchema = z.object({
   risk: z.enum(["safe", "pressure", "sensitive"]),
@@ -12,6 +16,7 @@ export const AnalyzeLlmOutputSchema = z.object({
   reply: z.string(),
   naiveReply: z.string(),
   sources: z.array(z.string()),
+  conversationText: z.string().optional(),
 });
 
 export type AnalyzeLlmOutput = z.infer<typeof AnalyzeLlmOutputSchema>;

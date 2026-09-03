@@ -13,7 +13,7 @@ export const FactListResponseSchema = z.array(FactSchema).openapi("FactList");
 /** PUT body 是整筆內容不含 id（id 取自路徑）。 */
 export const ContactPutBodySchema = ContactSchema.omit({ id: true }).openapi("ContactPutBody");
 
-/** facts 的 updatedAt 可省略，省略時後端補今天日期（見 LiveKnowledgeStore.upsertFact）。 */
+/** facts 的 updatedAt 可省略，省略時後端補今天日期（見 DbKnowledgeStore.upsertFact）。 */
 export const FactPutBodySchema = FactSchema.omit({ id: true }).extend({
   updatedAt: FactSchema.shape.updatedAt.optional(),
 }).openapi("FactPutBody");

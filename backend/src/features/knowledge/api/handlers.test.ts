@@ -2,36 +2,31 @@ import type { LanguageModel } from "ai";
 
 import { MockLanguageModelV4 } from "ai/test";
 import { testClient } from "hono/testing";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
+import type { TestDb } from "@/db/test-client";
+
+import { seedInto } from "@/db/seed";
+import { createTestDb } from "@/db/test-client";
 import { createAnalyzeRouter } from "@/features/analyze/api";
 import { createAnalyzeServices } from "@/features/analyze/services";
 import { createTestApp } from "@/lib/create-app";
-import { LiveKnowledgeStore, resolveDataDir } from "@/shared/knowledge";
+import { DbKnowledgeStore, loadContacts, loadFacts } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 import { createKnowledgeRouter } from "./index";
 
 /**
- * 每個測試都在 os.tmpdir() 下複製一份真實 data/*.json 當作 DATA_DIR，
- * 絕不對 repo 的 data/ 目錄讀寫；afterEach 清掉暫存目錄。
+ * 每個測試都用一份全新的 pglite（記憶體內 Postgres），套用真正的 migration SQL，
+ * 再灌入跟正式 data/*.json 一樣的內容——不連真的 Postgres、不寫任何檔案。
  */
-let tmpDir: string;
-let store: LiveKnowledgeStore;
+let db: TestDb;
+let store: DbKnowledgeStore;
 
-beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "fm2026-knowledge-test-"));
-  const sourceDir = resolveDataDir();
-  fs.copyFileSync(path.join(sourceDir, "facts.json"), path.join(tmpDir, "facts.json"));
-  fs.copyFileSync(path.join(sourceDir, "contacts.json"), path.join(tmpDir, "contacts.json"));
-  store = new LiveKnowledgeStore(tmpDir);
-});
-
-afterEach(() => {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+beforeEach(async () => {
+  db = await createTestDb();
+  await seedInto(db, loadFacts(), loadContacts());
+  store = new DbKnowledgeStore(db);
 });
 
 function buildKnowledgeClient() {
@@ -124,18 +119,6 @@ describe("put /contacts/{id}", () => {
     });
     expect(response.status).toBe(400);
   });
-
-  it("寫檔格式維持 2 空格縮排 JSON 加結尾換行", async () => {
-    const client = buildKnowledgeClient();
-    await client.contacts[":id"].$put({
-      param: { id: "format-check" },
-      json: { name: "格式檢查", role: "", tone: "", notes: "", recentTopics: [] },
-    });
-    const raw = fs.readFileSync(path.join(tmpDir, "contacts.json"), "utf-8");
-    expect(raw.endsWith("\n")).toBe(true);
-    expect(raw).toContain("  {\n");
-    expect(JSON.parse(raw)).toBeInstanceOf(Array);
-  });
 });
 
 describe("delete /contacts/{id}", () => {
@@ -225,7 +208,7 @@ describe("delete /facts/{id}", () => {
   });
 });
 
-describe("put 後 /analyze 立刻看到新 fact（同一個 store 參考，不是啟動時快照）", () => {
+describe("put 後 /analyze 立刻看到新 fact（同一個 DB，不是啟動時快照）", () => {
   function textResult(json: unknown) {
     return {
       content: [{ type: "text" as const, text: JSON.stringify(json) }],

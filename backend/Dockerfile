@@ -54,6 +54,7 @@ RUN APP="$(cat /tmp/app-dir)" \
  && mkdir -p /out/app /out/assets/data /out/assets/prompts \
  && cp -r "$APP/node_modules" /out/app/node_modules \
  && cp -r "$APP/dist" /out/app/dist \
+ && cp -r "$APP/drizzle" /out/app/drizzle \
  && cp "$APP/package.json" /out/app/package.json \
  && cp -r "$DATA_DIR"/. /out/assets/data/ \
  && cp -r "$PROMPTS_DIR"/. /out/assets/prompts/ \

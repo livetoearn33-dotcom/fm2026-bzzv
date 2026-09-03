@@ -35,7 +35,8 @@ export function createGuardService(deps: GuardServiceDeps): GuardFn {
       return response;
     }
 
-    const contact = findContact(knowledge.contacts, contactId);
+    const contacts = await knowledge.listContacts();
+    const contact = findContact(contacts, contactId);
     const taskBlock = buildGuardTaskBlock({ contact, conversation, draft });
     const systemPrompt = buildGuardSystemPrompt(promptLayers, taskBlock);
 
