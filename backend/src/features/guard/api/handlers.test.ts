@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { createTestApp } from "@/lib/create-app";
 import { loadKnowledgeStore } from "@/shared/knowledge";
-import { loadPromptLayers } from "@/shared/prompts";
+import { formatTodayLine, loadPromptLayers } from "@/shared/prompts";
 
 import { createGuardServices } from "../services";
 import { createGuardRouter } from "./index";
@@ -156,5 +156,43 @@ describe("post /guard", () => {
     });
 
     expect(response.status).toBe(502);
+  });
+});
+
+describe("system prompt 組裝規則（prompts/README-組裝說明.md「兩個引擎的通用組裝規則」）", () => {
+  function buildCapturingModel() {
+    return new MockLanguageModelV4({
+      doGenerate: async () => textResult({ flagged: false }),
+    });
+  }
+
+  function getSystemPrompt(model: MockLanguageModelV4) {
+    const call = model.doGenerateCalls.at(-1);
+    const systemMessage = call?.prompt.find(message => message.role === "system");
+    if (!systemMessage || systemMessage.role !== "system")
+      throw new Error("system message 沒被送進模型");
+    return systemMessage.content;
+  }
+
+  it("規則 1：〈本次任務〉開頭注入今天日期", async () => {
+    const model = buildCapturingModel();
+    const client = buildClient(model);
+
+    await client.guard.$post({
+      json: { draft: "這週來得及送出嗎，我再確認一下。", conversation: [] },
+    });
+
+    expect(getSystemPrompt(model)).toContain(formatTodayLine());
+  });
+
+  it("規則 2：查無 contactId 時對象段落 fallback 為「未知（無檔案）」", async () => {
+    const model = buildCapturingModel();
+    const client = buildClient(model);
+
+    await client.guard.$post({
+      json: { draft: "沒問題，我確認一下。", conversation: [], contactId: "not-exist" },
+    });
+
+    expect(getSystemPrompt(model)).toContain("對象：未知（無檔案）");
   });
 });

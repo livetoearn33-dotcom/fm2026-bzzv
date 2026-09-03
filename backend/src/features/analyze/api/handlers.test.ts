@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { createTestApp } from "@/lib/create-app";
 import { loadKnowledgeStore } from "@/shared/knowledge";
-import { loadPromptLayers } from "@/shared/prompts";
+import { formatTodayLine, loadPromptLayers } from "@/shared/prompts";
 
 import { createAnalyzeServices } from "../services";
 import { createAnalyzeRouter } from "./index";
@@ -81,7 +81,7 @@ describe("post /analyze", () => {
         riskReason: "他在比價，要的是台階",
         reply: "我確認一下報價，稍後回您——基礎方案含企劃、拍攝、剪輯三項。",
         naiveReply: "報價單附件給你",
-        sources: ["quote-standard-2026", "not-a-real-id"],
+        sources: ["quote-anchor-standard", "not-a-real-id"],
       }),
     });
     const client = buildClient(model);
@@ -102,7 +102,7 @@ describe("post /analyze", () => {
     expect(json.safeCard).toBe("我確認一下報價，稍後回您");
     expect(json.reply.startsWith(json.safeCard)).toBe(true);
     // 幻覺 id 被濾掉，只留真的被塞進 context 的 fact
-    expect(json.sources).toEqual([{ id: "quote-standard-2026", label: "2026 標準報價" }]);
+    expect(json.sources).toEqual([{ id: "quote-anchor-standard", label: "代操服務標準報價" }]);
   });
 
   it("reply 不以 safeCard 開頭時重打一次，仍不符就退回 safeCard 當 reply", async () => {
@@ -172,5 +172,70 @@ describe("post /analyze", () => {
       return;
     const json = await response.json();
     expect(json.message).toContain("network down");
+  });
+});
+
+describe("system prompt 組裝規則（prompts/README-組裝說明.md「兩個引擎的通用組裝規則」）", () => {
+  function buildCapturingModel() {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => textResult({
+        risk: "safe",
+        riskReason: "一般往來",
+        reply: "收到，我看一下——晚點回您。",
+        naiveReply: "收到",
+        sources: [],
+      }),
+    });
+    return model;
+  }
+
+  function getSystemPrompt(model: MockLanguageModelV4) {
+    const call = model.doGenerateCalls.at(-1);
+    const systemMessage = call?.prompt.find(message => message.role === "system");
+    if (!systemMessage || systemMessage.role !== "system")
+      throw new Error("system message 沒被送進模型");
+    return systemMessage.content;
+  }
+
+  it("規則 1：〈本次任務〉開頭注入今天日期", async () => {
+    const model = buildCapturingModel();
+    const client = buildClient(model);
+
+    await client.analyze.$post({
+      json: {
+        conversation: [{ speaker: "them", text: "這週來得及嗎？", ts: "2026-09-06T09:12:00Z" }],
+      },
+    });
+
+    expect(getSystemPrompt(model)).toContain(formatTodayLine());
+  });
+
+  it("規則 2：查無 contactId 時對象段落 fallback 為「未知（無檔案）」", async () => {
+    const model = buildCapturingModel();
+    const client = buildClient(model);
+
+    await client.analyze.$post({
+      json: {
+        conversation: [{ speaker: "them", text: "你好", ts: "2026-09-06T09:12:00Z" }],
+        contactId: "not-exist",
+      },
+    });
+
+    expect(getSystemPrompt(model)).toContain("對象：未知（無檔案）");
+  });
+
+  it("規則 3：usage 為 internal 的事實會進 prompt 但標註不得寫入回覆", async () => {
+    const model = buildCapturingModel();
+    const client = buildClient(model);
+
+    await client.analyze.$post({
+      json: {
+        conversation: [{ speaker: "them", text: "報價大概多少？", ts: "2026-09-06T09:12:00Z" }],
+      },
+    });
+
+    const systemPrompt = getSystemPrompt(model);
+    expect(systemPrompt).toContain("id: quote-floor-internal");
+    expect(systemPrompt).toContain("（內部參考，不得寫入回覆）");
   });
 });

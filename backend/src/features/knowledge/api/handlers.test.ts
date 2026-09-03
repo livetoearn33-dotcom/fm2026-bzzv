@@ -107,7 +107,7 @@ describe("put /contacts/{id}", () => {
     const list = await listResponse.json();
     const updated = list.find(contact => contact.id === "boss-lin");
     expect(updated?.name).toBe("林經理（更新）");
-    expect(list).toHaveLength(2);
+    expect(list).toHaveLength(4);
   });
 
   it("id 為 _TODO 前綴回 400", async () => {

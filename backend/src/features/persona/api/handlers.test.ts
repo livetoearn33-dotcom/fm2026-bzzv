@@ -51,7 +51,7 @@ describe("post /persona", () => {
       return;
     const json = await response.json();
     expect(json.reply).toBe(
-      "主公勿憂。臣已探得軍情：合約仍候客戶端回簽，已遣人催之。今晚八時前，完整戰報必至。",
+      "主公息怒。亮已探得軍情：合約仍候客戶回簽，癥結在彼不在我，已遣人催之。今晚八時，完整戰報必至——若誤期，甘受軍法。",
     );
   });
 

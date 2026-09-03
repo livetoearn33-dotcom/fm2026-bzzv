@@ -59,14 +59,25 @@ describe("buildAnalyzeTaskBlock", () => {
     expect(block).toContain("（無相關事實）");
   });
 
-  it("沒有對象資料時寫「（無對象資料）」", () => {
+  it("沒有對象資料時寫「未知（無檔案）」", () => {
     const block = buildAnalyzeTaskBlock({
       contact: undefined,
       facts: [],
       conversation: [{ speaker: "them", text: "哈囉", ts: "2026-09-06T00:00:00Z" }],
       safeCard: "收到，我看一下",
     });
-    expect(block).toContain("對象：（無對象資料）");
+    expect(block).toContain("對象：未知（無檔案）");
+  });
+
+  it("開頭注入今天日期行（週幾對照週日=0）", () => {
+    const block = buildAnalyzeTaskBlock({
+      contact,
+      facts: [],
+      conversation: [{ speaker: "them", text: "這週來得及嗎？", ts: "2026-09-06T00:00:00Z" }],
+      safeCard: "收到，我看一下",
+      now: new Date(2026, 8, 6), // 2026-09-06 是週日
+    });
+    expect(block).toContain("今天是 2026-09-06（週日）");
   });
 });
 

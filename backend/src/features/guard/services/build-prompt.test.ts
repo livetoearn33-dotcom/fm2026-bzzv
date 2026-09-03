@@ -33,10 +33,20 @@ describe("buildGuardTaskBlock", () => {
     expect(block).toContain("〈草稿〉\n我們的品質跟別人不一樣。");
   });
 
-  it("沒有對話時寫「（無對話紀錄）」", () => {
+  it("沒有對話時寫「（無對話紀錄）」，沒有對象時寫「未知（無檔案）」", () => {
     const block = buildGuardTaskBlock({ contact: undefined, conversation: [], draft: "草稿" });
     expect(block).toContain("（無對話紀錄）");
-    expect(block).toContain("對象：（無對象資料）");
+    expect(block).toContain("對象：未知（無檔案）");
+  });
+
+  it("開頭注入今天日期行", () => {
+    const block = buildGuardTaskBlock({
+      contact,
+      conversation: [],
+      draft: "草稿",
+      now: new Date(2026, 8, 6), // 2026-09-06 是週日
+    });
+    expect(block).toContain("今天是 2026-09-06（週日）");
   });
 });
 
