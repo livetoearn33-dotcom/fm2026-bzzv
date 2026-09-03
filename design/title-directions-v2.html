@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · 片頭第二輪 — 三個高製作構圖</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   片頭第二輪（2026-09-03，回應「還是陽春」）
+   診斷：第一輪只有置中排字，質地怎麼加都救不了空構圖。
+   這輪每個方向都有一個「世界」：
+
+     1 UI 星域　＝ 產品 UI 碎片漂浮在景深裡當背景，品牌站前景
+     2 改寫開場 ＝ demo 故事壓成片頭：火氣句 → 標記 → 替換 → 化成品牌
+     3 巨型字　 ＝ 出血裁切的編輯排版，面板條掃過、描邊變實心
+
+   三個都內建暗房（vignette）＋底片噪點，看到的就是成品規格。
+   操作：捲到哪段播哪段、點畫面重播、按 1-3 跳段；
+   滑鼠停 2.5 秒輔助字自動隱藏（可直接錄影）。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+  --coral: #ff6363;
+  --ember: #452324;
+  --host-bg:   #f2f2f3;
+  --host-card: #ffffff;
+  --host-line: #dfdfe0;
+  --host-ink:  #1b1c1e;
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+html{ scroll-snap-type: y mandatory; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button{ font-family: inherit; }
+
+.stage{
+  position:relative; width:100vw; height:100vh; overflow:hidden;
+  scroll-snap-align:start;
+  display:flex; align-items:center; justify-content:center;
+}
+/* 每段都鋪好暗房＋噪點：這是成品規格，不是選配 */
+.darkroom{
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 90% 75% at 50% 46%, #0c0d0f 0%, var(--void) 62%, #010102 100%);
+}
+.grain{
+  position:absolute; inset:0; pointer-events:none; opacity:0.5; z-index:8;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+
+.chrome{
+  position:fixed; left:0; right:0; bottom:16px; z-index:9;
+  display:flex; justify-content:center; pointer-events:none;
+  transition: opacity 300ms var(--ease);
+}
+body.quiet .chrome{ opacity:0; }
+.chrome .bar{
+  font-family: var(--mono); font-size:10px; letter-spacing:.8px; text-transform:uppercase;
+  color: var(--smoke); background: var(--ink); border-radius:8px; padding:8px 12px;
+  box-shadow: rgba(255,255,255,0.14) 0 0 0 1px;
+}
+
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:12px; line-height:1;
+  letter-spacing:4px; text-transform:uppercase; color: var(--smoke);
+}
+.fadein{ opacity:0; transform: translateY(10px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
+.fadein.in{ opacity:1; transform: translateY(0); }
+
+/* ============================================================
+   1 · UI 星域
+   ============================================================ */
+#field{
+  position:absolute; inset:0; perspective:1100px; perspective-origin:50% 45%;
+}
+.frag{
+  position:absolute; opacity:0;
+  transition: opacity 900ms var(--ease);
+  animation: drift 8s ease-in-out infinite alternate;
+}
+.frag.in{ opacity: var(--o, 0.4); }
+@keyframes drift{ from{ margin-top:0 } to{ margin-top:-14px } }
+
+/* 碎片 a：幕僚面板（收合列） */
+.frag-panel{
+  width:340px; background: var(--ink); border-radius:12px; padding:14px 16px;
+  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset, rgba(255,255,255,0.07) 0 0 0 1px;
+  display:flex; align-items:center; gap:10px;
+}
+.frag-panel .txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.frag-panel .eb{ display:flex; align-items:center; gap:7px; }
+.frag-panel .eb .lb{ font-family: var(--mono); font-size:9px; letter-spacing:.8px; text-transform:uppercase; color: var(--smoke); }
+.frag-panel .ti{ font-size:12px; font-weight:500; color: var(--ash); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.frag-panel .bt{
+  flex:none; height:30px; padding:0 11px; border-radius:7px; border:0;
+  background: var(--mist); color: var(--iron); font-size:11px; font-weight:500;
+}
+/* 碎片 b：chip */
+.frag-chip{
+  font-family: var(--mono); font-size:11px; letter-spacing:.4px; line-height:1;
+  border-radius:7px; padding:8px 10px; background: var(--graph); color: var(--ash);
+}
+.frag-chip.warm{ background: var(--ember); color: var(--mist); }
+.frag-chip.solid{ background:transparent; border:1px solid var(--slate); color: var(--ash); }
+/* 碎片 c：訊息泡（宿主淺色，暗場裡壓灰） */
+.frag-bub{
+  max-width:280px; background:#c9c9cb; border-radius:8px; padding:9px 13px;
+  font-size:12.5px; line-height:1.55; color:#3a3b3d;
+}
+/* 前景品牌 */
+#fieldFront{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; gap:20px; }
+#fieldFront .brand{ font-size:132px; font-weight:300; line-height:1.08; letter-spacing:18px; text-indent:18px; }
+#fieldFront .brand .ch{
+  display:inline-block; opacity:0; transform: translateY(24px);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+}
+#fieldFront .brand.in .ch{ opacity:1; transform:none; }
+#fieldFront .brand.in .ch:nth-child(2){ transition-delay:130ms; }
+#fieldFront .tagline{ font-size:17px; line-height:1.7; color: var(--ash); }
+/* 前景後面墊一圈暗暈，把碎片推遠（單色明度，不是發光） */
+#fieldFront::before{
+  content:''; position:absolute; inset:-120px -180px;
+  background: radial-gradient(ellipse at center, rgba(4,5,6,0.88) 0%, rgba(4,5,6,0.55) 45%, transparent 75%);
+  z-index:-1;
+}
+
+/* ============================================================
+   2 · 改寫開場
+   ============================================================ */
+#rw{ position:relative; z-index:3; width:min(760px, 88vw); display:flex; flex-direction:column; gap:0; }
+#rwComposer{
+  background: var(--host-card); border-radius:14px; padding:22px 26px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px, rgba(0,0,0,0.55) 0 24px 48px -24px;
+  font-size:21px; line-height:1.75; color: var(--host-ink); min-height:76px;
+  line-break:strict;
+  opacity:0; transform: translateY(14px);
+  transition: opacity 500ms var(--ease), transform 500ms var(--ease);
+}
+#rw.on #rwComposer{ opacity:1; transform:none; }
+.mark-typo{ border-bottom:1px dotted var(--ash); }
+.mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
+.rwcaret{ display:inline-block; width:2px; height:22px; background: var(--iron); margin-left:2px; vertical-align:-3px; }
+#rwPanel{
+  margin:0 18px; background: var(--ink); border-radius:0 0 14px 14px;
+  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset;
+  display:grid; grid-template-rows:0fr; transition: grid-template-rows 260ms var(--ease);
+}
+#rw.panel #rwPanel{ grid-template-rows:1fr; }
+#rwPanel > div{ overflow:hidden; }
+#rwPanel .row{ display:flex; align-items:center; gap:10px; padding:14px 20px; }
+#rwPanel .ti{ flex:1; min-width:0; font-size:14px; font-weight:500; color: var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#rwBtn{
+  flex:none; height:38px; padding:0 16px; border-radius:8px; border:0;
+  background: var(--mist); color: var(--iron); font-size:13px; font-weight:500;
+  transition: transform 120ms var(--ease), background 120ms var(--ease);
+}
+#rwBtn.press{ transform: scale(0.94); background: var(--white); }
+/* 終幕：composer 淡出、品牌浮上 */
+#rwFinal{
+  position:absolute; inset:0; z-index:4;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  pointer-events:none;
+}
+#rwFinal .brand{ font-size:124px; font-weight:300; line-height:1.08; letter-spacing:18px; text-indent:18px; }
+#rwFinal .brand .ch{
+  display:inline-block; opacity:0; transform: translateY(24px);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+}
+#rwFinal .brand.in .ch{ opacity:1; transform:none; }
+#rwFinal .brand.in .ch:nth-child(2){ transition-delay:130ms; }
+#rw.done{ opacity:0; transform: scale(0.97); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
+
+/* ============================================================
+   3 · 巨型字
+   ============================================================ */
+#mega{ position:absolute; inset:0; z-index:3; }
+.megawrap{
+  position:absolute; left:50%; top:44%; transform: translate(-50%,-50%);
+  font-size:min(34vw, 60vh); font-weight:300; line-height:1; letter-spacing:4vw;
+  white-space:nowrap;
+}
+.mega-stroke{
+  color:transparent; -webkit-text-stroke:1px var(--slate);
+}
+.mega-fill{
+  position:absolute; left:0; top:0; color: var(--mist);
+  clip-path: inset(0 100% 0 0);
+}
+#mega.reveal .mega-fill{ clip-path: inset(0 0% 0 0); transition: clip-path 1400ms var(--ease) 100ms; }
+/* 掃描線：一條 56dp 的直立面板條掃過畫面 */
+#scanbar{
+  position:absolute; top:0; bottom:0; left:0; width:56px;
+  background: var(--ink);
+  box-shadow: rgba(255,255,255,0.25) 1px 0 0 0 inset, rgba(255,255,255,0.25) -1px 0 0 0 inset;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:16px;
+  padding-bottom:48px;
+  transform: translateX(-64px); opacity:0;
+}
+#mega.reveal #scanbar{
+  opacity:1;
+  transform: translateX(calc(100vw + 8px));
+  transition: transform 1400ms var(--ease) 100ms, opacity 120ms linear;
+}
+#scanbar .vlabel{
+  font-family: var(--mono); font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color: var(--smoke); writing-mode:vertical-rl;
+}
+#megaMeta{
+  position:absolute; left:64px; bottom:56px; display:flex; flex-direction:column; gap:12px;
+}
+#megaMeta .tagline{ font-size:16px; line-height:1.7; color: var(--ash); }
+#megaMeta .eyerow{ display:flex; align-items:center; gap:10px; }
+</style>
+</head>
+<body>
+
+<!-- ============ 1 · UI 星域 ============ -->
+<section class="stage" id="s1" data-name="1 · UI 星域">
+  <div class="darkroom"></div>
+  <div id="field"><!-- 碎片由 JS 生成 --></div>
+  <div id="fieldFront">
+    <div class="brand" id="fBrand"><span class="ch">幕</span><span class="ch">僚</span></div>
+    <div class="eyebrow fadein" id="fEye">Chief of Staff</div>
+    <div class="tagline fadein" id="fTag">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+  </div>
+  <div class="grain"></div>
+</section>
+
+<!-- ============ 2 · 改寫開場 ============ -->
+<section class="stage" id="s2" data-name="2 · 改寫開場">
+  <div class="darkroom"></div>
+  <div id="rw">
+    <div id="rwComposer"><span id="rwText"></span><span class="rwcaret"></span></div>
+    <div id="rwPanel"><div><div class="row">
+      <i class="diamond" style="width:7px;height:7px"></i>
+      <span class="eyebrow" style="font-size:10px;letter-spacing:.8px">幕僚 · 對方會怎麼讀</span>
+      <span class="ti">他讀起來會像被下戰帖</span>
+      <button id="rwBtn">替換</button>
+    </div></div></div>
+  </div>
+  <div id="rwFinal">
+    <div class="brand" id="rwBrand"><span class="ch">幕</span><span class="ch">僚</span></div>
+    <div class="eyebrow fadein" id="rwEye">Chief of Staff</div>
+    <div class="tagline fadein" id="rwTag" style="font-size:17px;color:var(--ash)">送出之前，先過一個幕僚。</div>
+  </div>
+  <div class="grain"></div>
+</section>
+
+<!-- ============ 3 · 巨型字 ============ -->
+<section class="stage" id="s3" data-name="3 · 巨型字">
+  <div class="darkroom"></div>
+  <div id="mega">
+    <div class="megawrap">
+      <span class="mega-stroke">幕僚</span>
+      <span class="mega-fill" aria-hidden="true">幕僚</span>
+    </div>
+    <div id="scanbar"><span class="vlabel">Chief of Staff</span></div>
+    <div id="megaMeta">
+      <div class="eyerow fadein" id="mEye">
+        <i class="diamond" style="width:8px;height:8px"></i>
+        <span class="eyebrow" style="font-size:11px;letter-spacing:2px">幕僚 · Chief of Staff</span>
+      </div>
+      <div class="tagline fadein" id="mTag">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+    </div>
+  </div>
+  <div class="grain"></div>
+</section>
+
+<div class="chrome"><div class="bar" id="chromeBar">點畫面重播 · 按 1-3 跳段 · 滑鼠停 2.5 秒輔助字自動隱藏</div></div>
+
+<script>
+"use strict";
+
+const timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const clearAll = () => { while (timers.length) clearTimeout(timers.pop()); };
+const $ = (id) => document.getElementById(id);
+
+/* ============ 1 · UI 星域 ============
+   碎片全部來自產品世界觀：面板、chip、訊息泡。
+   位置手排（不用亂數，每次播一樣，方便錄影）。 */
+const FRAGS = [
+  { t:"panel", eb:"幕僚", ti:"他已經問第二次 · 要的是有人接住", btn:"填入",
+    x:"6%",  y:"14%", z:-420, ry:14,  o:0.5,  d:0 },
+  { t:"panel", eb:"幕僚 · 對方會怎麼讀", ti:"他讀起來會像被推回去自己想辦法", btn:"替換",
+    x:"66%", y:"70%", z:-260, ry:-12, o:0.55, d:2.1 },
+  { t:"panel", eb:"幕僚", ti:"下午要開會 · 他要一句能回報的話", btn:"填入",
+    x:"70%", y:"10%", z:-560, ry:-18, o:0.38, d:1.2 },
+  { t:"bub", tx:"這個進度到底怎麼樣了？下午要跟客戶開會。",
+    x:"12%", y:"66%", z:-500, ry:16,  o:0.42, d:0.8 },
+  { t:"bub", tx:"這個價格比別家貴很多耶。",
+    x:"30%", y:"6%",  z:-300, ry:6,   o:0.5,  d:1.6 },
+  { t:"chip", tx:"高壓", warm:true,  x:"24%", y:"36%", z:-180, ry:8,   o:0.6, d:0.4 },
+  { t:"chip", tx:"#A-案進度",        x:"58%", y:"30%", z:-240, ry:-8,  o:0.5, d:1.9 },
+  { t:"chip", tx:"諸葛亮", solid:true, x:"80%", y:"44%", z:-150, ry:-14, o:0.6, d:0.6 },
+  { t:"chip", tx:"回簽 · 9/1 已追",  x:"14%", y:"86%", z:-200, ry:10,  o:0.45, d:2.4 },
+  { t:"chip", tx:"偏好 · 先講結論",  x:"44%", y:"84%", z:-380, ry:-6,  o:0.4, d:1.0 }
+];
+
+function buildField() {
+  const f = $("field");
+  f.innerHTML = FRAGS.map((g, i) => {
+    const tf = "translateZ(" + g.z + "px) rotateY(" + g.ry + "deg)";
+    const style = 'left:' + g.x + ';top:' + g.y + ';--o:' + g.o +
+      ';transform:' + tf + ';animation-delay:' + g.d + 's;animation-duration:' + (7 + i % 4) + 's;';
+    if (g.t === "panel") return '<div class="frag frag-panel" style="' + style + '">' +
+      '<div class="txt"><div class="eb"><i class="diamond" style="width:5px;height:5px"></i>' +
+      '<span class="lb">' + g.eb + '</span></div><div class="ti">' + g.ti + '</div></div>' +
+      '<button class="bt">' + g.btn + '</button></div>';
+    if (g.t === "bub") return '<div class="frag frag-bub" style="' + style + '">' + g.tx + '</div>';
+    return '<div class="frag frag-chip' + (g.warm ? " warm" : "") + (g.solid ? " solid" : "") +
+      '" style="' + style + '">' + g.tx + '</div>';
+  }).join("");
+}
+
+function play1() {
+  buildField();
+  $("fBrand").classList.remove("in");
+  ["fEye","fTag"].forEach(id => $(id).classList.remove("in"));
+  document.querySelectorAll("#field .frag").forEach((el, i) => {
+    later(() => el.classList.add("in"), 200 + i * 110);
+  });
+  later(() => $("fBrand").classList.add("in"), 1400);
+  later(() => $("fEye").classList.add("in"), 1900);
+  later(() => $("fTag").classList.add("in"), 2300);
+}
+
+/* ============ 2 · 改寫開場 ============
+   demo 第二幕的句子。標記用 innerHTML 分段打字。 */
+const RW_SEGS = [
+  ["我們的", ""],
+  ["品質跟別人不一樣", "tone"],
+  ["，你可以去", ""],
+  ["筆較", "typo"],
+  ["看看。", ""]
+];
+function play2() {
+  const rw = $("rw");
+  rw.classList.remove("panel", "done");
+  $("rwBtn").classList.remove("press");
+  $("rwBrand").classList.remove("in");
+  ["rwEye","rwTag"].forEach(id => $(id).classList.remove("in"));
+  $("rwText").innerHTML = "";
+  rw.classList.remove("on"); void rw.offsetWidth;
+
+  later(() => rw.classList.add("on"), 300);
+
+  /* 逐字打，段落帶標記 class */
+  let t = 900;
+  const spans = [];
+  RW_SEGS.forEach(([txt, mark], si) => {
+    txt.split("").forEach(ch => {
+      const at = t;
+      later(() => {
+        let sp = spans[si];
+        if (!sp) {
+          sp = document.createElement("span");
+          if (mark === "tone") sp.className = "mark-tone";
+          if (mark === "typo") sp.className = "mark-typo";
+          $("rwText").appendChild(sp);
+          spans[si] = sp;
+        }
+        sp.textContent += ch;
+      }, at);
+      t += 85;
+    });
+  });
+
+  later(() => rw.classList.add("panel"), t + 350);          /* 面板滑出 */
+  later(() => $("rwBtn").classList.add("press"), t + 1500); /* 替換按下去 */
+  later(() => $("rwBtn").classList.remove("press"), t + 1650);
+  later(() => rw.classList.add("done"), t + 1800);          /* 整組退場 */
+  later(() => $("rwBrand").classList.add("in"), t + 2200);  /* 品牌浮上 */
+  later(() => $("rwEye").classList.add("in"), t + 2700);
+  later(() => $("rwTag").classList.add("in"), t + 3000);
+}
+
+/* ============ 3 · 巨型字 ============ */
+function play3() {
+  const m = $("mega");
+  m.classList.remove("reveal");
+  ["mEye","mTag"].forEach(id => $(id).classList.remove("in"));
+  void m.offsetWidth;
+  later(() => m.classList.add("reveal"), 500);
+  later(() => $("mEye").classList.add("in"), 1700);
+  later(() => $("mTag").classList.add("in"), 2000);
+}
+
+const PLAYERS = { s1: play1, s2: play2, s3: play3 };
+
+function play(id) {
+  clearAll();
+  $("chromeBar").textContent = document.querySelector("#" + id).dataset.name + " — 點畫面重播 · 按 1-3 跳段";
+  PLAYERS[id]();
+}
+
+let current = "", scrollTimer = null;
+function checkSection() {
+  const mid = scrollY + innerHeight / 2;
+  let hit = null;
+  document.querySelectorAll(".stage").forEach(s => {
+    if (s.offsetTop <= mid && mid < s.offsetTop + s.offsetHeight) hit = s.id;
+  });
+  if (hit && hit !== current) { current = hit; play(hit); }
+}
+addEventListener("scroll", () => {
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(checkSection, 120);
+});
+document.querySelectorAll(".stage").forEach(s => {
+  s.addEventListener("click", () => play(s.id));
+});
+checkSection();
+
+addEventListener("keydown", e => {
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 3) document.querySelector("#s" + n).scrollIntoView({ behavior: "instant", block: "start" });
+});
+
+let quietTimer = null;
+function poke() {
+  document.body.classList.remove("quiet");
+  clearTimeout(quietTimer);
+  quietTimer = setTimeout(() => document.body.classList.add("quiet"), 2500);
+}
+addEventListener("mousemove", poke);
+poke();
+</script>
+</body>
+</html>
