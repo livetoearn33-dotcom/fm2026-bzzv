@@ -185,11 +185,57 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 `spans` 給前端做風險詞標記用。
 
+### `POST /persona`
+
+把已生成的回覆改寫成角色口吻。組裝契約見 prompts/README-組裝說明.md 的 /persona 段。
+
+**Request**
+
+```json
+{
+  "reply": "收到，我確認一下進度——今晚 8 點前補完整版給您確認。",
+  "conversation": [{ "speaker": "them", "text": "這個進度到底怎麼樣了？" }],
+  "persona": "zhuge"
+}
+```
+
+**Response**
+
+```json
+{ "reply": "主公息怒。亮已探得軍情：合約仍候客戶回簽，癥結在彼不在我，已遣人催之。今晚八時，完整戰報必至——若誤期，甘受軍法。" }
+```
+
+- `persona` 對應 `prompts/角色卡-*.md`：`zhuge`（諸葛亮）、`ceo`（霸道總裁）、`charmer`（情場達人）。新角色放檔案即可，不用改後端。
+- 未知的 `persona` 回 400。
+
+### 知識庫設定：`/contacts`、`/facts`
+
+App 的設定畫面用這組讀寫對象檔案與事實庫。後端以記憶體為真源，每次寫入同步落回 `data/*.json`；`/analyze`、`/guard` 下一次請求就會用到新資料。
+
+| Method | Path | 說明 |
+|---|---|---|
+| `GET` | `/contacts` | 列出全部對象檔案 |
+| `PUT` | `/contacts/{id}` | 新增或整筆覆蓋，body 為整筆內容不含 `id` |
+| `DELETE` | `/contacts/{id}` | 刪除，不存在回 404 |
+| `GET` | `/facts` | 列出全部事實 |
+| `PUT` | `/facts/{id}` | 同上；`updatedAt` 省略時後端填今天 |
+| `DELETE` | `/facts/{id}` | 刪除，不存在回 404 |
+
+- 欄位定義見下方「知識庫」段，`facts` 另有 `volatility`（`high`／`low`）與選填 `usage`，以 data/README-知識庫.md 為準。
+- `_TODO` 開頭的 id 是骨架筆：列表不回、`PUT` 回 400。
+
+### 其他
+
+- `GET /health`：存活檢查，回 `status`、`uptimeSec`、`timestamp`。
+- `GET /reference`：OpenAPI 文件頁；原始 JSON 在 `/doc`。
+- 以上路徑除 `/health`、`/reference`、`/doc` 外都掛在 `/v1` 底下。
+- **Golden path**：demo 腳本兩幕的原文與諸葛亮加演台詞命中時直接回快取結果，不打 LLM；其餘走真 LLM。
+
 ---
 
 ## 知識庫
 
-兩個檔案，放 repo 裡，demo 用真實資料（10–20 筆就夠）。
+兩個檔案，放 repo 裡，demo 用真實資料（10–20 筆就夠）。後端啟動時讀入，並可透過 `/contacts`、`/facts` API 修改（改動會寫回檔案）。
 
 ### `data/facts.json` — 事實庫
 
@@ -249,7 +295,7 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 | 2 | **浮層** | **讀空氣＋回覆生成** ⭐ | safeCard 先顯示 → reply 接續長出來的動畫；風險標記；來源標籤；對比展開 |
 | 3 | **鍵盤** | **防自爆建議條** ⭐ | 待命（高度 0）→ 觸發（長出 56dp）→ 展開（160dp）→ 採用後收回；`spans` 標記風險詞 |
 | 4 | — | 跨 App | 動畫或預錄，不用真做 |
-| 5 | — | 知識庫設定 | 靜態一張，被問到才開 |
+| 5 | — | 知識庫設定 | 靜態一張，被問到才開；若要接功能，後端 `/contacts`、`/facts` 已可用 |
 
 **視覺火力集中在 2 和 3。** 兩個 surface 要用同一套視覺語言，但版面完全不同——一個是大卡片，一個是窄條。
 
