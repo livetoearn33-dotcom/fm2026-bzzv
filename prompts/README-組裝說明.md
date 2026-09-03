@@ -40,8 +40,10 @@
 1. **safeCard 是輸入不是輸出**：由分流本地規則產生（0.2 秒先上畫面），再塞進 prompt。LLM 只回 reply。
 2. **回包驗證**：檢查 `reply.startsWith(safeCard)`，不符就重打一次（最多一次）。
 3. **sources 對映**：LLM 只回 fact id 陣列；response 的 `sources[{id,label}]` 由後端拿 facts.json 的 label 補齊。
-4. **Golden path（已拍板）**：demo 劇本的固定訊息（見 demo-script 兩幕）直接回準備好的 JSON，不打 LLM。其他輸入走真 LLM。比對建議用「訊息文字完全相符」就好，不要模糊比對。
-5. 輸出要求 JSON-only 已寫在引擎層；解析失敗重打一次，再失敗回 fallback（safeCard 本身當 reply）。
+4. **Golden path（已拍板）**：demo 劇本的固定訊息（見 demo-script 兩幕）直接回準備好的 JSON，不打 LLM。其他輸入走真 LLM。比對方式＝**標點正規化後完全相符**（全形半形統一＋trim，實作見 `backend/src/shared/golden-path/normalize.ts`）——不做語意模糊比對。新增 golden path 句子時要知道它不是嚴格逐字元比對。
+5. 輸出要求 JSON-only 已寫在引擎層。**失敗處理分兩層**（2026-09-03 對齊實作）：
+   - 模型呼叫或 schema 解析失敗 → 重打一次 → 仍失敗**回 502 錯誤**，不靜默退回假資料（刻意取捨：寧可讓前端知道壞了，也不要給使用者一個看起來正常但不是 AI 產的回覆）
+   - reply 沒有以 safeCard 開頭 → 重打一次 → 仍不符則**退回 safeCard 本身當 reply**（這層退回是安全的，因為 safeCard 本來就顯示在畫面上了）
 
 ## /guard 的 system prompt 組裝
 
