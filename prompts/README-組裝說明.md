@@ -63,6 +63,29 @@
 4. `type` 值：defensive｜blame｜heat。
 5. **Golden path（已拍板）**：demo 第二幕那句「我們的品質跟別人不一樣，你可以去比較看看。」直接回準備好的 JSON（引擎檔 few-shot 例 1 就是答案），完全比對即可。
 
+## /extract 知識萃取（9/3 定案：最小可行版）
+
+使用者在設定頁貼一段文字或一個連結，抽成知識庫條目草稿，**使用者確認後才寫入**。範圍刻意收窄：只做「貼→抽→確認」，不做編輯與刪除 UI（CRUD API 已存在，這次不接前端）。
+
+```
+POST /v1/extract
+Request:  { "input": "<使用者貼的文字>", "kind": "text" }
+       或 { "input": "https://...", "kind": "url" }
+Response: { "extracted": true, "items": [ ...見引擎檔輸出格式... ] }
+       或 { "extracted": false, "reason": "<白話原因>" }
+```
+
+組裝（單層）：`引擎-extract.md` ＋ 〈今天日期〉＋〈使用者貼的內容〉。**不疊語氣層**——萃取是理解不是說話。
+
+### 契約重點
+
+1. **連結處理**：`kind: "url"` 時後端抓網頁內文再當文字送進 prompt。**抓不到就不要送 LLM**，直接回 `{ "extracted": false, "reason": "這個連結我讀不到內容，可以直接把文字貼給我" }`。現場網路不穩時這是唯一不會爆的行為。
+2. **id 由後端產**：LLM 不回 id。用 label 轉英文 kebab-case，碰撞時加序號。
+3. **確認才寫入**：`/extract` 只回草稿，不落檔。使用者按確認後前端再打 `PUT /v1/facts/{id}` 或 `/v1/contacts/{id}`。
+4. **internal 是勾選不是自動**：`usage: "internal"` 與 `internalReason` 要在確認畫面顯示成**可勾選的開關**，預設照 LLM 判定，使用者可以改。引擎已寫明判不準時傾向標 internal——多標的代價遠小於少標。
+5. `internalReason` 只是給使用者看的說明，**不寫進 facts.json**（寫入時丟棄）。
+6. 最多回 3 筆；`extracted: false` 時前端顯示 `reason` 原文，不要自己改寫。
+
 ## 兩個引擎的通用組裝規則
 
 1. **今天日期**：第 4 層〈本次任務〉開頭注入一行「今天是 YYYY-MM-DD（週X）」——「這週來得及嗎」這類時效問題沒有它會答含糊。
