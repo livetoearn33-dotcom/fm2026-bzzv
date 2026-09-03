@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幕僚 · 影片字卡 — 鉤子＋片頭三方向＋片尾</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   幕僚 · 影片字卡（≤2 分鐘介紹影片素材，螢幕錄影用）
+   五段直向排列，捲到哪段就自動播那段；點畫面重播；按 1-5 跳段。
+   滑鼠不動 2.5 秒後所有輔助文字自動隱藏——錄影時畫面上只有素材。
+
+   段落：
+     1 鉤子 · 通知轟炸 → 黑場出字
+     2 片頭 A · 極簡菱形
+     3 片頭 B · 生長字卡（建議預設，呼應第一幕文字生長）
+     4 片頭 C · 面板升起
+     5 片尾 · 隊名
+
+   設計語言沿用 refined.html：#040506 canvas、珊瑚菱形只當品牌標記、
+   expo-out 轉場、不彈跳、不發光、不漸層。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+  --coral: #ff6363;
+  --host-bg:   #f2f2f3;
+  --host-card: #ffffff;
+  --host-line: #dfdfe0;
+  --host-ink:  #1b1c1e;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; }
+html{ scroll-snap-type: y mandatory; }
+body{
+  background: var(--void); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage{
+  position:relative; width:100vw; height:100vh; overflow:hidden;
+  scroll-snap-align:start; cursor:default;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* 錄影時要消失的輔助層：滑鼠不動 2.5 秒自動隱藏 */
+.chrome{
+  position:fixed; left:0; right:0; bottom:16px; z-index:9;
+  display:flex; justify-content:center; pointer-events:none;
+  transition: opacity 300ms var(--ease);
+}
+body.quiet .chrome{ opacity:0; }
+.chrome .bar{
+  font-family: var(--mono); font-size:10px; letter-spacing:.8px; text-transform:uppercase;
+  color: var(--smoke); background: var(--ink); border-radius:8px; padding:8px 12px;
+  box-shadow: rgba(255,255,255,0.14) 0 0 0 1px;
+}
+
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.eyebrow{
+  font-family: var(--mono); font-size:13px; line-height:1;
+  letter-spacing:4px; text-transform:uppercase; color: var(--smoke);
+}
+
+/* ---------- 1 · 鉤子：通知轟炸 ---------- */
+#hookRain{ position:absolute; inset:0; background: var(--host-bg); }
+.notif{
+  position:absolute; width:340px; border-radius:8px;
+  background: var(--host-card); border:1px solid var(--host-line);
+  padding:12px 14px; display:flex; gap:10px; align-items:flex-start;
+  opacity:0; transform: scale(0.96) rotate(var(--r, 0deg));
+}
+.notif.in{ opacity:1; transform: scale(1) rotate(var(--r, 0deg)); transition: opacity 150ms var(--ease), transform 150ms var(--ease); }
+.notif .av{ width:28px; height:28px; border-radius:9999px; background: var(--host-line); flex:none; }
+.notif .tx{ flex:1; min-width:0; }
+.notif .t1{ display:flex; align-items:baseline; gap:8px; }
+.notif .nm{ font-size:13px; font-weight:500; color: var(--host-ink); }
+.notif .app{ font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); margin-left:auto; }
+.notif .msg{
+  font-size:12px; line-height:1.5; color: var(--iron); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#hookDark{ position:absolute; inset:0; background: var(--void); opacity:0; }
+#hookDark.on{ opacity:1; }
+.hookline{
+  position:absolute; left:0; right:0; text-align:center;
+  opacity:0; transform: translateY(8px);
+  transition: opacity 400ms var(--ease), transform 400ms var(--ease);
+}
+.hookline.in{ opacity:1; transform: translateY(0); }
+#hl1{ top:42%; font-size:40px; font-weight:400; line-height:1.4; color: var(--white); }
+#hl2{ top:56%; font-size:15px; color: var(--smoke); }
+
+/* ---------- 片頭共用 ---------- */
+.titlewrap{ display:flex; flex-direction:column; align-items:center; gap:24px; }
+.brandbig{ font-size:112px; font-weight:300; line-height:1.1; letter-spacing:16px; text-indent:16px; color: var(--white); }
+.tagline{ font-size:18px; line-height:1.7; color: var(--ash); text-wrap:pretty; text-align:center; }
+.fadein{ opacity:0; transform: translateY(8px); transition: opacity 500ms var(--ease), transform 500ms var(--ease); }
+.fadein.in{ opacity:1; transform: translateY(0); }
+
+/* A · 極簡菱形 */
+#dA{ width:20px; height:20px; opacity:0; transform: rotate(45deg) scale(0.4); transition: opacity 300ms var(--ease), transform 300ms var(--ease); }
+#dA.in{ opacity:1; transform: rotate(45deg) scale(1); }
+
+/* B · 生長字卡 */
+#typeLine{ font-size:20px; line-height:1.7; color: var(--mist); min-height:34px; text-align:center; }
+.caret{ display:inline-block; width:2px; height:22px; background: var(--iron); margin-left:3px; vertical-align:-4px; }
+
+/* C · 面板升起 */
+#panelC{
+  position:absolute; left:50%; bottom:0; transform: translate(-50%, 100%);
+  width:min(720px, 86vw); background: var(--ink); border-radius:16px 16px 0 0;
+  box-shadow: rgba(255,255,255,0.25) 0 1px 0 0 inset;
+  transition: transform 250ms var(--ease);
+}
+#panelC.up{ transform: translate(-50%, 0); }
+#panelC .row{ height:72px; display:flex; align-items:center; gap:12px; padding:0 24px; }
+#panelC .row .eyebrow{ font-size:11px; letter-spacing:2px; }
+#panelC .body{ display:grid; grid-template-rows:0fr; transition: grid-template-rows 300ms var(--ease); }
+#panelC.open .body{ grid-template-rows:1fr; }
+#panelC .body > div{ overflow:hidden; }
+#panelC .body-in{
+  background: var(--obsid); padding:64px 24px 72px;
+  display:flex; flex-direction:column; align-items:center; gap:24px;
+}
+#panelC .brandbig{ font-size:88px; }
+
+/* ---------- 5 · 片尾 ---------- */
+.endwrap{ display:flex; flex-direction:column; align-items:center; gap:20px; }
+.endbrand{ display:flex; align-items:center; gap:12px; }
+.teamname{ font-size:36px; font-weight:400; line-height:1.4; color: var(--white); }
+.endmono{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
+</style>
+</head>
+<body>
+
+<!-- ============ 1 · 鉤子：通知轟炸 ============ -->
+<section class="stage" id="s1" data-name="1 · 鉤子 通知轟炸 → 黑場">
+  <div id="hookRain"></div>
+  <div id="hookDark">
+    <div class="hookline" id="hl1">不是我不想回，是我怕回錯。</div>
+    <div class="hookline" id="hl2">每拖一小時，就有一個案子在冷掉。</div>
+  </div>
+</section>
+
+<!-- ============ 2 · 片頭 A：極簡菱形 ============ -->
+<section class="stage" id="s2" data-name="2 · 片頭 A 極簡菱形">
+  <div class="titlewrap">
+    <i class="diamond" id="dA"></i>
+    <div class="brandbig fadein" id="brandA">幕僚</div>
+    <div class="eyebrow fadein" id="eyeA">Chief of Staff</div>
+    <div class="tagline fadein" id="tagA">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+  </div>
+</section>
+
+<!-- ============ 3 · 片頭 B：生長字卡（建議預設） ============ -->
+<section class="stage" id="s3" data-name="3 · 片頭 B 生長字卡（建議預設）">
+  <div class="titlewrap">
+    <div class="brandbig fadein" id="brandB">幕僚</div>
+    <div class="eyebrow fadein" id="eyeB">Chief of Staff</div>
+    <div id="typeLine"><span id="typeTx"></span><span class="caret" id="typeCaret"></span></div>
+  </div>
+</section>
+
+<!-- ============ 4 · 片頭 C：面板升起 ============ -->
+<section class="stage" id="s4" data-name="4 · 片頭 C 面板升起">
+  <div id="panelC">
+    <div class="row">
+      <i class="diamond" style="width:10px;height:10px"></i>
+      <span class="eyebrow">幕僚 · Chief of Staff</span>
+    </div>
+    <div class="body"><div><div class="body-in">
+      <div class="brandbig">幕僚</div>
+      <div class="tagline">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+    </div></div></div>
+  </div>
+</section>
+
+<!-- ============ 5 · 片尾：隊名 ============ -->
+<section class="stage" id="s5" data-name="5 · 片尾 隊名">
+  <div class="endwrap">
+    <div class="endbrand fadein" id="endBrand">
+      <i class="diamond" style="width:10px;height:10px"></i>
+      <span class="eyebrow" style="font-size:11px;letter-spacing:2px">幕僚 · Chief of Staff</span>
+    </div>
+    <div class="teamname fadein" id="endTeam">全村的希望就是真真</div>
+    <div class="endmono fadein" id="endMeta">Futuremode × SITCON Buildmode 2026 · Future of Work</div>
+    <div class="endmono fadein" id="endRepo" style="text-transform:none">github.com/livetoearn33-dotcom/fm2026-bzzv</div>
+  </div>
+</section>
+
+<div class="chrome"><div class="bar" id="chromeBar">點畫面重播 · 按 1-5 跳段 · 滑鼠停 2.5 秒輔助字自動隱藏</div></div>
+
+<script>
+"use strict";
+
+/* ---------- 通知池：demo 世界觀裡的真實工作訊息 ---------- */
+const NOTIFS = [
+  ["林經理", "LINE", "這個進度到底怎麼樣了？"],
+  ["林經理", "LINE", "下午要跟客戶開會。"],
+  ["王先生", "LINE", "這個價格比別家貴很多耶。"],
+  ["王先生", "LINE", "報價單今天能給嗎？"],
+  ["陳姐",   "LINE", "上次說的企劃好了嗎？這週能約個時段嗎"],
+  ["凱文",   "LINE", "這個月的結算數字我看不太懂"],
+  ["專案群組", "Lark", "@你 明天提案誰負責？"],
+  ["專案群組", "Lark", "會議改到 14:00，資料麻煩會前丟上來"],
+  ["業務部",  "Lark", "Q3 數字今天下班前要"],
+  ["客戶窗口", "Gmail", "Re: 合約範圍確認——再麻煩回覆"],
+  ["客戶窗口", "Gmail", "Re: Re: 報價單（第 3 次寄送）"],
+  ["主辦單位", "Gmail", "出席確認回條尚未收到"]
+];
+
+const timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const clearAll = () => { while (timers.length) clearTimeout(timers.pop()); };
+const $ = (id) => document.getElementById(id);
+
+/* ---------- 段 1：通知轟炸 → 黑場出字 ----------
+   節奏：0–5.2s 通知從每 600ms 一張加速到每 70ms 一張、疊到蓋滿；
+   5.6s 硬切黑場（不淡出——「突然靜音」就是要硬切）；
+   6.4s 主句、7.6s 副句。總長約 9s。 */
+function playHook() {
+  const rain = $("hookRain"), dark = $("hookDark");
+  rain.innerHTML = ""; rain.style.display = "";
+  dark.classList.remove("on");
+  $("hl1").classList.remove("in"); $("hl2").classList.remove("in");
+
+  let t = 300, gap = 600, i = 0;
+  while (t < 5200) {
+    const delay = t;
+    later(() => {
+      const [nm, app, msg] = NOTIFS[i++ % NOTIFS.length];
+      const el = document.createElement("div");
+      el.className = "notif";
+      el.style.left = (4 + Math.random() * (innerWidth - 356)) + "px";
+      el.style.top  = (4 + Math.random() * (innerHeight - 84)) + "px";
+      el.style.setProperty("--r", (Math.random() * 5 - 2.5).toFixed(1) + "deg");
+      el.innerHTML =
+        '<div class="av"></div><div class="tx"><div class="t1"><span class="nm">' + nm +
+        '</span><span class="app">' + app + '</span></div><div class="msg">' + msg + '</div></div>';
+      rain.appendChild(el);
+      requestAnimationFrame(() => el.classList.add("in"));
+    }, delay);
+    t += gap;
+    gap = Math.max(70, gap * 0.86);
+  }
+  later(() => { rain.style.display = "none"; dark.classList.add("on"); }, 5600);
+  later(() => $("hl1").classList.add("in"), 6400);
+  later(() => $("hl2").classList.add("in"), 7600);
+}
+
+/* ---------- 段 2：極簡菱形。菱形 → 名 → 眉標 → 定位句 ---------- */
+function playA() {
+  ["dA","brandA","eyeA","tagA"].forEach(id => $(id).classList.remove("in"));
+  later(() => $("dA").classList.add("in"), 300);
+  later(() => $("brandA").classList.add("in"), 700);
+  later(() => $("eyeA").classList.add("in"), 1000);
+  later(() => $("tagA").classList.add("in"), 1400);
+}
+
+/* ---------- 段 3：生長字卡。名先立，定位句逐字長出（同第一幕的文字生長） ---------- */
+const TYPE_LINE = "你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。";
+function playB() {
+  ["brandB","eyeB"].forEach(id => $(id).classList.remove("in"));
+  $("typeTx").textContent = "";
+  later(() => $("brandB").classList.add("in"), 300);
+  later(() => $("eyeB").classList.add("in"), 600);
+  TYPE_LINE.split("").forEach((ch, i) => {
+    later(() => { $("typeTx").textContent += ch; }, 1400 + i * 65);
+  });
+}
+
+/* ---------- 段 4：面板升起。56dp 條先上來，停一拍，向上長出品牌 ---------- */
+function playC() {
+  const p = $("panelC");
+  p.classList.remove("up", "open");
+  later(() => p.classList.add("up"), 400);
+  later(() => p.classList.add("open"), 1300);
+}
+
+/* ---------- 段 5：片尾 ---------- */
+function playEnd() {
+  ["endBrand","endTeam","endMeta","endRepo"].forEach(id => $(id).classList.remove("in"));
+  later(() => $("endBrand").classList.add("in"), 300);
+  later(() => $("endTeam").classList.add("in"), 700);
+  later(() => $("endMeta").classList.add("in"), 1100);
+  later(() => $("endRepo").classList.add("in"), 1400);
+}
+
+const PLAYERS = { s1: playHook, s2: playA, s3: playB, s4: playC, s5: playEnd };
+
+function play(id) {
+  clearAll();
+  $("chromeBar").textContent = document.querySelector("#" + id).dataset.name + " — 點畫面重播 · 按 1-5 跳段";
+  PLAYERS[id]();
+}
+
+/* 捲到哪段就播哪段（不用 IntersectionObserver，WebView 相容性較穩） */
+let current = "", scrollTimer = null;
+function checkSection() {
+  const mid = scrollY + innerHeight / 2;
+  let hit = null;
+  document.querySelectorAll(".stage").forEach(s => {
+    if (s.offsetTop <= mid && mid < s.offsetTop + s.offsetHeight) hit = s.id;
+  });
+  if (hit && hit !== current) { current = hit; play(hit); }
+}
+addEventListener("scroll", () => {
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(checkSection, 120);
+});
+document.querySelectorAll(".stage").forEach(s => {
+  s.addEventListener("click", () => play(s.id));
+});
+checkSection();
+
+/* 按 1-5 跳段 */
+addEventListener("keydown", e => {
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 5) document.querySelector("#s" + n).scrollIntoView({ behavior: "instant", block: "start" });
+});
+
+/* 滑鼠不動 2.5 秒 → 隱藏輔助層（錄影乾淨） */
+let quietTimer = null;
+function poke() {
+  document.body.classList.remove("quiet");
+  clearTimeout(quietTimer);
+  quietTimer = setTimeout(() => document.body.classList.add("quiet"), 2500);
+}
+addEventListener("mousemove", poke);
+poke();
+</script>
+</body>
+</html>
