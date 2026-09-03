@@ -298,7 +298,67 @@ const SAMPLES = {
   chat: "今天開會開到快吐，晚點再說"
 };
 
-/* ============ 原型假引擎（規則版；真 API 接 /extract 即換，欄位相同） ============ */
+/* ============================================================
+   API 層 —— Brian 接後端只改這一區，畫面／狀態機／假引擎都不用動。
+
+   接法：
+   1. 把 API.base 填成後端位址，API.useMock 改 false。
+   2. apiExtract() 換真 fetch 那支已經寫好；回傳形狀跟 mockExtract() 一致
+      （{extracted:true, items:[...]} 或 {extracted:false, reason}），
+      畫面渲染邏輯不用動。
+   3. apiWriteFact()／apiWriteContact() 同理，接 PUT /facts/{id}、/contacts/{id}。
+
+   TODO（給 Brian，交接時口頭講過的那個缺口）：
+   /extract 契約寫「id 不由你產生，後端負責」，但 PUT 路由是 /facts/{id}，
+   id 得由呼叫端帶在網址上——目前兩邊對不起來。這裡先用 slugTempId() 佔位，
+   實際串接時看 extract 回應有沒有帶 id，或後端另開一支「配發 id」的端點，
+   對齊後改掉 slugTempId() 那一行就好，其他都不用動。
+   ============================================================ */
+const API = {
+  base: "",        // 例如 "http://192.168.1.20:3000/v1"
+  useMock: true,    // 真 API 接上、現場網路確認可用後才改 false
+};
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const slugTempId = () => "draft-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+
+async function apiExtract(raw) {
+  if (API.useMock) { await sleep(900); return mockExtract(raw); }
+  const res = await fetch(API.base + "/extract", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: raw }),
+  });
+  if (!res.ok) throw new Error("extract 失敗 · HTTP " + res.status);
+  return res.json();
+}
+
+async function apiWriteFact(d) {
+  if (API.useMock) return d;
+  const id = d.id || slugTempId();
+  const body = {
+    label: d.label, tags: d.tags, content: d.content,
+    updatedAt: d.updatedAt, volatility: d.volatility,
+    ...(d.internal ? { usage: "internal" } : {}),
+  };
+  const res = await fetch(API.base + "/facts/" + encodeURIComponent(id), {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("寫入事實失敗 · HTTP " + res.status);
+  return res.json();
+}
+
+async function apiWriteContact(d) {
+  if (API.useMock) return d;
+  const id = d.id || slugTempId();
+  const body = { name: d.name, role: d.role || "", tone: d.tone, notes: d.notes, recentTopics: d.recentTopics || [] };
+  const res = await fetch(API.base + "/contacts/" + encodeURIComponent(id), {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("寫入對象失敗 · HTTP " + res.status);
+  return res.json();
+}
+
+/* ============ 原型假引擎（規則版；真 API 接上後只有上面 apiExtract() 會呼叫到它） ============ */
 const TODAY = "2026-09-03";
 function mockExtract(raw) {
   const t = raw.trim();
@@ -440,22 +500,32 @@ function renderDrafts() {
     renderDrafts();
   }));
   $("btnDiscard").addEventListener("click", () => { drafts = []; renderDrafts(); });
-  $("btnConfirm").addEventListener("click", () => {
-    drafts.slice().reverse().forEach(d => {
-      if (d.type === "contact") CONTACTS.unshift({ name:d.name, role:d.role || "窗口", tone:d.tone, note:d.notes, _fresh:true });
-      else FACTS.unshift({ label:d.label, tags:d.tags, date:d.updatedAt, internal:d.internal, _fresh:true });
-    });
-    const n = drafts.length;
-    drafts = [];
-    renderDrafts();
-    renderList(n);
-    $("feedText").value = "";
-    $("feedHint").textContent = "已寫入 " + n + " 筆，回主畫面立刻能被引用。";
+  $("btnConfirm").addEventListener("click", async () => {
+    const btn = $("btnConfirm");
+    btn.disabled = true;
+    try {
+      /* 逐筆寫入（mock 模式下這兩支直接 resolve 原值，行為跟改版前一致） */
+      await Promise.all(drafts.map(d => d.type === "contact" ? apiWriteContact(d) : apiWriteFact(d)));
+      drafts.slice().reverse().forEach(d => {
+        if (d.type === "contact") CONTACTS.unshift({ name:d.name, role:d.role || "窗口", tone:d.tone, note:d.notes, _fresh:true });
+        else FACTS.unshift({ label:d.label, tags:d.tags, date:d.updatedAt, internal:d.internal, _fresh:true });
+      });
+      const n = drafts.length;
+      drafts = [];
+      renderDrafts();
+      renderList(n);
+      $("feedText").value = "";
+      $("feedHint").textContent = "已寫入 " + n + " 筆，回主畫面立刻能被引用。";
+    } catch (err) {
+      /* 真 API 上線後才可能走到這裡；mock 模式不會拋錯 */
+      btn.disabled = false;
+      $("feedHint").textContent = "寫入失敗，請再按一次確認（" + err.message + "）。";
+    }
   });
 }
 
 /* ============ 抽取流程 ============ */
-function runExtract() {
+async function runExtract() {
   const raw = $("feedText").value;
   if (!raw.trim()) return;
   const feeder = $("feeder"), btn = $("btnExtract");
@@ -463,10 +533,8 @@ function runExtract() {
   feeder.classList.add("reading");
   btn.disabled = true;
   $("feedHint").textContent = "讀取中……";
-  setTimeout(() => {   /* 原型固定 900ms；真 API 換成 fetch(/v1/extract) */
-    feeder.classList.remove("reading");
-    btn.disabled = false;
-    const res = mockExtract(raw);
+  try {
+    const res = await apiExtract(raw);
     if (res.extracted) {
       drafts = res.items.map(d => ({ ...d, internal: !!(d.internal || d.usage === "internal") }));
       $("feedHint").textContent = "抽出 " + drafts.length + " 筆草稿，看過再按確認。";
@@ -474,8 +542,15 @@ function runExtract() {
       noResult = { reason: res.reason, orig: raw.trim() };
       $("feedHint").textContent = "抽出來的是草稿，你確認了才會寫入。";
     }
+  } catch (err) {
+    /* 真 API 上線後才可能走到這裡；mock 模式不會拋錯 */
+    noResult = { reason: "讀取失敗，請稍後再試（" + err.message + "）。", orig: raw.trim() };
+    $("feedHint").textContent = "抽出來的是草稿，你確認了才會寫入。";
+  } finally {
+    feeder.classList.remove("reading");
+    btn.disabled = false;
     renderDrafts();
-  }, 900);
+  }
 }
 
 $("btnExtract").addEventListener("click", runExtract);
