@@ -15,6 +15,7 @@ FUTUREMODE × SITCON BUILDMODE Hackathon 2026｜賽道 Future of Work
 | UI 技術 | **純 HTML + CSS，跑在 WebView 裡** | 2026-08-31 |
 | 知識庫 | **事實庫 ＋ 對象檔案** | 2026-08-31 |
 | 角色改寫 | **三張角色卡（諸葛亮／霸道總裁／情場達人），改寫已生成的回覆；上台版演諸葛亮、影片只閃過、情場達人不進 demo**。契約見 prompts/README-組裝說明.md 的 /persona 段 | 2026-09-02 |
+| 知識庫餵入 | **做最小可行版：貼文字或連結 → AI 抽成條目草稿 → 使用者確認才寫入。收文字與連結（連結抓不到就請使用者貼文字，不編）。不做編輯／刪除 UI（CRUD API 已存在，這次不接）。上台不加演，只當 QA 彈藥。** 契約見 prompts/README-組裝說明.md 的 /extract 段 | 2026-09-03 |
 
 ### 為什麼是兩個 surface
 
