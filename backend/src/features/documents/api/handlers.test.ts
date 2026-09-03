@@ -146,6 +146,39 @@ describe("post /knowledge/documents", () => {
     expect(list).toHaveLength(0);
   });
 
+  it("副檔名是 .pdf、但 MIME 是 application/octet-stream（如 Android／OkHttp）：仍視為 PDF，可正常上傳", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => textResult({
+        extracted: true,
+        items: [{ label: "A", content: "內容 A", tags: ["a"], volatility: "low" }],
+      }),
+    });
+    const client = buildClient(model);
+    const file = new File([samplePdfBytes], "報價單.pdf", { type: "application/octet-stream" });
+
+    const response = await client.knowledge.documents.$post({ form: { file } });
+    expect(response.status).toBe(200);
+    if (response.status !== 200)
+      return;
+    const json = await response.json();
+    expect(json.extracted).toBe(true);
+    expect(json.items).toHaveLength(1);
+  });
+
+  it("檔名是 .pdf 但內容毀損／根本不是 PDF：回 400（不是 422），document 標記為 failed", async () => {
+    const client = buildClient(neverCallModel());
+    const garbageBytes = new TextEncoder().encode("這不是 PDF 內容，只是純文字假冒成 .pdf");
+    const file = new File([garbageBytes], "假冒.pdf", { type: "application/pdf" });
+
+    const response = await client.knowledge.documents.$post({ form: { file } });
+    expect(response.status).toBe(400);
+
+    const list = await documentStore.list();
+    expect(list).toHaveLength(1);
+    expect(list[0].status).toBe("failed");
+    expect(list[0].errorReason).toBeTruthy();
+  });
+
   it("上傳的 PDF 無可抽文字（掃描檔／純圖）回 422，document 標記為 failed", async () => {
     const client = buildClient(neverCallModel());
     const file = new File([blankPdfBytes], "scan.pdf", { type: "application/pdf" });
@@ -339,6 +372,89 @@ describe("post /knowledge/documents/{id}/commit", () => {
       json: { items: [{ id: "x", label: "x", content: "x", tags: [], volatility: "low", internal: false }] },
     });
     expect(response.status).toBe(404);
+  });
+
+  it("commit body 的 id 撞到別份文件／手動維護的既有 fact：回 409，不覆蓋原內容", async () => {
+    // 模擬使用者手動維護的既有事實（沒有 source_document_id）。
+    await store.upsertFact("manual-fact", {
+      label: "手動維護的事實",
+      content: "原始內容，不該被覆蓋",
+      tags: ["手動"],
+      volatility: "low",
+    });
+
+    const { client, json } = await uploadAndExtract([
+      { label: "A", content: "內容 A", tags: ["a"], volatility: "low" },
+    ]);
+    const draft = json.items[0];
+
+    // commit body 的 id 是使用者可編輯欄位——這裡故意改成別人已存在的 id，
+    // 而不是後端生成的 suggestedId（generateSuggestedIds 本身不會撞到既有 id）。
+    const commitResponse = await client.knowledge.documents[":id"].commit.$post({
+      param: { id: json.documentId },
+      json: {
+        items: [{
+          id: "manual-fact",
+          label: draft.label,
+          content: draft.content,
+          tags: draft.tags,
+          volatility: draft.volatility,
+          internal: false,
+        }],
+      },
+    });
+    expect(commitResponse.status).toBe(409);
+
+    const [row] = await db.select().from(factsTable).where(eq(factsTable.id, "manual-fact"));
+    expect(row.content).toBe("原始內容，不該被覆蓋");
+    expect(row.sourceDocumentId).toBeNull();
+
+    // 文件狀態不因衝突而變成 committed。
+    const detail = await documentStore.getById(json.documentId);
+    expect(detail?.status).toBe("extracted");
+  });
+
+  it("同一份文件重複 commit 自己先前產生的 fact：允許（不是 409），內容會更新", async () => {
+    const { client, json } = await uploadAndExtract([
+      { label: "A", content: "第一次內容", tags: ["a"], volatility: "low" },
+    ]);
+    const draft = json.items[0];
+    const commitBody = {
+      param: { id: json.documentId },
+      json: {
+        items: [{
+          id: draft.suggestedId,
+          label: draft.label,
+          content: draft.content,
+          tags: draft.tags,
+          volatility: draft.volatility,
+          internal: false,
+        }],
+      },
+    };
+
+    const firstCommit = await client.knowledge.documents[":id"].commit.$post(commitBody);
+    expect(firstCommit.status).toBe(200);
+
+    // 同一份文件、同一個 id 再 commit 一次（例如使用者回頭改了草稿內容再送出一次）。
+    const secondCommit = await client.knowledge.documents[":id"].commit.$post({
+      param: { id: json.documentId },
+      json: {
+        items: [{
+          id: draft.suggestedId,
+          label: draft.label,
+          content: "更新後的內容",
+          tags: draft.tags,
+          volatility: draft.volatility,
+          internal: false,
+        }],
+      },
+    });
+    expect(secondCommit.status).toBe(200);
+    if (secondCommit.status !== 200)
+      return;
+    const [fact] = await secondCommit.json();
+    expect(fact.content).toBe("更新後的內容");
   });
 });
 

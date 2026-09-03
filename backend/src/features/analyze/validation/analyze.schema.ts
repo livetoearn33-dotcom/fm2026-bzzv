@@ -24,7 +24,9 @@ export const AnalyzeToneSchema = z.enum(["empathy", "concise", "affirmative"]);
  */
 export const ScreenshotAnalyzeRequestSchema = z.object({
   screenshot: z.string().min(1),
-  screenshotMimeType: z.string().optional(),
+  // .min(1)：欄位存在但送空字串（常見於客戶端固定帶欄位卻沒填值）要在驗證階段擋下，
+  // 不要讓空字串一路流到 normalizeScreenshot 才變成 mediaType: ""（見 services/screenshot.ts）。
+  screenshotMimeType: z.string().min(1).optional(),
   tone: AnalyzeToneSchema,
   contactId: z.string().optional(),
   draft: z.string().optional(),

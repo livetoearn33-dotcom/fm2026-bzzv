@@ -39,6 +39,10 @@ export const uploadDocument = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(UploadDocumentResponseSchema, "解析＋LLM 抽取結果（草稿，尚未寫入知識庫）"),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      createMessageObjectSchema("PDF 檔案讀取失敗"),
+      "檔名／MIME 看起來是 PDF，但內容毀損或根本不是 PDF",
+    ),
     [HttpStatusCodes.UNSUPPORTED_MEDIA_TYPE]: jsonContent(
       createMessageObjectSchema("只接受 PDF 檔案"),
       "上傳的不是 PDF",
@@ -103,6 +107,10 @@ export const commitDocument = createRoute({
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       createMessageObjectSchema("找不到知識文件"),
       "id 不存在",
+    ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      createMessageObjectSchema("以下 id 已存在且不是由這份文件建立"),
+      "commit body 的 id 撞到別的文件／手動維護的既有 fact",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(DocumentCommitBodySchema),

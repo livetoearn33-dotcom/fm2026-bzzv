@@ -60,3 +60,18 @@ Zeabur（或任何 Docker 平台）一律用 repo 根目錄的 `Dockerfile`；Ro
 
 1. `backend/` 子目錄 context 部署時讀到舊資料。
 2. `pnpm test` 會紅（`src/shared/assets-sync.test.ts` 會逐檔比對 `assets/` 與來源是否一致）。
+
+### 資料庫 migration／seed
+
+知識庫存在 Postgres（見 `src/db/schema.ts`）。容器啟動（`node dist/src/main.js`）時會自動：
+
+1. 跑 `runMigrations()` 套用 `backend/drizzle/` 下的 migration SQL。
+2. 檢查 `facts`／`contacts` 兩張表是否都是空的——**只有全新部署（兩表都空）才會自動 seed** `assets/data/facts.json`、`assets/data/contacts.json` 進去；只要任一張表已有資料就跳過，不會把使用者刪掉的 demo 資料又塞回來。
+
+需要手動重跑 seed（例如懷疑自動 seed 沒觸發、或想強制補資料）時，在容器內執行：
+
+```bash
+node dist/src/db/seed.js   # 等同 pnpm db:seed:prod；本機開發用 pnpm db:seed（tsx，讀 repo 根目錄 data/）
+```
+
+`db:seed`／`db:seed:prod` 用 `onConflictDoNothing`，同一筆 id 已存在就跳過，可重複執行不會覆蓋既有資料。

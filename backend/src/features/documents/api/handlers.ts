@@ -2,7 +2,7 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import type { AppRouteHandler } from "@/shared/types";
 
-import { NotFoundError, ValidationError } from "@/shared/errors";
+import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 
 import type { DocumentServices } from "../services";
 import type {
@@ -13,7 +13,7 @@ import type {
   UploadDocumentRoute,
 } from "./routes";
 
-import { DocumentExtractionError, UnextractableContentError, UnsupportedFileTypeError } from "../domain/errors";
+import { DocumentExtractionError, InvalidPdfError, UnextractableContentError, UnsupportedFileTypeError } from "../domain/errors";
 
 export function createUploadDocumentHandler(services: DocumentServices): AppRouteHandler<UploadDocumentRoute> {
   return async (c) => {
@@ -26,6 +26,9 @@ export function createUploadDocumentHandler(services: DocumentServices): AppRout
     catch (error) {
       if (error instanceof UnsupportedFileTypeError) {
         return c.json({ message: error.message }, HttpStatusCodes.UNSUPPORTED_MEDIA_TYPE);
+      }
+      if (error instanceof InvalidPdfError) {
+        return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
       }
       if (error instanceof UnextractableContentError) {
         return c.json({ message: error.message }, HttpStatusCodes.UNPROCESSABLE_ENTITY);
@@ -70,6 +73,9 @@ export function createCommitDocumentHandler(services: DocumentServices): AppRout
       }
       if (error instanceof ValidationError) {
         return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
+      }
+      if (error instanceof ConflictError) {
+        return c.json({ message: error.message }, HttpStatusCodes.CONFLICT);
       }
       throw error;
     }

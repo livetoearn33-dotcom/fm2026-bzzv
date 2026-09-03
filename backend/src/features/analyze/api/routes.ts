@@ -41,6 +41,10 @@ export const analyze = createRoute({
       createErrorSchema(AnalyzeRequestSchema),
       "驗證錯誤",
     ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      createMessageObjectSchema("screenshot 是 data URL 格式但無法解析"),
+      "截圖模式的 screenshot 是 data URL 卻無法解析",
+    ),
     [HttpStatusCodes.REQUEST_TOO_LONG]: jsonContent(
       createMessageObjectSchema("截圖超過大小上限"),
       "截圖過大",

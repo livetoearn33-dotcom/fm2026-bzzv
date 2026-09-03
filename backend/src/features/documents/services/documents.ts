@@ -10,7 +10,7 @@ import { NotFoundError } from "@/shared/errors";
 
 import type { DocumentServiceDeps } from "../domain/entities";
 
-import { DocumentExtractionError, UnextractableContentError, UnsupportedFileTypeError } from "../domain/errors";
+import { DocumentExtractionError, InvalidPdfError, UnextractableContentError, UnsupportedFileTypeError } from "../domain/errors";
 import { extractFactsFromDocument } from "./extract";
 import { parsePdf, PdfParseError } from "./pdf";
 import { generateSuggestedIds } from "./slug";
@@ -23,10 +23,15 @@ export interface UploadDocumentResult {
   reason?: string;
 }
 
-/** 判斷是不是 PDF：優先看瀏覽器/multipart client 回報的 MIME type，沒有才退回看副檔名。 */
+/**
+ * 判斷是不是 PDF：MIME type 是 application/pdf，或副檔名是 .pdf，兩者其一即接受。
+ * 副檔名是額外的接受路徑，不是「沒有 MIME 時才退回」的 fallback——Android／OkHttp
+ * 常見送 `application/octet-stream`（file.type 有值但不是 application/pdf），若副檔名
+ * 只在「完全沒有 Content-Type」時才可達，合法 .pdf 上傳會被誤擋成 415。
+ */
 function isPdfFile(file: File): boolean {
-  if (file.type) {
-    return file.type === "application/pdf";
+  if (file.type === "application/pdf") {
+    return true;
   }
   return file.name.toLowerCase().endsWith(".pdf");
 }
@@ -56,6 +61,12 @@ export function createDocumentServices(deps: DocumentServiceDeps) {
     catch (error) {
       const message = error instanceof PdfParseError || error instanceof Error ? error.message : String(error);
       await documents.markFailed(documentSummary.id, message);
+      // PdfParseError＝getDocumentProxy 讀不出 PDF 結構（毀損檔、或副檔名是 .pdf 但內容
+      // 不是 PDF）——400，跟「讀得到結構但沒有文字（掃描檔／純圖）」的 422 分開，
+      // 避免誤導使用者去檢查一份根本不是 PDF 的檔案是不是掃描檔。
+      if (error instanceof PdfParseError) {
+        throw new InvalidPdfError(message);
+      }
       throw new UnextractableContentError(message);
     }
 

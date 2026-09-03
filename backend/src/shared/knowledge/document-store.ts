@@ -1,7 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 import { knowledgeDocuments as documentsTable, facts as factsTable } from "@/db/schema";
-import { ValidationError } from "@/shared/errors";
+import { ConflictError, ValidationError } from "@/shared/errors";
 
 import type { ExtractedDraft, KnowledgeDocumentDetail, KnowledgeDocumentSummary } from "./document-types";
 import type { AnyPgDatabase } from "./store";
@@ -122,9 +122,35 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
   /**
    * `_TODO` 前綴檢查故意放在 transaction 迴圈「裡面」而不是先掃一輪再開 transaction：
    * 這樣前面已成功 insert 的項目會跟著這筆失敗一起 rollback，才是真的「不留半套資料」。
+   *
+   * id 衝突檢查則相反，故意放在迴圈「外面」先掃一輪：commit body 的 id 是使用者可編輯
+   * 的欄位，`generateSuggestedIds` 只保證跟產生當下的既有 id 不衝突，並不能擋使用者
+   * 手動改成別的既有 id。若該 id 已存在且不是這份文件自己建立的（source_document_id
+   * 不是這份文件），無條件 onConflictDoUpdate 會靜默覆蓋別人的 fact——所以先掃一輪
+   * 全部擋下來，回 409，不要一半 commit 一半用 transaction rollback（那樣使用者體驗
+   * 是「有時候成功有時候不」，先掃更直接）。同一份文件重複 commit（更新自己先前
+   * 產生的 facts）仍然允許：source_document_id 等於這份文件時不算衝突。
    */
   async commit(id: string, items: DocumentCommitItemInput[]): Promise<Fact[]> {
     return this.db.transaction(async (tx) => {
+      if (items.length > 0) {
+        const ids = items.map(item => item.id);
+        const existingRows = await tx
+          .select({ id: factsTable.id, sourceDocumentId: factsTable.sourceDocumentId })
+          .from(factsTable)
+          .where(inArray(factsTable.id, ids));
+
+        const conflictingIds = existingRows
+          .filter(row => row.sourceDocumentId !== id)
+          .map(row => row.id);
+
+        if (conflictingIds.length > 0) {
+          throw new ConflictError(
+            `以下 id 已存在且不是由這份文件建立，請改用其他 id 或先確認再覆蓋：${conflictingIds.join(", ")}`,
+          );
+        }
+      }
+
       const updatedAtString = todayDateString();
       const updatedAt = new Date(`${updatedAtString}T00:00:00.000Z`);
       const results: Fact[] = [];

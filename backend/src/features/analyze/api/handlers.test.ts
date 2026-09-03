@@ -264,6 +264,48 @@ describe("post /analyze — 截圖模式", () => {
     expect(filePart.mediaType).toBe("image/jpeg");
   });
 
+  it("screenshotMimeType 是空字串（欄位存在但沒填值）：驗證階段就擋下（422），不會呼叫模型", async () => {
+    const throwingModel = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("不該呼叫模型：空字串 mimeType 應該在 schema 驗證就被擋下");
+      },
+    });
+    const client = buildClient(throwingModel);
+
+    const response = await client.analyze.$post({
+      json: {
+        screenshot: TINY_SCREENSHOT_BASE64,
+        screenshotMimeType: "",
+        tone: "concise",
+      },
+    });
+
+    expect(response.status).toBe(422);
+  });
+
+  it("screenshot 是 data: 開頭但格式不符（例如帶了 DATA_URL_PATTERN 沒預期到的參數）：回 400，不會呼叫模型", async () => {
+    const throwingModel = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("不該呼叫模型：無法解析的 data URL 應該在送進模型前就被拒絕");
+      },
+    });
+    const client = buildClient(throwingModel);
+
+    const response = await client.analyze.$post({
+      json: {
+        // 帶了 `;name=` 參數，DATA_URL_PATTERN 只接受 `;charset=`，故意不 match。
+        screenshot: `data:image/png;name=shot.png;base64,${TINY_SCREENSHOT_BASE64}`,
+        tone: "concise",
+      },
+    });
+
+    expect(response.status).toBe(400);
+    if (response.status !== 400)
+      return;
+    const json = await response.json();
+    expect(json.message).toContain("data URL");
+  });
+
   it("三種 tone 各自載入不同的語氣層，system prompt 內容有差異", async () => {
     function buildCapturingModel() {
       return new MockLanguageModelV4({

@@ -5,6 +5,8 @@
  * 這裡統一轉成 { data, mediaType } 給 services/analyze.ts 組 image content part 用。
  */
 
+import { InvalidScreenshotError } from "../domain/errors";
+
 const DATA_URL_PATTERN = /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([\s\S]+)$/;
 
 const DEFAULT_MEDIA_TYPE = "image/png";
@@ -17,16 +19,25 @@ export interface NormalizedScreenshot {
 
 /**
  * mimeTypeHint（request 的 screenshotMimeType）優先於 data URL 裡帶的 mime type，
- * 因為那是呼叫端明確指定的；都沒有時退回 image/png。
+ * 因為那是呼叫端明確指定的；都沒有時退回 image/png。用 `||` 而非 `??`：schema 已加
+ * `.min(1)` 擋空字串，這裡再擋一層，兩邊都不信任對方單獨擋得住（見 validation/analyze.schema.ts）。
  */
 export function normalizeScreenshot(screenshot: string, mimeTypeHint?: string): NormalizedScreenshot {
   const trimmed = screenshot.trim();
-  const match = DATA_URL_PATTERN.exec(trimmed);
 
-  if (match) {
+  // `data:` 開頭但格式不符（例如帶了 DATA_URL_PATTERN 沒預期到的參數，如 `;name=`）
+  // 一律拒絕，不要落到下面當成裸 base64——那樣 `data` 會整段帶著 "data:...;base64," 前綴，
+  // 送到上游 provider 必定被拒（400），重試兩次後才變成誤導的 502。
+  if (trimmed.startsWith("data:")) {
+    const match = DATA_URL_PATTERN.exec(trimmed);
+    if (!match) {
+      throw new InvalidScreenshotError(
+        "screenshot 是 data URL 格式但無法解析，僅支援 data:<mime>[;charset=...];base64,<data>",
+      );
+    }
     const [, mediaTypeFromUrl, base64] = match;
-    return { data: base64, mediaType: mimeTypeHint ?? mediaTypeFromUrl };
+    return { data: base64, mediaType: mimeTypeHint || mediaTypeFromUrl };
   }
 
-  return { data: trimmed, mediaType: mimeTypeHint ?? DEFAULT_MEDIA_TYPE };
+  return { data: trimmed, mediaType: mimeTypeHint || DEFAULT_MEDIA_TYPE };
 }

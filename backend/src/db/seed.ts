@@ -53,12 +53,36 @@ export async function seedInto(
 }
 
 /**
- * `pnpm db:seed` 入口：把 repo 根目錄 data/facts.json、data/contacts.json 匯入 Postgres。
- * `_TODO` 前綴的骨架筆沿用 loadFacts/loadContacts 既有過濾，不會被 seed 進去。
+ * `pnpm db:seed` / `pnpm db:seed:prod` 入口：把 data/facts.json、data/contacts.json
+ * （或正式映像內的 assets/data 副本，見 shared/knowledge/repository.ts 的 resolveDataDir）
+ * 匯入 Postgres。`_TODO` 前綴的骨架筆沿用 loadFacts/loadContacts 既有過濾，不會被 seed 進去。
  */
 export async function seed(): Promise<{ factsInserted: number; contactsInserted: number }> {
   const db = createDb();
   return seedInto(db, loadFacts(), loadContacts());
+}
+
+/**
+ * 啟動時自動 seed 的守門邏輯：只有 facts／contacts 兩張表都是空的（全新部署、
+ * migration 剛建完表）才會真的匯入資料；只要任一張表已經有資料，一律跳過——
+ * 避免把使用者刪掉的 demo 資料，或使用者手動維護的 fact/contact，在下次重啟時
+ * 又被塞回去。這是 main.ts 啟動流程呼叫的入口，`db:seed`/`db:seed:prod` 手動執行
+ * 的 `seed()` 不受這層限制（手動重跑本來就是明確意圖，用 onConflictDoNothing 保護）。
+ */
+export async function seedIfEmpty(db: AnyPgDatabase): Promise<{
+  seeded: boolean;
+  factsInserted: number;
+  contactsInserted: number;
+}> {
+  const [existingFact] = await db.select({ id: factsTable.id }).from(factsTable).limit(1);
+  const [existingContact] = await db.select({ id: contactsTable.id }).from(contactsTable).limit(1);
+
+  if (existingFact || existingContact) {
+    return { seeded: false, factsInserted: 0, contactsInserted: 0 };
+  }
+
+  const result = await seedInto(db, loadFacts(), loadContacts());
+  return { seeded: true, ...result };
 }
 
 const isMainModule = process.argv[1] !== undefined
