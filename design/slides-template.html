@@ -32,6 +32,9 @@
   --coral: #ff6363;
   --ember: #452324;
   --amber: #4a3a1f;
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
 }
@@ -59,8 +62,18 @@ body{
 }
 .brandline{ display:flex; align-items:center; gap:12px; }
 
+/* 眉標列右側接一條髮絲線，翻到該頁時沿線掃一道光（產品「讀取中」的簽名動作） */
+.eyerow{ display:flex; align-items:center; gap:20px; }
+.eyerow .ln{ position:relative; flex:1; height:1px; background: rgba(255,255,255,0.08); overflow:hidden; }
+.eyerow .ln::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:22%; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+}
+.slide.lit .eyerow .ln::after{ animation: sweep-once 1000ms linear 150ms both; }
+@keyframes sweep-once{ from{ transform:translateX(-100%); opacity:1 } to{ transform:translateX(560%); opacity:1 } }
+
 h1{ font-size:72px; font-weight:300; line-height:1.25; margin:0; letter-spacing:.5px; text-wrap:balance; }
-h2{ font-size:48px; font-weight:300; line-height:1.35; margin:0; text-wrap:balance; }
+h2{ font-size:56px; font-weight:300; line-height:1.3; margin:0; text-wrap:balance; }
 .lede{ font-size:22px; line-height:1.7; color: var(--ash); text-wrap:pretty; margin:0; max-width:880px; }
 .note{ font-size:16px; line-height:1.7; color: var(--smoke); text-wrap:pretty; }
 .mono-sm{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
@@ -78,7 +91,7 @@ body.quiet .chrome{ opacity:0; }
 .col{
   background: var(--ink); border-radius:16px; padding:32px 28px;
   display:flex; flex-direction:column; gap:12px;
-  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+  box-shadow: var(--keyline-soft);
 }
 .col .k{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
 .col .t{ font-size:22px; font-weight:400; line-height:1.4; color: var(--white); }
@@ -88,12 +101,12 @@ body.quiet .chrome{ opacity:0; }
 .demo-grid{ display:grid; grid-template-columns:2fr 1fr; gap:32px; align-items:stretch; }
 .demo-frame{
   aspect-ratio:16/9; border-radius:16px; background: var(--ink);
-  box-shadow: rgba(255,255,255,0.14) 0 0 0 1px;
+  box-shadow: var(--keyline-soft);
   display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px;
 }
 .demo-frame .mono-sm{ color: var(--iron); }
 .sidelist{ display:flex; flex-direction:column; gap:16px; justify-content:center; }
-.sideitem{ display:flex; flex-direction:column; gap:6px; padding:16px 20px; border-radius:12px; background: var(--ink); }
+.sideitem{ display:flex; flex-direction:column; gap:6px; padding:16px 20px; border-radius:12px; background: var(--ink); box-shadow: var(--keyline-soft); }
 .sideitem .t{ font-size:18px; font-weight:500; line-height:1.4; }
 .sideitem .d{ font-size:13px; line-height:1.6; color: var(--smoke); }
 
@@ -102,6 +115,7 @@ body.quiet .chrome{ opacity:0; }
 .layer{
   display:flex; align-items:center; gap:16px;
   border-radius:12px; padding:20px 24px;
+  box-shadow: rgba(255,255,255,0.05) 0 1px 0 0 inset, rgba(0,0,0,0.20) 0 -1px 0 0 inset;
 }
 .layer .k{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); width:120px; flex:none; }
 .layer .t{ font-size:18px; font-weight:400; color: var(--white); }
@@ -121,9 +135,10 @@ body.quiet .chrome{ opacity:0; }
 
 <!-- ============ 頁 1 · 封面 ============ -->
 <section class="slide">
-  <div class="brandline">
+  <div class="eyerow">
     <i class="diamond" style="width:12px;height:12px"></i>
     <span class="eyebrow">幕僚 · Chief of Staff</span>
+    <span class="ln"></span>
   </div>
   <h1 style="font-size:96px">幕僚</h1>
   <p class="lede">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</p>
@@ -135,7 +150,7 @@ body.quiet .chrome{ opacity:0; }
 
 <!-- ============ 頁 2 · 痛點 ============ -->
 <section class="slide">
-  <span class="eyebrow">01 · 問題</span>
+  <div class="eyerow"><span class="eyebrow">01 · 問題</span><span class="ln"></span></div>
   <h2>不是我不想回，是我怕回錯。</h2>
   <div class="cols">
     <div class="col">
@@ -159,7 +174,7 @@ body.quiet .chrome{ opacity:0; }
 
 <!-- ============ 頁 3 · Demo ============ -->
 <section class="slide">
-  <span class="eyebrow">02 · Demo</span>
+  <div class="eyerow"><span class="eyebrow">02 · Demo</span><span class="ln"></span></div>
   <h2>讀空氣 · 查自己的資料 · 防自爆</h2>
   <div class="demo-grid">
     <div class="demo-frame">
@@ -185,7 +200,7 @@ body.quiet .chrome{ opacity:0; }
 
 <!-- ============ 頁 4 · 架構＋收尾 ============ -->
 <section class="slide">
-  <span class="eyebrow">03 · 為什麼能換臉不換腦</span>
+  <div class="eyerow"><span class="eyebrow">03 · 為什麼能換臉不換腦</span><span class="ln"></span></div>
   <h2>引擎沒變、資料沒變——只是換了一張卡。</h2>
   <div class="stack">
     <div class="layer" style="background:var(--graph)">
@@ -222,10 +237,16 @@ let idx = 0;
 history.scrollRestoration = "manual";
 addEventListener("load", () => goTo(0));
 
+function light() {
+  slides.forEach(s => s.classList.remove("lit"));
+  void slides[idx].offsetWidth;             /* 重觸發掃光動畫 */
+  slides[idx].classList.add("lit");
+}
 function goTo(i) {
   idx = Math.max(0, Math.min(slides.length - 1, i));
   slides[idx].scrollIntoView({ behavior: "instant", block: "start" });
   document.getElementById("pageNo").textContent = (idx + 1) + " / " + slides.length;
+  light();
 }
 
 addEventListener("keydown", e => {
@@ -241,8 +262,10 @@ addEventListener("scroll", () => {
   clearTimeout(st);
   st = setTimeout(() => {
     const mid = scrollY + innerHeight / 2;
+    const prev = idx;
     slides.forEach((s, i) => { if (s.offsetTop <= mid && mid < s.offsetTop + s.offsetHeight) idx = i; });
     document.getElementById("pageNo").textContent = (idx + 1) + " / " + slides.length;
+    if (idx !== prev) light();
   }, 120);
 });
 

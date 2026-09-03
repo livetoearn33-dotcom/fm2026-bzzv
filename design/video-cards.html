@@ -38,6 +38,9 @@
   --host-card: #ffffff;
   --host-line: #dfdfe0;
   --host-ink:  #1b1c1e;
+  --keyline-soft: rgba(255,255,255,0.05) 0 1px 0 0 inset,
+                  rgba(255,255,255,0.14) 0 0 0 1px,
+                  rgba(0,0,0,0.20) 0 -1px 0 0 inset;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
 }
@@ -114,12 +117,37 @@ body.quiet .chrome{ opacity:0; }
 #hl1{ top:42%; font-size:40px; font-weight:400; line-height:1.4; color: var(--white); }
 #hl2{ top:56%; font-size:15px; color: var(--smoke); }
 
-/* ---------- 片頭共用 ---------- */
+/* ---------- 片頭共用 ----------
+   質感三件套（都是產品裡已有的語彙，不加新色不加漸層特效）：
+   1. 髮絲線從中心拉開＋掃一道光（讀取中的簽名動作）
+   2. 品牌字分字進場（120ms 錯拍）
+   3. 眉標字距從 8px 收攏到 4px（落定感） */
 .titlewrap{ display:flex; flex-direction:column; align-items:center; gap:24px; }
 .brandbig{ font-size:112px; font-weight:300; line-height:1.1; letter-spacing:16px; text-indent:16px; color: var(--white); }
+.brandbig .ch{
+  display:inline-block; opacity:0; transform: translateY(20px);
+  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+}
+.brandbig.in .ch{ opacity:1; transform:none; }
+.brandbig.in .ch:nth-child(2){ transition-delay:120ms; }
 .tagline{ font-size:18px; line-height:1.7; color: var(--ash); text-wrap:pretty; text-align:center; }
-.fadein{ opacity:0; transform: translateY(8px); transition: opacity 500ms var(--ease), transform 500ms var(--ease); }
+.fadein{ opacity:0; transform: translateY(8px); transition: opacity 500ms var(--ease), transform 500ms var(--ease), letter-spacing 900ms var(--ease); }
 .fadein.in{ opacity:1; transform: translateY(0); }
+.eyebrow.fadein{ letter-spacing:8px; }
+.eyebrow.fadein.in{ letter-spacing:4px; }
+
+.rule{
+  position:relative; height:1px; width:min(640px, 64vw); overflow:hidden;
+  background: rgba(255,255,255,0.12);
+  transform: scaleX(0); transition: transform 700ms var(--ease);
+}
+.rule.in{ transform: scaleX(1); }
+.rule::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:28%; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+}
+.rule.in::after{ animation: sweep-once 900ms linear 350ms both; }
+@keyframes sweep-once{ from{ transform:translateX(-100%); opacity:1 } to{ transform:translateX(460%); opacity:1 } }
 
 /* A · 極簡菱形 */
 #dA{ width:20px; height:20px; opacity:0; transform: rotate(45deg) scale(0.4); transition: opacity 300ms var(--ease), transform 300ms var(--ease); }
@@ -137,6 +165,13 @@ body.quiet .chrome{ opacity:0; }
   transition: transform 250ms var(--ease);
 }
 #panelC.up{ transform: translate(-50%, 0); }
+/* 升起後沿上緣掃兩道光——產品「讀取中」的簽名動作 */
+#panelC::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:35%; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
+}
+#panelC.lit::after{ opacity:1; animation: sweep 1100ms linear 2; }
+@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
 #panelC .row{ height:72px; display:flex; align-items:center; gap:12px; padding:0 24px; }
 #panelC .row .eyebrow{ font-size:11px; letter-spacing:2px; }
 #panelC .body{ display:grid; grid-template-rows:0fr; transition: grid-template-rows 300ms var(--ease); }
@@ -151,7 +186,7 @@ body.quiet .chrome{ opacity:0; }
 /* ---------- 5 · 片尾 ---------- */
 .endwrap{ display:flex; flex-direction:column; align-items:center; gap:20px; }
 .endbrand{ display:flex; align-items:center; gap:12px; }
-.teamname{ font-size:36px; font-weight:400; line-height:1.4; color: var(--white); }
+.teamname{ font-size:44px; font-weight:300; line-height:1.4; letter-spacing:4px; text-indent:4px; color: var(--white); }
 .endmono{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--smoke); }
 </style>
 </head>
@@ -169,9 +204,11 @@ body.quiet .chrome{ opacity:0; }
 <!-- ============ 2 · 片頭 A：極簡菱形 ============ -->
 <section class="stage" id="s2" data-name="2 · 片頭 A 極簡菱形">
   <div class="titlewrap">
+    <div class="rule" id="ruleA1"></div>
     <i class="diamond" id="dA"></i>
-    <div class="brandbig fadein" id="brandA">幕僚</div>
+    <div class="brandbig" id="brandA"><span class="ch">幕</span><span class="ch">僚</span></div>
     <div class="eyebrow fadein" id="eyeA">Chief of Staff</div>
+    <div class="rule" id="ruleA2"></div>
     <div class="tagline fadein" id="tagA">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
   </div>
 </section>
@@ -179,8 +216,9 @@ body.quiet .chrome{ opacity:0; }
 <!-- ============ 3 · 片頭 B：生長字卡（建議預設） ============ -->
 <section class="stage" id="s3" data-name="3 · 片頭 B 生長字卡（建議預設）">
   <div class="titlewrap">
-    <div class="brandbig fadein" id="brandB">幕僚</div>
+    <div class="brandbig" id="brandB"><span class="ch">幕</span><span class="ch">僚</span></div>
     <div class="eyebrow fadein" id="eyeB">Chief of Staff</div>
+    <div class="rule" id="ruleB"></div>
     <div id="typeLine"><span id="typeTx"></span><span class="caret" id="typeCaret"></span></div>
   </div>
 </section>
@@ -193,8 +231,8 @@ body.quiet .chrome{ opacity:0; }
       <span class="eyebrow">幕僚 · Chief of Staff</span>
     </div>
     <div class="body"><div><div class="body-in">
-      <div class="brandbig">幕僚</div>
-      <div class="tagline">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
+      <div class="brandbig" id="brandC"><span class="ch">幕</span><span class="ch">僚</span></div>
+      <div class="tagline fadein" id="tagC">你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。</div>
     </div></div></div>
   </div>
 </section>
@@ -207,6 +245,7 @@ body.quiet .chrome{ opacity:0; }
       <span class="eyebrow" style="font-size:11px;letter-spacing:2px">幕僚 · Chief of Staff</span>
     </div>
     <div class="teamname fadein" id="endTeam">全村的希望就是真真</div>
+    <div class="rule" id="ruleEnd"></div>
     <div class="endmono fadein" id="endMeta">Futuremode × SITCON Buildmode 2026 · Future of Work</div>
     <div class="endmono fadein" id="endRepo" style="text-transform:none">github.com/livetoearn33-dotcom/fm2026-bzzv</div>
   </div>
@@ -288,42 +327,49 @@ function playHook() {
   later(() => $("hl2").classList.add("in"), 6000);
 }
 
-/* ---------- 段 2：極簡菱形。菱形 → 名 → 眉標 → 定位句 ---------- */
+/* ---------- 段 2：極簡菱形。線拉開 → 菱形 → 名（分字）→ 眉標 → 定位句 ---------- */
 function playA() {
-  ["dA","brandA","eyeA","tagA"].forEach(id => $(id).classList.remove("in"));
-  later(() => $("dA").classList.add("in"), 300);
-  later(() => $("brandA").classList.add("in"), 700);
-  later(() => $("eyeA").classList.add("in"), 1000);
-  later(() => $("tagA").classList.add("in"), 1400);
+  ["ruleA1","ruleA2","dA","brandA","eyeA","tagA"].forEach(id => $(id).classList.remove("in"));
+  later(() => { $("ruleA1").classList.add("in"); $("ruleA2").classList.add("in"); }, 250);
+  later(() => $("dA").classList.add("in"), 600);
+  later(() => $("brandA").classList.add("in"), 850);
+  later(() => $("eyeA").classList.add("in"), 1250);
+  later(() => $("tagA").classList.add("in"), 1650);
 }
 
 /* ---------- 段 3：生長字卡。名先立，定位句逐字長出（同第一幕的文字生長） ---------- */
 const TYPE_LINE = "你收到工作訊息，點一下，它照著你自己的資料把回覆寫好。";
 function playB() {
-  ["brandB","eyeB"].forEach(id => $(id).classList.remove("in"));
+  ["brandB","eyeB","ruleB"].forEach(id => $(id).classList.remove("in"));
   $("typeTx").textContent = "";
   later(() => $("brandB").classList.add("in"), 300);
-  later(() => $("eyeB").classList.add("in"), 600);
+  later(() => $("eyeB").classList.add("in"), 700);
+  later(() => $("ruleB").classList.add("in"), 950);
   TYPE_LINE.split("").forEach((ch, i) => {
-    later(() => { $("typeTx").textContent += ch; }, 1400 + i * 65);
+    later(() => { $("typeTx").textContent += ch; }, 1700 + i * 65);
   });
 }
 
 /* ---------- 段 4：面板升起。收合條先上來（產品是 56dp，影片放大版用 72px），停一拍，向上長出品牌 ---------- */
 function playC() {
   const p = $("panelC");
-  p.classList.remove("up", "open");
+  p.classList.remove("up", "open", "lit");
+  ["brandC","tagC"].forEach(id => $(id).classList.remove("in"));
   later(() => p.classList.add("up"), 400);
-  later(() => p.classList.add("open"), 1300);
+  later(() => p.classList.add("lit"), 700);   /* 讀取中掃光兩輪 */
+  later(() => p.classList.add("open"), 1600);
+  later(() => $("brandC").classList.add("in"), 1900);
+  later(() => $("tagC").classList.add("in"), 2300);
 }
 
 /* ---------- 段 5：片尾 ---------- */
 function playEnd() {
-  ["endBrand","endTeam","endMeta","endRepo"].forEach(id => $(id).classList.remove("in"));
+  ["endBrand","endTeam","ruleEnd","endMeta","endRepo"].forEach(id => $(id).classList.remove("in"));
   later(() => $("endBrand").classList.add("in"), 300);
   later(() => $("endTeam").classList.add("in"), 700);
-  later(() => $("endMeta").classList.add("in"), 1100);
-  later(() => $("endRepo").classList.add("in"), 1400);
+  later(() => $("ruleEnd").classList.add("in"), 1000);
+  later(() => $("endMeta").classList.add("in"), 1300);
+  later(() => $("endRepo").classList.add("in"), 1600);
 }
 
 const PLAYERS = { s1: playHook, s2: playA, s3: playB, s4: playC, s5: playEnd };

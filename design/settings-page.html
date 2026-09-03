@@ -47,6 +47,7 @@ body{
 .page{ padding:48px 48px 96px; display:flex; flex-direction:column; gap:48px; }
 .intro{ display:flex; flex-direction:column; gap:16px; max-width:680px; }
 .brandline{ display:flex; align-items:center; gap:8px; }
+.brandline .ln{ flex:1; height:1px; background: rgba(255,255,255,0.08); }
 .diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
 .eyebrow{
   font-family: var(--mono); font-size:10px; line-height:1;
@@ -152,6 +153,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
       <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 三方向並排</span>
+      <span class="ln"></span>
     </div>
     <h1>評審問「資料是真的嗎」，開這一頁</h1>
     <p class="lede">靜態頁、不用互動，回答一個問題：回覆裡的數字從哪來。資料照抄 data/ 的 10 條知識與 4 張對象檔案，「議價底線」那條是內部參考——引擎讀得到、永遠不會寫進回覆，三個方向用三種方式把這條界線畫出來。屏內可以捲動。</p>
