@@ -8,6 +8,14 @@ RUN pnpm install --frozen-lockfile
 COPY backend/ ./
 RUN pnpm build && pnpm prune --prod
 
+# 把整個 build context 收進來並列出，部署平台若漏掉目錄，這一步會在 build log 直接看到
+COPY . /ctx
+RUN echo "== build context ==" && ls -la /ctx \
+ && echo "== data ==" && ls -la /ctx/data \
+ && echo "== prompts ==" && ls -la /ctx/prompts \
+ && test -f /ctx/data/facts.json && test -f /ctx/data/contacts.json \
+ && test "$(ls /ctx/prompts | wc -l)" -gt 0
+
 FROM node:22-alpine
 WORKDIR /app/backend
 ENV NODE_ENV=production \
@@ -18,7 +26,7 @@ ENV NODE_ENV=production \
 COPY --from=build /app/backend/node_modules ./node_modules
 COPY --from=build /app/backend/dist ./dist
 COPY backend/package.json ./
-COPY data/ /app/data/
-COPY prompts/ /app/prompts/
+COPY --from=build /ctx/data/ /app/data/
+COPY --from=build /ctx/prompts/ /app/prompts/
 EXPOSE 8080
 CMD ["node", "dist/src/main.js"]
