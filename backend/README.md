@@ -48,3 +48,15 @@ pnpm lint         # 程式碼檢查
 ## Golden Path
 
 Demo 劇本句子命中預先寫好的 `src/shared/golden-path/*.ts` 對照表時直接回傳固定結果，其餘輸入才呼叫 LLM。
+
+## 部署
+
+Zeabur（或任何 Docker 平台）一律用 repo 根目錄的 `Dockerfile`；Root Directory 設 `backend` 或留空都可以——這份 Dockerfile 會自動判斷 build context 是 repo 根目錄還是 `backend/` 子目錄，兩種都能 build 出一樣的服務（`backend/Dockerfile` 是同一份檔案的副本，兩者需保持一致）。
+
+- build context 是 repo 根目錄：直接讀 `data/`、`prompts/` 真源。
+- build context 只有 `backend/`：讀 `backend/assets/data`、`backend/assets/prompts`（`data/`、`prompts/` 的副本，見 `scripts/sync-assets.mjs`）。
+
+**改了 `data/` 或 `prompts/` 之後，一定要跑 `pnpm sync:assets` 並把 `backend/assets/` 的變動一併 commit**，否則：
+
+1. `backend/` 子目錄 context 部署時讀到舊資料。
+2. `pnpm test` 會紅（`src/shared/assets-sync.test.ts` 會逐檔比對 `assets/` 與來源是否一致）。

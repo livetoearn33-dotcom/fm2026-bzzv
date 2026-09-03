@@ -4,6 +4,7 @@ export default antfu({
   type: "app",
   typescript: true,
   formatters: true,
+  ignores: ["assets/**"],
   stylistic: {
     indent: 2,
     semi: true,

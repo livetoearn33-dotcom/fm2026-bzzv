@@ -15,8 +15,20 @@ export function isTodoId(id: string): boolean {
   return id.startsWith("_TODO");
 }
 
+/**
+ * 沒設 DATA_DIR 時的預設順序：先找 repo 根目錄的 `../data`（本機開發、
+ * build context 是 repo 根目錄時都在），不存在再退回 `assets/data`
+ * （build context 只有 backend/ 時的副本，見 scripts/sync-assets.mjs）。
+ */
 export function resolveDataDir(): string {
-  return env.DATA_DIR ?? path.resolve(process.cwd(), "../data");
+  if (env.DATA_DIR) {
+    return env.DATA_DIR;
+  }
+  const repoRootDataDir = path.resolve(process.cwd(), "../data");
+  if (fs.existsSync(repoRootDataDir)) {
+    return repoRootDataDir;
+  }
+  return path.resolve(process.cwd(), "assets/data");
 }
 
 export function readJsonArray(filePath: string): unknown[] {
