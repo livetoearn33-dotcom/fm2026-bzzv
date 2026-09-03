@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · Chief of Staff — refined v0.3（鍵盤形態）</title>
+<title>幕僚 · Chief of Staff — refined v0.4（鍵盤形態 · 質感版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑（原 Google Fonts 線上載入已移除 2026-09-02） -->
 <style>
 /* ============================================================
@@ -342,9 +342,42 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .panel[data-open="true"] .panel-in > .sugtext.flash{ animation: fadein 180ms var(--ease) both; }
 /* C5 · 本文呼吸 */
 .sugtext{ letter-spacing:.01em; line-height:1.68; }
+
+/* ============================================================
+   質感三層（2026-09-03 Zeno 裁定 A+B+C 全疊，五檔統一）
+   B 暗房：canvas 中心微亮＋viewport 邊緣壓暗（單色明度）
+   C 噪點：內嵌 SVG 顆粒（離線可跑）
+   A 儀表：四角刻度＋mono 中繼資料
+   全部 pointer-events:none，不影響互動。
+   ============================================================ */
+body{
+  background: radial-gradient(ellipse 120% 90% at 50% 30%, #0b0c0e 0%, var(--void) 55%) fixed;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:55; pointer-events:none;
+  background: radial-gradient(ellipse 92% 80% at 50% 46%, transparent 58%, rgba(0,0,0,0.42) 100%);
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:56; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+.qtick{ position:fixed; width:14px; height:14px; border:0 solid var(--slate); z-index:57; pointer-events:none; }
+.qtick.tl{ left:20px; top:20px; border-left-width:1px; border-top-width:1px; }
+.qtick.tr{ right:20px; top:20px; border-right-width:1px; border-top-width:1px; }
+.qtick.bl{ left:20px; bottom:20px; border-left-width:1px; border-bottom-width:1px; }
+.qtick.br{ right:20px; bottom:20px; border-right-width:1px; border-bottom-width:1px; }
+.qmeta{
+  position:fixed; z-index:57; pointer-events:none;
+  font-family: var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color: var(--iron);
+}
+.qmeta.tl{ left:44px; top:23px; }
+.qmeta.br{ right:44px; bottom:23px; }
 </style>
 </head>
 <body>
+<i class="qtick tl"></i><i class="qtick tr"></i><i class="qtick bl"></i><i class="qtick br"></i>
+<span class="qmeta tl">幕僚 · Refined v0.4</span>
+<span class="qmeta br">Buildmode 2026</span>
 <div class="page">
 
   <div class="intro">

@@ -168,9 +168,36 @@ body.quiet .chrome{ opacity:0; }
 
 .foot{ position:absolute; left:120px; right:120px; bottom:48px; display:flex; align-items:center; gap:12px; }
 .foot .mono-sm{ letter-spacing:1.5px; }
+
+/* ============================================================
+   質感三層（2026-09-03 Zeno 裁定 A+B+C 全疊，五檔統一）
+   ============================================================ */
+body{
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, #0b0c0e 0%, var(--void) 55%) fixed;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:55; pointer-events:none;
+  background: radial-gradient(ellipse 92% 80% at 50% 46%, transparent 58%, rgba(0,0,0,0.42) 100%);
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:56; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+.qtick{ position:fixed; width:14px; height:14px; border:0 solid var(--slate); z-index:57; pointer-events:none; }
+.qtick.tl{ left:20px; top:20px; border-left-width:1px; border-top-width:1px; }
+.qtick.tr{ right:20px; top:20px; border-right-width:1px; border-top-width:1px; }
+.qtick.bl{ left:20px; bottom:20px; border-left-width:1px; border-bottom-width:1px; }
+.qtick.br{ right:20px; bottom:20px; border-right-width:1px; border-bottom-width:1px; }
+.qmeta{
+  position:fixed; z-index:57; pointer-events:none;
+  font-family: var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color: var(--iron);
+}
+.qmeta.tl{ left:44px; top:23px; }
 </style>
 </head>
 <body>
+<i class="qtick tl"></i><i class="qtick tr"></i><i class="qtick bl"></i><i class="qtick br"></i>
+<span class="qmeta tl">幕僚 · Round 2</span>
 
 <!-- ============ 頁 1 · 封面：面板升起 ============ -->
 <section class="slide">

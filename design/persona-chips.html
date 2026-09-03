@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 角色 chip 排 — 三個方向並排</title>
+<title>幕僚 · 角色 chip 排（定案 · 本文上方一排）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
@@ -207,24 +207,6 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .pchip[aria-pressed="true"]{ background: var(--graph); color: var(--mist); border-color: var(--slate); }
 .prow{ display:flex; gap:6px; flex-wrap:wrap; }
 
-/* 方向 B：收合列下方的常駐第二列（有建議時就在，不用展開） */
-.pstrip{ display:flex; gap:6px; padding:0 16px 12px; }
-.pstrip .pchip{ height:36px; }
-
-/* 方向 C：理由行下方的 mono 文字鍵列 */
-.footrow2{
-  display:flex; align-items:center; gap:2px;
-  font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke);
-}
-.footrow2 .sep{ padding:0 4px; color: var(--slate); }
-.plink{
-  border:0; background:transparent; padding:4px 4px;
-  font-family: var(--mono); font-size:10px; letter-spacing:.3px; line-height:1; color: var(--smoke);
-  transition: color 150ms var(--ease);
-}
-.plink:hover{ color: var(--mist); }
-.plink[aria-pressed="true"]{ color: var(--mist); border-bottom:1px solid var(--iron); }
-
 .kbd{ flex:none; background: var(--mist); padding:8px 4px 12px; display:flex; flex-direction:column; gap:6px; }
 .kbd-row{ display:flex; gap:5px; justify-content:center; padding:0 4px; }
 .key{
@@ -302,19 +284,48 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 @keyframes rise{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
 .panel[data-open="true"] .panel-in > .sugtext.flash{ animation: fadein 180ms var(--ease) both; }
 .sugtext{ letter-spacing:.01em; line-height:1.68; }
+
+/* ============================================================
+   質感三層（2026-09-03 Zeno 裁定 A+B+C 全疊，五檔統一）
+   ============================================================ */
+body{
+  background: radial-gradient(ellipse 120% 90% at 50% 30%, #0b0c0e 0%, var(--void) 55%) fixed;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:55; pointer-events:none;
+  background: radial-gradient(ellipse 92% 80% at 50% 46%, transparent 58%, rgba(0,0,0,0.42) 100%);
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:56; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+.qtick{ position:fixed; width:14px; height:14px; border:0 solid var(--slate); z-index:57; pointer-events:none; }
+.qtick.tl{ left:20px; top:20px; border-left-width:1px; border-top-width:1px; }
+.qtick.tr{ right:20px; top:20px; border-right-width:1px; border-top-width:1px; }
+.qtick.bl{ left:20px; bottom:20px; border-left-width:1px; border-bottom-width:1px; }
+.qtick.br{ right:20px; bottom:20px; border-right-width:1px; border-bottom-width:1px; }
+.qmeta{
+  position:fixed; z-index:57; pointer-events:none;
+  font-family: var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color: var(--iron);
+}
+.qmeta.tl{ left:44px; top:23px; }
+.qmeta.br{ right:44px; bottom:23px; }
 </style>
 </head>
 <body>
+<i class="qtick tl"></i><i class="qtick tr"></i><i class="qtick bl"></i><i class="qtick br"></i>
+<span class="qmeta tl">幕僚 · Persona Chips</span>
+<span class="qmeta br">Buildmode 2026</span>
 <div class="page">
 
   <div class="intro">
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
-      <span class="eyebrow lg">幕僚 / Chief of Staff · 角色 chip 排 · 三方向並排</span>
+      <span class="eyebrow lg">幕僚 / Chief of Staff · 角色 chip 排 · 定案版</span>
       <span class="ln"></span>
     </div>
     <h1>引擎沒變、資料沒變——只是換了一張卡</h1>
-    <p class="lede">Round 2 加演用：回覆生成完之後點「諸葛亮」，同一則回覆被改寫，事實、承諾、時間點一個不掉。三個方向差在 chip 排長在哪裡。每支手機都能真的點：點角色會改寫、點「填入」會進輸入框、點收合列會收展。場景用 demo 第一幕——林經理催 A 案進度、高壓局。⚠️ 童錦城依角色卡紅線「demo 不演」：chip 留在畫面上（這是產品畫面，不是台本），上台照稿只點諸葛亮。</p>
+    <p class="lede">Round 2 加演用：回覆生成完之後點「諸葛亮」，同一則回覆被改寫，事實、承諾、時間點一個不掉。chip 排定案在本文上方（原三方向並排見 git 歷史）。手機能真的點：點角色會改寫、點「填入」會進輸入框、點收合列會收展。場景用 demo 第一幕——林經理催 A 案進度、高壓局。⚠️ 童錦城依角色卡紅線「demo 不演」：chip 留在畫面上（這是產品畫面，不是台本），上台照稿只點諸葛亮。</p>
   </div>
 
   <div class="decks">
@@ -322,7 +333,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
     <!-- ============ 方向 A ============ -->
     <div class="deck">
       <div class="deck-head">
-        <span class="eyebrow lg">方向 A · 本文上方一排（建議預設）</span>
+        <span class="eyebrow lg">定案 · 本文上方一排（2026-09-03 Zeno 裁定）</span>
         <div class="tabs" data-tabs="A">
           <button class="tab" data-open="true" aria-selected="true">展開（demo 主場）</button>
           <button class="tab" data-open="false">有建議（收合）</button>
@@ -398,164 +409,6 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
       <p class="caption"><b>chip 排長在展開面板裡、緊貼本文上方。</b>手指點的位置和被改寫的那句話只隔 8px，台下視線不用跳——點下去、正下方的字換掉，因果一眼看懂。收合時面板維持 56dp 不變胖，選了角色只在眉標記一筆「幕僚 · 諸葛亮」。<b>代價</b>：要先展開才點得到角色。demo 第一幕本來就是在展開狀態收尾，所以這個代價在台上是零。</p>
     </div>
 
-    <!-- ============ 方向 B ============ -->
-    <div class="deck">
-      <div class="deck-head">
-        <span class="eyebrow lg">方向 B · 收合列下常駐一排</span>
-        <div class="tabs" data-tabs="B">
-          <button class="tab" data-open="true" aria-selected="true">展開（demo 主場）</button>
-          <button class="tab" data-open="false">有建議（收合）</button>
-        </div>
-      </div>
-
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar">
-            <span>13:47</span>
-            <span class="stat-r">
-              <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
-              <span style="font-family:var(--mono);font-size:9px">LTE</span>
-              <span class="batt"></span>
-            </span>
-          </div>
-          <div class="apphead">
-            <span class="backchev">‹</span>
-            <div class="avatar">林</div>
-            <div style="display:flex;align-items:center">
-              <div><div class="nm">林經理</div><div class="sub">業務部</div></div>
-              <span class="rolebadge">主管</span>
-            </div>
-            <span class="headdots">···</span>
-          </div>
-          <div class="thread">
-            <div class="bubwrap">
-              <div class="bub-av">林</div>
-              <div class="bubble">這個進度到底怎麼樣了？</div>
-              <div class="bubmeta"><span>13:44</span></div>
-            </div>
-            <div class="bubwrap">
-              <div class="bub-av">林</div>
-              <div class="bubble">下午要跟客戶開會。</div>
-              <div class="bubmeta"><span>已讀</span><span>13:46</span></div>
-            </div>
-          </div>
-          <div class="composer">
-            <div class="field" data-field="B">輸入訊息<span class="caret"></span></div>
-            <div class="sendbtn" data-send="B"></div>
-          </div>
-
-          <div class="panel" data-panel="B" data-open="true">
-            <div class="panel-row">
-              <button class="panel-hit" data-hit="B">
-                <span class="panel-txt">
-                  <span class="panel-eyebrow">
-                    <i class="diamond" style="width:6px;height:6px"></i>
-                    <span class="eyebrow" data-eyebrow="B">幕僚</span>
-                    <span class="chip mood warm">高壓</span>
-                  </span>
-                  <span class="panel-title">下午要開會 · 他要一句能回報的話</span>
-                </span>
-              </button>
-              <button class="btn-adopt" data-adopt="B">填入</button>
-              <button class="chevron" data-chev="B" aria-label="展開"><span>▴</span></button>
-            </div>
-            <div class="pstrip" data-prow="B"></div>
-            <div class="panel-body"><div><div class="panel-in">
-              <div class="sugtext" data-reply="B"></div>
-              <div class="srcline">引用<span class="sdot"></span>A 案進度<span class="sdot"></span>回簽 9/1 已追</div>
-              <div class="footrow">
-                <span class="sugreason" data-reason="B"></span>
-                <button class="linkbtn" data-reroll="B">換一版</button>
-              </div>
-            </div></div></div>
-          </div>
-
-          <div class="kbd" data-kbd></div>
-        </div>
-      </div>
-
-      <p class="caption"><b>chip 排常駐在收合列正下方</b>——只要有建議，不展開也點得到角色，chip 也做大一號（36dp）。<b>代價</b>：有建議狀態從 56dp 變 104dp，這條 bar 在使用者還沒決定看不看建議之前就先胖了一倍；而且角色排位置比來源標籤還高，「糖衣」站到了「硬底子」前面——跟上台講法的順序打架。</p>
-    </div>
-
-    <!-- ============ 方向 C ============ -->
-    <div class="deck">
-      <div class="deck-head">
-        <span class="eyebrow lg">方向 C · 理由行下的文字鍵（對照組）</span>
-        <div class="tabs" data-tabs="C">
-          <button class="tab" data-open="true" aria-selected="true">展開（demo 主場）</button>
-          <button class="tab" data-open="false">有建議（收合）</button>
-        </div>
-      </div>
-
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar">
-            <span>13:47</span>
-            <span class="stat-r">
-              <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
-              <span style="font-family:var(--mono);font-size:9px">LTE</span>
-              <span class="batt"></span>
-            </span>
-          </div>
-          <div class="apphead">
-            <span class="backchev">‹</span>
-            <div class="avatar">林</div>
-            <div style="display:flex;align-items:center">
-              <div><div class="nm">林經理</div><div class="sub">業務部</div></div>
-              <span class="rolebadge">主管</span>
-            </div>
-            <span class="headdots">···</span>
-          </div>
-          <div class="thread">
-            <div class="bubwrap">
-              <div class="bub-av">林</div>
-              <div class="bubble">這個進度到底怎麼樣了？</div>
-              <div class="bubmeta"><span>13:44</span></div>
-            </div>
-            <div class="bubwrap">
-              <div class="bub-av">林</div>
-              <div class="bubble">下午要跟客戶開會。</div>
-              <div class="bubmeta"><span>已讀</span><span>13:46</span></div>
-            </div>
-          </div>
-          <div class="composer">
-            <div class="field" data-field="C">輸入訊息<span class="caret"></span></div>
-            <div class="sendbtn" data-send="C"></div>
-          </div>
-
-          <div class="panel" data-panel="C" data-open="true">
-            <div class="panel-row">
-              <button class="panel-hit" data-hit="C">
-                <span class="panel-txt">
-                  <span class="panel-eyebrow">
-                    <i class="diamond" style="width:6px;height:6px"></i>
-                    <span class="eyebrow" data-eyebrow="C">幕僚</span>
-                    <span class="chip mood warm">高壓</span>
-                  </span>
-                  <span class="panel-title">下午要開會 · 他要一句能回報的話</span>
-                </span>
-              </button>
-              <button class="btn-adopt" data-adopt="C">填入</button>
-              <button class="chevron" data-chev="C" aria-label="展開"><span>▴</span></button>
-            </div>
-            <div class="panel-body"><div><div class="panel-in">
-              <div class="sugtext" data-reply="C"></div>
-              <div class="srcline">引用<span class="sdot"></span>A 案進度<span class="sdot"></span>回簽 9/1 已追</div>
-              <div class="footrow">
-                <span class="sugreason" data-reason="C"></span>
-                <button class="linkbtn" data-reroll="C">換一版</button>
-              </div>
-              <div class="footrow2" data-prow="C"></div>
-            </div></div></div>
-          </div>
-
-          <div class="kbd" data-kbd></div>
-        </div>
-      </div>
-
-      <p class="caption"><b>角色降成 10px mono 文字鍵</b>，跟「換一版」同一階——說法上最誠實（角色本來就是「換一版」的親戚），視覺上零增重。<b>代價</b>：投影機上這排字幾乎看不見，點擊區也小於 40dp。放進來當對照組：它示範了「最克制」長什麼樣，但上台演這格，台下會不知道你剛剛點了什麼。</p>
-    </div>
-
   </div>
 </div>
 
@@ -624,7 +477,7 @@ function render(d, animate) {
   }));
 }
 
-["A", "B", "C"].forEach(d => {
+["A"].forEach(d => {   /* 2026-09-03 Zeno 定案方向 A，B/C 已移除 */
   render(d, false);
 
   const panel = $1('[data-panel="' + d + '"]');

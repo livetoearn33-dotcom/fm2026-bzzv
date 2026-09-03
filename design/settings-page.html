@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幕僚 · 知識庫設定頁 — 三個方向並排</title>
+<title>幕僚 · 知識庫設定頁（定案 · 列表列）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
@@ -103,26 +103,7 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 .rowtop .lb{ flex:1; min-width:0; font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
 .tagline{ display:flex; gap:6px; flex-wrap:wrap; }
 
-/* ---------- 方向 B：卡片 ---------- */
-.card{
-  background: var(--obsid); border-radius:16px; padding:16px;
-  display:flex; flex-direction:column; gap:8px;
-}
-.card.internal{ box-shadow: 0 0 0 1px var(--amber); }
-.card .lb{ font-size:13px; font-weight:500; line-height:1.4; color: var(--white); }
-.card .meta{ display:flex; align-items:center; gap:8px; }
-.card .meta .tagline{ flex:1; }
-
-/* ---------- 方向 C：分組高密度 ---------- */
-.denserow{ display:flex; align-items:center; gap:8px; height:36px; }
-.denserow .lb{
-  flex:1; min-width:0; font-size:13px; font-weight:400; line-height:1.4; color: var(--mist);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.groupbox{ background: var(--ink); border-radius:12px; padding:4px 12px; display:flex; flex-direction:column; }
-.groupbox.internal{ background: var(--obsid); }
-
-/* ---------- 對象卡（三方向共用骨架，密度不同） ---------- */
+/* ---------- 對象卡 ---------- */
 .pcard{
   background: var(--obsid); border-radius:16px; padding:16px;
   display:flex; flex-direction:column; gap:6px;
@@ -141,29 +122,55 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
 .pcard.slim{ padding:12px 16px; border-radius:12px; }
-.pgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.pgrid .pcard{ padding:12px; border-radius:12px; }
-.pgrid .note{ -webkit-line-clamp:3; }
+
+/* ============================================================
+   質感三層（2026-09-03 Zeno 裁定 A+B+C 全疊，五檔統一）
+   ============================================================ */
+body{
+  background: radial-gradient(ellipse 120% 90% at 50% 30%, #0b0c0e 0%, var(--void) 55%) fixed;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:55; pointer-events:none;
+  background: radial-gradient(ellipse 92% 80% at 50% 46%, transparent 58%, rgba(0,0,0,0.42) 100%);
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:56; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.16'/></svg>");
+}
+.qtick{ position:fixed; width:14px; height:14px; border:0 solid var(--slate); z-index:57; pointer-events:none; }
+.qtick.tl{ left:20px; top:20px; border-left-width:1px; border-top-width:1px; }
+.qtick.tr{ right:20px; top:20px; border-right-width:1px; border-top-width:1px; }
+.qtick.bl{ left:20px; bottom:20px; border-left-width:1px; border-bottom-width:1px; }
+.qtick.br{ right:20px; bottom:20px; border-right-width:1px; border-bottom-width:1px; }
+.qmeta{
+  position:fixed; z-index:57; pointer-events:none;
+  font-family: var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color: var(--iron);
+}
+.qmeta.tl{ left:44px; top:23px; }
+.qmeta.br{ right:44px; bottom:23px; }
 </style>
 </head>
 <body>
+<i class="qtick tl"></i><i class="qtick tr"></i><i class="qtick bl"></i><i class="qtick br"></i>
+<span class="qmeta tl">幕僚 · Knowledge</span>
+<span class="qmeta br">Buildmode 2026</span>
 <div class="page">
 
   <div class="intro">
     <div class="brandline">
       <i class="diamond" style="width:8px;height:8px"></i>
-      <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 三方向並排</span>
+      <span class="eyebrow lg">幕僚 / Chief of Staff · 畫面 5 知識庫設定頁 · 定案版</span>
       <span class="ln"></span>
     </div>
     <h1>評審問「資料是真的嗎」，開這一頁</h1>
-    <p class="lede">靜態頁、不用互動，回答一個問題：回覆裡的數字從哪來。資料照抄 data/ 的 10 條知識與 4 張對象檔案，「議價底線」那條是內部參考——引擎讀得到、永遠不會寫進回覆，三個方向用三種方式把這條界線畫出來。屏內可以捲動。</p>
+    <p class="lede">靜態頁、不用互動，回答一個問題：回覆裡的數字從哪來。資料照抄 data/ 的 10 條知識與 4 張對象檔案，「議價底線」那條是內部參考——引擎讀得到、永遠不會寫進回覆，靠一顆 amber chip 把這條界線畫出來。定案為列表列（2026-09-03 Zeno 裁定，原三方向見 git 歷史）。屏內可以捲動。</p>
   </div>
 
   <div class="decks">
 
     <!-- ============ 方向 A ============ -->
     <div class="deck">
-      <span class="eyebrow lg">方向 A · 列表列（建議預設）</span>
+      <span class="eyebrow lg">定案 · 列表列</span>
       <div class="phone"><div class="screen">
         <div class="statusbar"><span>13:47</span><span>LTE</span></div>
         <div class="apphead">
@@ -174,36 +181,6 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
         <div class="scroll" data-deck="A"></div>
       </div></div>
       <p class="caption"><b>Linear 式列表：一條知識一列，零分隔線，層次靠間距。</b>標籤跟著各自的條目走，內部參考只靠一顆 amber chip 區隔——跟面板上「敏感」用同一個顏色、同一個意思：這裡有條線不能過。對象檔案在下方一人一卡。<b>代價</b>：掃起來最素，評審若只瞄一眼，可能看不出「內部/外部」是這頁的重點。</p>
-    </div>
-
-    <!-- ============ 方向 B ============ -->
-    <div class="deck">
-      <span class="eyebrow lg">方向 B · 卡片</span>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
-        <div class="apphead">
-          <i class="diamond" style="width:8px;height:8px"></i>
-          <span class="ttl">知識庫</span>
-          <span class="cnt" data-cnt="B"></span>
-        </div>
-        <div class="scroll" data-deck="B"></div>
-      </div></div>
-      <p class="caption"><b>一條知識一張卡（obsid 表面浮在 void 上），跟展開面板同一種分層邏輯。</b>內部參考除了 chip，整張卡多一圈 1px amber hairline——遠看就知道這張不一樣。<b>代價</b>：10 張卡捲起來比列表長一截，而且卡片版「每張都被框起來」的重量感，跟面板那邊「靠留白不靠框」的原則稍微打架。</p>
-    </div>
-
-    <!-- ============ 方向 C ============ -->
-    <div class="deck">
-      <span class="eyebrow lg">方向 C · 分組高密度</span>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>13:47</span><span>LTE</span></div>
-        <div class="apphead">
-          <i class="diamond" style="width:8px;height:8px"></i>
-          <span class="ttl">知識庫</span>
-          <span class="cnt" data-cnt="C"></span>
-        </div>
-        <div class="scroll" data-deck="C"></div>
-      </div></div>
-      <p class="caption"><b>按主題分組（報價／案子與交付／檔期時程），內部參考獨立成組、組名直接寫「引擎可讀 · 不外流」。</b>一列 36dp、標籤收到只剩日期和效期，一屏能看完最多條——資訊密度最像「真的有在用的工具」。<b>代價</b>：分組是這頁自己發明的階層（facts.json 裡沒有），評審追問「分組怎麼來的」要多答一句。</p>
     </div>
 
   </div>
@@ -265,45 +242,6 @@ document.querySelector('[data-deck="A"]').innerHTML =
     </div>`).join("") +
   sect("對象檔案 · " + CONTACTS.length + " 人") +
   CONTACTS.map(c => pcard(c, "slim")).join("");
-
-/* ---------- 方向 B：卡片 ---------- */
-document.querySelector('[data-deck="B"]').innerHTML =
-  sect("知識 · " + FACTS.length + " 條") +
-  FACTS.map(f => `
-    <div class="card${f.internal ? " internal" : ""}">
-      <div class="lb">${esc(f.label)}</div>
-      <div class="meta">
-        <div class="tagline">${chips(f)}</div>
-        <span class="datep">${esc(f.date)}</span>
-      </div>
-    </div>`).join("") +
-  sect("對象檔案 · " + CONTACTS.length + " 人") +
-  CONTACTS.map(c => pcard(c, "")).join("");
-
-/* ---------- 方向 C：分組高密度 ---------- */
-const GROUPS = [
-  ["報價",  "報價"],
-  ["案子",  "案子與交付"],
-  ["檔期",  "檔期時程"],
-  ["內部",  "內部參考 · 引擎可讀 · 不外流"]
-];
-document.querySelector('[data-deck="C"]').innerHTML =
-  GROUPS.map(([g, title]) => {
-    const rows = FACTS.filter(f => f.group === g);
-    if (!rows.length) return "";
-    return sect(title) +
-      '<div class="groupbox' + (g === "內部" ? " internal" : "") + '">' +
-      rows.map(f => `
-        <div class="denserow">
-          <span class="lb">${esc(f.label)}</span>
-          ${f.vol === "high" ? '<span class="chip ghost">效期短</span>' : ""}
-          ${f.internal ? '<span class="chip amber">內部</span>' : ""}
-          <span class="datep">${esc(f.date)}</span>
-        </div>`).join("") +
-      '</div>';
-  }).join("") +
-  sect("對象檔案 · " + CONTACTS.length + " 人") +
-  '<div class="pgrid">' + CONTACTS.map(c => pcard(c, "")).join("") + '</div>';
 
 /* 條數統計 */
 document.querySelectorAll("[data-cnt]").forEach(el => {
