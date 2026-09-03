@@ -1,5 +1,61 @@
 [
   {
+    "id": "product-eqcopilot",
+    "label": "幕聊 EQ Copilot 是什麼",
+    "tags": ["幕聊", "EQ Copilot", "產品", "這是什麼", "介紹"],
+    "content": "幕聊 EQ Copilot：Android 上的工作訊息回覆助手。收到訊息按一下，它截這一次的畫面讀懂對話、判斷氣氛、查知識庫，把回覆寫好填進輸入框；送不送由使用者按。FUTUREMODE × SITCON BUILDMODE 2026 作品，賽道 Future of Work。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-three-engines",
+    "label": "三個引擎",
+    "tags": ["引擎", "功能", "架構", "怎麼運作", "prompt"],
+    "content": "/analyze 讀空氣：判斷一般／高壓／敏感三種氣氛再產生回覆。/guard 防自爆：偵測使用者自己打的字有沒有防禦、推卸、火氣，只描述對方會怎麼讀、不判對錯。/extract 知識萃取：貼一段文字抽成知識庫條目。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-architecture",
+    "label": "技術架構",
+    "tags": ["架構", "技術", "怎麼做的", "stack"],
+    "content": "三層：Android 原生殼只做浮層、Accessibility 讀畫面、截圖與填回輸入框；UI 是純 HTML 跑在 WebView；後端 Hono 讀 prompts 資料夾的 md 檔做四層組裝再打 LLM。prompt 分引擎／語氣／範例／runtime 四層，改 md 檔即生效不必動程式。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-honesty-line",
+    "label": "誠實底線的設計",
+    "tags": ["誠實", "會不會亂編", "幻覺", "紅線", "內部參考"],
+    "content": "事實（報價、進度、規格）只能來自知識庫，查不到就寫「我確認後回覆您」不編；承諾（今晚 8 點給）允許 AI 提，因為使用者按填入前會看過。標記為內部參考的事實 AI 讀得到、會拿來判斷，但一個字都不會寫進回覆，也不會出現在來源標註。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "product-verification",
+    "label": "驗證記錄",
+    "tags": ["測試", "驗證", "品質", "測過了嗎"],
+    "content": "Prompt 引擎跑過 dry-run 靶子測試 13 題全過，涵蓋誠實底線攻擊（問知識庫沒有的事）、內部資訊洩漏檢查、guard 誤報陷阱；報告在 tests/ 資料夾。後端 84 個測試通過，LLM 用 mock model。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "team-info",
+    "label": "團隊與分工",
+    "tags": ["團隊", "隊名", "分工", "誰做的"],
+    "content": "隊名「全村的希望就是真真」，四人：Zeno 負責 prompt 設計、知識庫內容與 demo 敘事；Vincent 負責 Android 原生殼；Brian 負責後端與整合；Zanna 負責前端 UI 與簡報視覺。",
+    "updatedAt": "2026-09-03",
+    "volatility": "low"
+  },
+  {
+    "id": "hackathon-schedule",
+    "label": "賽程與交付",
+    "tags": ["賽程", "死線", "提交", "黑客松", "時間"],
+    "content": "9/4–9/6 台北花博爭艷館。Round 1 無現場 demo：交 2 分鐘內介紹影片＋介紹文字＋GitHub（專案必須開源），評審看繳交物選出十強，提交截止 9/6 上午 10:00。Round 2 十強上台 5 分鐘＝3 分簡報＋1 分提問＋1 分回答。",
+    "updatedAt": "2026-09-03",
+    "volatility": "high"
+  },
+  {
     "id": "quote-anchor-standard",
     "label": "代操服務標準報價",
     "tags": ["報價", "價格", "方案", "月費"],

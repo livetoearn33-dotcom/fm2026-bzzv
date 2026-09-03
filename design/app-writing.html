@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>幕僚 · 代寫（WebView 正式版）</title>
+<title>幕聊 · 代寫（WebView 正式版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
-   幕僚 · 代寫流程 —— WebView 正式版
+   幕聊 · 代寫流程 —— WebView 正式版
    從 refined.html 抽出、拿掉桌機展示外框（.page/.decks/.caption/tabs），
    改成吃滿真實裝置螢幕、支援 safe-area 的全螢幕版本。
    視覺 token、狀態機、文案完全沿用 refined.html，未改寫。
@@ -130,7 +130,7 @@ button{ font-family: inherit; cursor: pointer; }
 .mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
 
 /* ============================================================
-   幕僚面板 —— 貼齊左右緣，從鍵盤上緣往上長。tap target ≥ 40dp/44dp
+   幕聊面板 —— 貼齊左右緣，從鍵盤上緣往上長。tap target ≥ 40dp/44dp
    ============================================================ */
 .panel{
   position:relative; flex:none;
@@ -294,7 +294,7 @@ button{ font-family: inherit; cursor: pointer; }
   <div class="kbd" data-kbd></div>
 </div>
 
-<span class="qabadge">幕僚 · app-writing · 高壓局</span>
+<span class="qabadge">幕聊 · app-writing · 高壓局</span>
 
 <script>
 "use strict";
@@ -360,7 +360,7 @@ function rowSuggest(m, title) {
     <span class="panel-txt">
       <span class="panel-eyebrow">
         <i class="diamond" style="width:6px;height:6px"></i>
-        <span class="eyebrow">幕僚</span>
+        <span class="eyebrow">幕聊</span>
         <span class="chip mood ${m.chip}">${esc(m.label)}</span>
       </span>
       <span class="panel-title">${esc(title)}</span>

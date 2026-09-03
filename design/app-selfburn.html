@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>幕僚 · 防自爆（WebView 正式版）</title>
+<title>幕聊 · 防自爆（WebView 正式版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
-   幕僚 · 防自爆流程 —— WebView 正式版
+   幕聊 · 防自爆流程 —— WebView 正式版
    從 refined.html 的「02 · 防自爆」deck 抽出、拿掉桌機展示外框，
    改成吃滿真實裝置螢幕、支援 safe-area 的全螢幕版本。
    視覺 token、文案、骨架與 app-writing.html 同一套，未改寫。
 
    對應 demo-script.md 第二幕（45 秒）：
-   使用者自己打字帶防禦語氣 → 幕僚攔下來，描述「對方會怎麼讀」，
+   使用者自己打字帶防禦語氣 → 幕聊攔下來，描述「對方會怎麼讀」，
    給出建議版本，不判使用者對錯。
    ============================================================ */
 
@@ -125,7 +125,7 @@ button{ font-family: inherit; cursor: pointer; }
 .mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
 
 /* ============================================================
-   幕僚面板 —— 骨架與代寫共用，只換內容：
+   幕聊面板 —— 骨架與代寫共用，只換內容：
    眉標「對方會怎麼讀」、主動作「替換」、不需要「附加」
    （輸入法本來就看得到你自己打的字）
    ============================================================ */
@@ -252,7 +252,7 @@ button{ font-family: inherit; cursor: pointer; }
         <span class="panel-txt">
           <span class="panel-eyebrow">
             <i class="diamond" style="width:6px;height:6px"></i>
-            <span class="eyebrow">幕僚 · 對方會怎麼讀</span>
+            <span class="eyebrow">幕聊 · 對方會怎麼讀</span>
           </span>
           <span class="panel-title">他讀起來會像被推回去自己想辦法</span>
         </span>
@@ -273,7 +273,7 @@ button{ font-family: inherit; cursor: pointer; }
   <div class="kbd" data-kbd></div>
 </div>
 
-<span class="qabadge">幕僚 · app-selfburn</span>
+<span class="qabadge">幕聊 · app-selfburn</span>
 
 <script>
 "use strict";
