@@ -248,6 +248,100 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
   display:flex; align-items:center; justify-content:center; font-size:14px;
 }
 .key.mod{ background: var(--host-key); }
+
+/* ============================================================
+   質感版 v0.4（2026-09-03 Zeno 核定 C 案，出處 product-polish.html）
+   色票、字級、間距、骨架全部未動；動的是光影與宿主真實感。
+   宿主側：H1 頭像有人／H2 時間戳＋已讀／H3 app 列／H4 鍵帽底影／
+   　　　　H5 輸入框內縮線／C3 狀態列訊號電池／C4 手機側鍵
+   幕僚側：M1 收合列微漸層＋keyline／M2 填入鍵帽感／M3 游標呼吸／
+   　　　　M4 面板內亮線＋tabular-nums／M5 菱形讀取中慢轉／
+   　　　　C1 標籤排降級成來源註腳／C2 內容錯拍浮入／C5 本文呼吸
+   ============================================================ */
+
+/* C4 · 手機側鍵 */
+.phone::before{
+  content:''; position:absolute; right:-2.5px; top:180px; width:3px; height:92px;
+  background: var(--ink); border-radius:0 2px 2px 0;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+.phone::after{
+  content:''; position:absolute; left:-2.5px; top:150px; width:3px; height:56px;
+  background: var(--ink); border-radius:2px 0 0 2px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+/* C3 · 狀態列 */
+.stat-r{ display:flex; align-items:center; gap:5px; }
+.sig{ display:flex; align-items:flex-end; gap:1.5px; height:9px; }
+.sig i{ width:2.5px; background: var(--iron); border-radius:1px; }
+.batt{ width:20px; height:9px; border:1px solid var(--iron); border-radius:2.5px; position:relative; margin-left:2px; }
+.batt::before{ content:''; position:absolute; left:1px; top:1px; bottom:1px; width:70%; background: var(--iron); border-radius:1px; }
+.batt::after{ content:''; position:absolute; right:-3px; top:2px; width:1.5px; height:3px; background: var(--iron); border-radius:0 1px 1px 0; }
+/* H3 · app 列 */
+.apphead{ border-bottom:0; box-shadow: rgba(27,28,30,0.07) 0 1px 0 0; }
+.backchev{ width:24px; height:24px; flex:none; display:flex; align-items:center; justify-content:center; color: var(--smoke); font-size:16px; font-weight:300; }
+.rolebadge{ font-size:9px; line-height:1; color:#8a8b8e; background:rgba(27,28,30,0.06); border-radius:4px; padding:3px 5px; margin-left:6px; }
+.headdots{ margin-left:auto; color:#a2a3a6; font-size:16px; letter-spacing:2px; }
+/* H1 · 頭像有人（宿主世界觀的暖色，不進幕僚 token 表） */
+.avatar{ display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:500; color:#7a6f5d; background:#e8e0d0; }
+/* H2 · 訊息列：頭像＋泡泡＋時間戳/已讀 */
+.bubwrap{ display:flex; align-items:flex-end; gap:6px; max-width:86%; align-self:flex-start; }
+.bub-av{
+  width:26px; height:26px; border-radius:9999px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:500; color:#7a6f5d; background:#e8e0d0;
+}
+.bubble{
+  max-width:none; border:0; border-radius:4px 14px 14px 14px;
+  box-shadow: rgba(27,28,30,0.06) 0 1px 2px 0, rgba(27,28,30,0.04) 0 0 0 1px;
+}
+.bubmeta{
+  flex:none; display:flex; flex-direction:column; align-items:flex-start; gap:1px;
+  font-size:9px; line-height:1.3; color:#a2a3a6; padding-bottom:2px;
+}
+/* H5 · 輸入框內縮線 */
+.field{ box-shadow: rgba(27,28,30,0.08) 0 0 0 1px inset; background:#ededee; }
+/* H4 · 鍵帽底影 */
+.key{ box-shadow: rgba(0,0,0,0.22) 0 1px 0 0; }
+.key.mod{ box-shadow: rgba(0,0,0,0.16) 0 1px 0 0; }
+/* M3 · 游標呼吸 */
+.caret{ animation: blink 1.1s steps(2, jump-none) infinite; }
+@keyframes blink{ 0%,45%{ opacity:1 } 50%,95%{ opacity:0 } 100%{ opacity:1 } }
+/* M1 · 收合列微漸層＋keyline（單色明度，不是禁的彩色漸層） */
+.panel{
+  background: linear-gradient(180deg, #0a0b0d 0%, var(--ink) 100%);
+  box-shadow: rgba(255,255,255,0.28) 0 1px 0 0 inset,
+              rgba(255,255,255,0.06) 0 0 0 1px;
+}
+/* M2 · 填入鍵帽感 */
+.btn-adopt{
+  box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
+  transition: transform 110ms var(--ease), background 110ms var(--ease);
+}
+.btn-adopt:active{ transform: translateY(1px) scale(0.98); background: var(--white); }
+/* M4 · 面板內亮線＋數字等寬 */
+.panel-body{ box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset; }
+.chip{ font-variant-numeric: tabular-nums; }
+.chip.warm, .chip.amber{ box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset; }
+/* M5 · 讀取中菱形慢轉 */
+.panel.reading .diamond{ animation: spin 1400ms var(--ease) infinite; }
+@keyframes spin{ from{ transform: rotate(45deg) } to{ transform: rotate(405deg) } }
+/* C1 · 來源註腳（取代標籤排；催問×2 重複標題、偏好是內部知識，皆刪） */
+.srcline{
+  font-family: var(--mono); font-size:10px; letter-spacing:.4px; line-height:1.6;
+  color: var(--smoke); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.srcline .sdot{ width:3px; height:3px; border-radius:9999px; background: var(--iron); flex:none; }
+/* C2 · 展開時內容錯拍浮入 */
+.panel[data-open="true"] .panel-in > *{ animation: rise 420ms var(--ease) both; }
+.panel[data-open="true"] .panel-in > *:nth-child(1){ animation-delay:60ms; }
+.panel[data-open="true"] .panel-in > *:nth-child(2){ animation-delay:160ms; }
+.panel[data-open="true"] .panel-in > *:nth-child(3){ animation-delay:260ms; }
+@keyframes rise{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
+/* 換一版的 flash 要壓過 rise，不然展開狀態下換版沒有回饋 */
+.panel[data-open="true"] .panel-in > .sugtext.flash{ animation: fadein 180ms var(--ease) both; }
+/* C5 · 本文呼吸 */
+.sugtext{ letter-spacing:.01em; line-height:1.68; }
 </style>
 </head>
 <body>
@@ -284,19 +378,39 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 
       <div class="phone">
         <div class="screen">
-          <div class="statusbar"><span>14:32</span><span>LTE</span></div>
+          <div class="statusbar">
+            <span>14:32</span>
+            <span class="stat-r">
+              <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
+              <span style="font-family:var(--mono);font-size:9px">LTE</span>
+              <span class="batt"></span>
+            </span>
+          </div>
 
           <div class="apphead">
-            <div class="avatar"></div>
-            <div>
-              <div class="nm">王經理</div>
-              <div class="sub">宏碩採購</div>
+            <span class="backchev">‹</span>
+            <div class="avatar">王</div>
+            <div style="display:flex;align-items:center">
+              <div>
+                <div class="nm">王經理</div>
+                <div class="sub">宏碩採購</div>
+              </div>
+              <span class="rolebadge">客戶</span>
             </div>
+            <span class="headdots">···</span>
           </div>
 
           <div class="thread">
-            <div class="bubble">上次那批的報價還沒給我，明天要開會。</div>
-            <div class="bubble">這已經是我第二次問了。</div>
+            <div class="bubwrap">
+              <div class="bub-av">王</div>
+              <div class="bubble">上次那批的報價還沒給我，明天要開會。</div>
+              <div class="bubmeta"><span>14:29</span></div>
+            </div>
+            <div class="bubwrap">
+              <div class="bub-av">王</div>
+              <div class="bubble">這已經是我第二次問了。</div>
+              <div class="bubmeta"><span>已讀</span><span>14:31</span></div>
+            </div>
           </div>
 
           <div class="composer">
@@ -307,8 +421,8 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
           <div class="panel" id="panelA" data-open="false">
             <div class="panel-row" id="rowA"><!-- 由 JS 依狀態填入 --></div>
             <div class="panel-body"><div><div class="panel-in">
-              <div class="tagrow" id="tagsA"></div>
               <div class="sugtext" id="replyA"></div>
+              <div class="srcline" id="tagsA"></div>
               <div class="footrow">
                 <span class="sugreason" id="reasonA"></span>
                 <button class="linkbtn" id="rerollA">換一版</button>
@@ -335,19 +449,39 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 
       <div class="phone">
         <div class="screen">
-          <div class="statusbar"><span>14:34</span><span>LTE</span></div>
+          <div class="statusbar">
+            <span>14:34</span>
+            <span class="stat-r">
+              <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
+              <span style="font-family:var(--mono);font-size:9px">LTE</span>
+              <span class="batt"></span>
+            </span>
+          </div>
 
           <div class="apphead">
-            <div class="avatar"></div>
-            <div>
-              <div class="nm">王經理</div>
-              <div class="sub">宏碩採購</div>
+            <span class="backchev">‹</span>
+            <div class="avatar">王</div>
+            <div style="display:flex;align-items:center">
+              <div>
+                <div class="nm">王經理</div>
+                <div class="sub">宏碩採購</div>
+              </div>
+              <span class="rolebadge">客戶</span>
             </div>
+            <span class="headdots">···</span>
           </div>
 
           <div class="thread">
-            <div class="bubble">這已經是我第二次問了。</div>
-            <div class="bubble">交期到底能不能給我確定的？</div>
+            <div class="bubwrap">
+              <div class="bub-av">王</div>
+              <div class="bubble">這已經是我第二次問了。</div>
+              <div class="bubmeta"><span>14:33</span></div>
+            </div>
+            <div class="bubwrap">
+              <div class="bub-av">王</div>
+              <div class="bubble">交期到底能不能給我確定的？</div>
+              <div class="bubmeta"><span>已讀</span><span>14:34</span></div>
+            </div>
           </div>
 
           <div class="composer">
@@ -371,11 +505,8 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
             </div>
 
             <div class="panel-body"><div><div class="panel-in">
-              <div class="tagrow">
-                <span class="chip warm">聽起來在推開</span>
-                <span class="chip">#P-118 · 14 天</span>
-              </div>
               <div class="sugtext">交期我來幫您確認。今天內跟生產端對過，回覆您一個能承諾的日期。</div>
+              <div class="srcline">引用<span class="sdot"></span>案 #P-118<span class="sdot"></span>交期 14 天</div>
               <div class="footrow">
                 <span class="sugreason">他會覺得有人接手了，而不是又被轉一手。</span>
               </div>
@@ -400,7 +531,7 @@ const MOODS = {
   normal: {
     label: "一般", chip: "",
     strategy: "",
-    tags: [["#Q-2410",""], ["交期 14 天",""], ["偏好 · 先給結論",""]],
+    src: ["報價單 #Q-2410", "交期 14 天"],
     replies: [
       "王經理午安，報價已完成：A 規格 NT$248／pcs，B 規格 NT$276／pcs，交期同為 14 天。稍後寄 PDF 給您，明天開會直接用這版。",
       "王經理午安。A 規格 NT$248／pcs、B 規格 NT$276／pcs，交期都是 14 天，等下把 PDF 寄過去。"
@@ -410,7 +541,7 @@ const MOODS = {
   tense: {
     label: "高壓", chip: "warm",
     strategy: "他已經問第二次 · 要的是有人接住",
-    tags: [["#Q-2410",""], ["催問 ×2","warm"], ["交期 14 天",""], ["偏好 · 條列",""]],
+    src: ["報價單 #Q-2410", "交期 14 天"],
     replies: [
       "王經理，抱歉讓您問到第二次，這是我這邊的疏漏。報價今天下午三點前給您，含 A／B 兩種規格與交期。明天開會若要簡報版本，我一併整理好。",
       "王經理，第二次才回覆是我的問題，抱歉。今天下午三點前給您完整報價（A／B 規格與交期），並附一份可直接開會用的一頁版。"
@@ -420,7 +551,7 @@ const MOODS = {
   sensitive: {
     label: "敏感", chip: "amber",
     strategy: "話題已碰到價格 · 這裡多說一個數字就會被當成承諾",
-    tags: [["#Q-2410",""], ["折讓需核准","amber"], ["敏感詞 · 降價","amber"]],
+    src: ["報價單 #Q-2410", "折讓需核准"],
     replies: [
       "王經理，抱歉讓您等。完整報價今天下午三點前給您；價格條件我需要先與主管確認，今天下班前正式回覆，不會讓您明天開會前空著。",
       "王經理，抱歉。報價今天下午三點前送到；折讓條件涉及內部核准，我今天下班前正式回覆您，開會前一定給確定的數字。"
@@ -478,8 +609,11 @@ function renderA(animate) {
   $("panelA").dataset.open = String(v === "expanded");
   $("panelA").classList.toggle("reading", v === "reading");
 
-  $("tagsA").innerHTML = m.tags
-    .map(([t, k]) => '<span class="chip' + (k ? " " + k : "") + '">' + esc(t) + '</span>')
+  /* C1（v0.4）：標籤排降級成一行來源註腳。
+     「催問 ×2」「敏感詞 · 降價」重複情境判讀、「偏好 · …」是內部知識，皆不再對用戶顯示；
+     留下的是「這句話引用了哪筆資料」——可信度證明。 */
+  $("tagsA").innerHTML = "引用" + m.src
+    .map(s => '<span class="sdot"></span>' + esc(s))
     .join("");
 
   const el = $("replyA");
