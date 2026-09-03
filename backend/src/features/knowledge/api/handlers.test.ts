@@ -15,6 +15,9 @@ import { loadPromptLayers } from "@/shared/prompts";
 
 import { createKnowledgeRouter } from "./index";
 
+// 1x1 透明 PNG，測試用最小合法 image data URL（v0.2 /analyze 吃截圖不吃文字對話）
+const SCREENSHOT = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
 /**
  * 每個測試都在 os.tmpdir() 下複製一份真實 data/*.json 當作 DATA_DIR，
  * 絕不對 repo 的 data/ 目錄讀寫；afterEach 清掉暫存目錄。
@@ -259,6 +262,7 @@ describe("put 後 /analyze 立刻看到新 fact（同一個 store 參考，不�
 
     const model = new MockLanguageModelV4({
       doGenerate: async () => textResult({
+        conversationText: "them: 關於 testtopic 的事，你有空聊聊嗎？",
         risk: "safe",
         riskReason: "一般往來",
         reply: "收到，我看一下——晚點回您。",
@@ -268,11 +272,12 @@ describe("put 後 /analyze 立刻看到新 fact（同一個 store 參考，不�
     });
     const analyzeClient = buildAnalyzeClient(model);
 
+    // v0.2：/analyze 吃截圖不吃文字對話，但這裡驗證的是 sources 映射看得到剛 PUT
+    // 進去的新 fact（同一個 store 參考，不是啟動時快照），跟輸入形式無關，
+    // screenshot 內容本身不影響這個斷言。
     const response = await analyzeClient.analyze.$post({
       json: {
-        conversation: [
-          { speaker: "them", text: "關於 testtopic 的事，你有空聊聊嗎？", ts: "2026-09-06T09:12:00Z" },
-        ],
+        screenshot: SCREENSHOT,
       },
     });
 

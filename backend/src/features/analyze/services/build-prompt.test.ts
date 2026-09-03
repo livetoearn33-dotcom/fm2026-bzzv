@@ -34,38 +34,23 @@ const facts: Fact[] = [
 ];
 
 describe("buildAnalyzeTaskBlock", () => {
-  it("組出對象、事實、對話、安全牌四段，internal 事實標註不得寫入回覆", () => {
-    const block = buildAnalyzeTaskBlock({
-      contact,
-      facts,
-      conversation: [{ speaker: "them", text: "進度到底怎樣了？", ts: "2026-09-06T00:00:00Z" }],
-      safeCard: "收到，我確認一下進度",
-    });
+  it("組出對象、事實兩段，internal 事實標註不得寫入回覆，結尾提示截圖另外附上", () => {
+    const block = buildAnalyzeTaskBlock({ contact, facts });
 
     expect(block).toContain("對象：林經理（主管）");
     expect(block).toContain("id: proj-a-status｜A 案進度｜卡在客戶端還沒回簽合約。");
     expect(block).toContain("（內部參考，不得寫入回覆）");
-    expect(block).toContain("對方：進度到底怎樣了？");
-    expect(block).toContain("你的 reply 必須以這句原文開頭，接著往下寫。");
+    expect(block).toContain("〈畫面〉");
+    expect(block).toContain("截圖以 image content part 附上，不放在文字裡");
   });
 
   it("沒有相關事實時寫「（無相關事實）」", () => {
-    const block = buildAnalyzeTaskBlock({
-      contact,
-      facts: [],
-      conversation: [{ speaker: "them", text: "哈囉", ts: "2026-09-06T00:00:00Z" }],
-      safeCard: "收到，我看一下",
-    });
+    const block = buildAnalyzeTaskBlock({ contact, facts: [] });
     expect(block).toContain("（無相關事實）");
   });
 
   it("沒有對象資料時寫「未知（無檔案）」", () => {
-    const block = buildAnalyzeTaskBlock({
-      contact: undefined,
-      facts: [],
-      conversation: [{ speaker: "them", text: "哈囉", ts: "2026-09-06T00:00:00Z" }],
-      safeCard: "收到，我看一下",
-    });
+    const block = buildAnalyzeTaskBlock({ contact: undefined, facts: [] });
     expect(block).toContain("對象：未知（無檔案）");
   });
 
@@ -73,11 +58,32 @@ describe("buildAnalyzeTaskBlock", () => {
     const block = buildAnalyzeTaskBlock({
       contact,
       facts: [],
-      conversation: [{ speaker: "them", text: "這週來得及嗎？", ts: "2026-09-06T00:00:00Z" }],
-      safeCard: "收到，我看一下",
       now: new Date(2026, 8, 6), // 2026-09-06 是週日
     });
     expect(block).toContain("今天是 2026-09-06（週日）");
+  });
+
+  it("帶 draft 時加〈使用者已打的草稿〉段", () => {
+    const block = buildAnalyzeTaskBlock({ contact, facts: [], draft: "我們一直都是這樣做的" });
+    expect(block).toContain("〈使用者已打的草稿〉");
+    expect(block).toContain("我們一直都是這樣做的");
+    expect(block).toContain("保留他的原意與立場");
+  });
+
+  it("沒帶 draft 時不出現〈使用者已打的草稿〉段", () => {
+    const block = buildAnalyzeTaskBlock({ contact, facts: [] });
+    expect(block).not.toContain("〈使用者已打的草稿〉");
+  });
+
+  it("帶 personaCard 時加〈指定角色〉段，附角色卡全文", () => {
+    const block = buildAnalyzeTaskBlock({ contact, facts: [], personaCard: "諸葛亮角色卡全文" });
+    expect(block).toContain("〈指定角色〉");
+    expect(block).toContain("諸葛亮角色卡全文");
+  });
+
+  it("沒帶 personaCard 時不出現〈指定角色〉段", () => {
+    const block = buildAnalyzeTaskBlock({ contact, facts: [] });
+    expect(block).not.toContain("〈指定角色〉");
   });
 });
 

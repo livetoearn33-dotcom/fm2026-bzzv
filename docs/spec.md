@@ -53,11 +53,14 @@ Android 原生 UI 是 Compose／XML，吃不了 HTML。如果視覺稿要被原�
 
 ## 架構
 
+> v0.2（2026-09-03 三人討論定案）：分流與安全牌整個功能砍掉、輸入改截圖。
+> 下面的圖與機制說明已對齊這次改動——見決策表。
+
 ```mermaid
 flowchart TB
     subgraph AND["Android 原生殼"]
         F["懸浮球<br/>SYSTEM_ALERT_WINDOW"]
-        R["Accessibility Service<br/>讀對話 + 監聽輸入框"]
+        R["Accessibility Service<br/>讀畫面 + 監聽輸入框"]
         IME["自訂輸入法 IME 殼"]
         P["填回輸入框"]
     end
@@ -68,17 +71,17 @@ flowchart TB
         U2["防自爆攔截"]
     end
     subgraph API["後端"]
-        S["/analyze 分析對話"]
+        S["/analyze 讀截圖、分析、回覆（含 persona）"]
         G["/guard 防自爆檢查"]
         K["知識庫<br/>facts.json + contacts.json"]
     end
     F --> U1
-    R -->|"對話文字"| U1
+    R -->|"螢幕截圖"| U1
     R -->|"你正在打的字"| U2
     IME --> U2
-    U1 -->|"對話"| S
+    U1 -->|"截圖 (+ draft / persona)"| S
     S --> K
-    S -->|"風險等級 安全牌 回覆 來源"| U1
+    S -->|"對話文字 風險等級 回覆 來源"| U1
     U2 -->|"草稿"| G
     G -->|"風險詞 建議版本"| U2
     U1 --> P
@@ -87,20 +90,11 @@ flowchart TB
 
 ---
 
-## 三個機制
+## 兩個機制
 
-### 1. 分流
+分流與安全牌已砍掉（見決策表）：不再有本地規則預先給答案，demo 的節奏靠剪輯處理，不靠 0.2 秒安全牌。
 
-不是每則訊息都要動用 LLM。
-
-| 類型 | 判斷方式 | 處理 |
-|---|---|---|
-| **高頻可預測**（收到、好的、我下午回你、這週三可以） | 本地規則（關鍵字／樣式比對） | 直接給一個，零延遲 |
-| **要查資料**（報價多少、什麼時候出貨、規格） | 落不進本地規則的都算 | 查知識庫 ＋ LLM |
-
-demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
-
-### 2. 讀空氣
+### 1. 讀空氣
 
 在產生回覆**之前**先判斷氣氛。
 
@@ -114,7 +108,7 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 **這是產品跟一般聊天機器人的分界線。** 一般 AI 只判斷「這句話怎麼回」，我們判斷「現在能不能這樣回」。
 
-### 3. 防自爆
+### 2. 防自爆
 
 使用者不採用建議、自己動手打字時觸發。
 
@@ -130,17 +124,16 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 ### `POST /analyze`
 
-分析一段對話，回傳風險等級與建議回覆。
+讀一張截圖，回傳讀到的對話文字、風險等級與建議回覆。**v0.2：persona 併入本端點**，帶了就直接產角色版回覆；`draft` 帶了就是「改寫使用者的草稿」而不是「產生回覆」。完整組裝契約見 `prompts/README-組裝說明.md`。
 
 **Request**
 
 ```json
 {
-  "conversation": [
-    { "speaker": "them", "text": "這個進度到底怎麼樣了？下午要跟客戶開會。", "ts": "2026-09-06T09:12:00Z" },
-    { "speaker": "me", "text": "好的", "ts": "2026-09-05T18:03:00Z" }
-  ],
-  "contactId": "boss-lin"
+  "screenshot": "data:image/png;base64,...",
+  "draft": "（選填）使用者已經打在輸入框的字",
+  "contactId": "boss-lin",
+  "persona": "（選填）zhuge | ceo | charmer"
 }
 ```
 
@@ -148,22 +141,24 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 ```json
 {
+  "conversationText": "them: 這個進度到底怎麼樣了？下午要跟客戶開會。",
   "risk": "pressure",
   "riskReason": "對方在催進度，且有明確時間壓力",
-  "safeCard": "收到，我確認一下進度",
   "reply": "收到，我確認一下進度——今晚 8 點前補完整版給您確認。目前卡在客戶端還沒回簽，已經在追。",
   "naiveReply": "收到",
   "sources": [
-    { "id": "proj-a-status", "label": "A 案進度 · 2026-09-05" }
+    { "id": "proj-a-status", "label": "A 案進度" }
   ],
   "latencyMs": 1840
 }
 ```
 
-- `safeCard` 前端在 0.2 秒內先顯示
-- `reply` 到了之後**接在 safeCard 後面長出來**，不是整句抽換
+- `conversationText`：VLM 從截圖讀到的對話，格式固定 `them: 內容` / `me: 內容`，每則一行。後端拿它比對 golden path（二段式：LLM 先讀圖產生這個欄位，命中劇本就用快取覆蓋 `risk`/`reply`/`naiveReply`/`sources`，不再打第二次生成——目的是講稿穩定，不是變快）
 - `naiveReply` 用在 demo 的對比展開（「一般 AI 會回什麼」）
 - `sources` 給回覆旁邊的來源標籤用
+- `plainReply`：只有 request 帶 `persona` 時才會出現，是改寫前的正常版回覆
+- 讀不到畫面上的對話時回 422，`{"message": "這張畫面我讀不到對話"}`
+- `persona` 帶了但找不到對應角色卡時回 400
 
 ### `POST /guard`
 
@@ -193,9 +188,9 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 
 `spans` 給前端做風險詞標記用。
 
-### `POST /persona`
+### `POST /persona`（保留，demo 不用）
 
-把已生成的回覆改寫成角色口吻。組裝契約見 prompts/README-組裝說明.md 的 /persona 段。
+把已生成的回覆改寫成角色口吻。**v0.2：這個呼叫方式被 `/analyze` 的 `persona` 參數取代**（一次呼叫直接產角色版，見上方 `/analyze`）。端點本身還在，是因為契約沒理由砍，但 demo 走的是併進 `/analyze` 的路徑。組裝契約見 prompts/README-組裝說明.md 的「角色改寫」段。
 
 **Request**
 
@@ -300,10 +295,10 @@ App 的設定畫面用這組讀寫對象檔案與事實庫。後端以記憶體�
 | # | Surface | 畫面 | 前端要做的事 |
 |---|---|---|---|
 | 1 | 浮層 | 懸浮球待命 | 收起／hover 兩個狀態 |
-| 2 | **浮層** | **讀空氣＋回覆生成** ⭐ | safeCard 先顯示 → reply 接續長出來的動畫；風險標記；來源標籤；對比展開 |
+| 2 | **浮層** | **讀空氣＋回覆生成** ⭐ | 讀取中（無 spinner，沿用面板上緣掃光語彙）→ reply 長出來的動畫；風險標記；來源標籤；對比展開。**v0.2：不再有 safeCard 可以先墊，讀取中狀態要撐住這段等待** |
 | 3 | **鍵盤** | **防自爆建議條** ⭐ | 待命（高度 0）→ 觸發（長出 56dp）→ 展開（160dp）→ 採用後收回；`spans` 標記風險詞 |
 | 4 | — | 跨 App | 動畫或預錄，不用真做 |
-| 5 | — | 知識庫設定 | 靜態一張，被問到才開；若要接功能，後端 `/contacts`、`/facts` 已可用 |
+| 5 | — | 知識庫設定 | 互動版（貼→抽→確認）已做，`design/app-settings.html`；後端 `/contacts`、`/facts` CRUD 已可用，`/extract` 還沒接（前端目前是假引擎） |
 
 **視覺火力集中在 2 和 3。** 兩個 surface 要用同一套視覺語言，但版面完全不同——一個是大卡片，一個是窄條。
 
@@ -323,10 +318,10 @@ App 的設定畫面用這組讀寫對象檔案與事實庫。後端以記憶體�
 
 | 模組 | 內容 |
 |---|---|
-| **Android 殼 A · 浮層** | 懸浮球權限（`SYSTEM_ALERT_WINDOW`）、Accessibility Service 讀對話、WebView 容器、JS bridge |
-| **Android 殼 B · 輸入法** | IME 骨架、建議條 WebView、填回輸入框。**建議 fork [AOSP SoftKeyboard sample](https://github.com/aosp-mirror/platform_development/tree/master/samples/SoftKeyboard) 加一條 WebView，不要自己從零寫鍵盤**——鍵盤本體只要能打字就好，不用做好 |
-| **前端 UI** | 兩個 surface 的所有狀態，純 HTML+CSS+JS |
-| **後端** | `/analyze`、`/guard`、知識庫檢索、分流規則 |
+| **Android 殼 A · 浮層** | 懸浮球權限（`SYSTEM_ALERT_WINDOW`）、Accessibility Service 截圖／讀畫面、WebView 容器、JS bridge。**目前 repo 裡沒有這層的任何程式碼**，是現在最大的缺口 |
+| **Android 殼 B · 輸入法** | IME 骨架、建議條 WebView、填回輸入框。**建議 fork [AOSP SoftKeyboard sample](https://github.com/aosp-mirror/platform_development/tree/master/samples/SoftKeyboard) 加一條 WebView，不要自己從零寫鍵盤**——鍵盤本體只要能打字就好，不用做好。**同樣沒有程式碼** |
+| **前端 UI** | 兩個 surface 的所有狀態，純 HTML+CSS+JS。三個「真做」畫面已完成：`design/app-writing.html`、`app-selfburn.html`、`app-settings.html` |
+| **後端** | `/analyze`（截圖＋persona，v0.2 已實作）、`/guard`、知識庫檢索、golden path |
 | **內容與測資** | facts.json、contacts.json 的真實資料；demo 對話腳本；備援錄影 |
 
 **動態轉換要有人明確負責。** 這個 demo 的價值在「文字長出來」「卡片滑進來」，不在靜態版面。如果沒人負責狀態轉換，會做出漂亮但不會動的畫面。
