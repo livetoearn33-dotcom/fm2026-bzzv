@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>幕僚 · 代寫（WebView 正式版）</title>
+<link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
+<style>
+/* ============================================================
+   幕僚 · 代寫流程 —— WebView 正式版
+   從 refined.html 抽出、拿掉桌機展示外框（.page/.decks/.caption/tabs），
+   改成吃滿真實裝置螢幕、支援 safe-area 的全螢幕版本。
+   視覺 token、狀態機、文案完全沿用 refined.html，未改寫。
+
+   這份檔案是「要放進 Android WebView 的東西」，不是設計稿。
+   ============================================================ */
+
+:root{
+  --void:  #040506;
+  --ink:   #07080a;
+  --obsid: #111214;
+  --graph: #1b1c1e;
+  --slate: #363739;
+  --iron:  #454647;
+  --smoke: #6a6b6c;
+  --ash:   #9c9c9d;
+  --mist:  #e6e6e6;
+  --white: #ffffff;
+
+  --coral: #ff6363;
+  --ember: #452324;
+  --amber: #4a3a1f;
+
+  --host-bg:   #f2f2f3;
+  --host-card: #ffffff;
+  --host-line: #dfdfe0;
+  --host-ink:  #1b1c1e;
+  --host-key:  #d4d4d5;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
+
+  /* --vh：JS 修正 WebView 對 100vh/100dvh 支援不一致的問題（見下方 script） */
+  --vh: 1vh;
+}
+
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html,body{ margin:0; height:100%; overscroll-behavior: none; }
+body{
+  height: calc(var(--vh, 1vh) * 100);
+  background: var(--host-bg); color: var(--white);
+  font-family: "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+button{ font-family: inherit; cursor: pointer; }
+
+/* ---------- 螢幕本體：填滿裝置，含 safe-area ---------- */
+.screen{
+  position: relative; width: 100%; height: 100%;
+  display:flex; flex-direction:column;
+  background: var(--host-bg);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---------- 宿主 App ---------- */
+.apphead{
+  flex:none; display:flex; align-items:center; gap:8px;
+  padding:10px 16px; background: var(--host-card);
+  box-shadow: rgba(27,28,30,0.07) 0 1px 0 0;
+}
+.backchev{ width:24px; height:24px; flex:none; display:flex; align-items:center; justify-content:center; color: var(--smoke); font-size:18px; font-weight:300; }
+.avatar{
+  width:34px; height:34px; border-radius:9999px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:500; color:#7a6f5d; background:#e8e0d0;
+}
+.apphead .nm{ font-size:14px; font-weight:500; line-height:1.4; color: var(--host-ink); }
+.apphead .sub{ font-size:11px; line-height:1.4; color: var(--smoke); }
+.rolebadge{ font-size:9px; line-height:1; color:#8a8b8e; background:rgba(27,28,30,0.06); border-radius:4px; padding:3px 5px; margin-left:6px; }
+.headdots{ margin-left:auto; color:#a2a3a6; font-size:18px; letter-spacing:2px; padding:4px; }
+
+.thread{
+  flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-end;
+  gap:8px; padding:16px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.bubwrap{ display:flex; align-items:flex-end; gap:6px; max-width:86%; align-self:flex-start; }
+.bub-av{
+  width:26px; height:26px; border-radius:9999px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:500; color:#7a6f5d; background:#e8e0d0;
+}
+.bubble{
+  border-radius:4px 14px 14px 14px; padding:9px 13px;
+  font-size:15px; line-height:1.55; color: var(--host-ink); text-wrap:pretty;
+  background: var(--host-card);
+  box-shadow: rgba(27,28,30,0.06) 0 1px 2px 0, rgba(27,28,30,0.04) 0 0 0 1px;
+}
+.bubmeta{
+  flex:none; display:flex; flex-direction:column; align-items:flex-start; gap:1px;
+  font-size:9px; line-height:1.3; color:#a2a3a6; padding-bottom:2px;
+}
+
+.composer{
+  flex:none; display:flex; align-items:flex-end; gap:8px;
+  padding:8px 16px 12px; border-top:1px solid var(--host-line); background: var(--host-card);
+}
+.field{
+  flex:1; min-height:40px; border-radius:8px; background:#ededee;
+  box-shadow: rgba(27,28,30,0.08) 0 0 0 1px inset;
+  display:flex; align-items:center;
+  padding:9px 13px; font-size:15px; line-height:1.6; color: var(--ash);
+  transition: color 200ms var(--ease);
+}
+.field.typed{ display:block; color: var(--host-ink); line-break:strict; }
+.sendbtn{
+  width:40px; height:40px; flex:none; border-radius:8px; background: var(--host-bg);
+  transition: background 200ms var(--ease);
+}
+.sendbtn.live{ background: var(--graph); }
+.caret{ display:inline-block; width:1.5px; height:16px; background: var(--iron); margin-left:2px; vertical-align:-3px;
+  animation: blink 1.1s steps(2, jump-none) infinite; }
+@keyframes blink{ 0%,45%{ opacity:1 } 50%,95%{ opacity:0 } 100%{ opacity:1 } }
+
+.mark-typo{ border-bottom:1px dotted var(--ash); }
+.mark-tone{ background: rgba(69,35,36,0.14); border-bottom:2px solid var(--ember); padding-bottom:1px; }
+
+/* ============================================================
+   幕僚面板 —— 貼齊左右緣，從鍵盤上緣往上長。tap target ≥ 40dp/44dp
+   ============================================================ */
+.panel{
+  position:relative; flex:none;
+  background: linear-gradient(180deg, #0a0b0d 0%, var(--ink) 100%);
+  border-radius:16px 16px 0 0; overflow:hidden;
+  box-shadow: rgba(255,255,255,0.28) 0 1px 0 0 inset,
+              rgba(255,255,255,0.06) 0 0 0 1px;
+}
+.panel.reading::after{
+  content:''; position:absolute; left:0; top:0; height:1px; width:35%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
+  animation: sweep 1100ms linear infinite;
+}
+@keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
+.panel.reading .diamond{ animation: spin 1400ms var(--ease) infinite; }
+@keyframes spin{ from{ transform: rotate(45deg) } to{ transform: rotate(405deg) } }
+
+.panel-row{ min-height:56px; display:flex; align-items:center; gap:8px; padding:8px 8px 8px 16px; }
+.panel-hit{
+  flex:1; min-width:0; display:flex; align-items:center; gap:8px;
+  border:0; background:transparent; padding:8px 0; text-align:left; min-height:44px;
+}
+.panel-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.panel-eyebrow{ display:flex; align-items:center; gap:8px; }
+.eyebrow{
+  font-family: var(--mono); font-size:10px; line-height:1;
+  letter-spacing:.8px; text-transform:uppercase; color: var(--smoke);
+}
+.panel-title{
+  font-size:13px; font-weight:500; line-height:1.3; color: var(--white);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.chip{
+  font-family: var(--mono); font-size:10px; line-height:1.6; letter-spacing:.3px;
+  border-radius:6px; padding:3px 6px; white-space:nowrap;
+  background: var(--graph); color: var(--ash);
+  font-variant-numeric: tabular-nums;
+}
+.chip.mood{ letter-spacing:.8px; text-transform:uppercase; }
+.chip.warm{ background: var(--ember); color: var(--mist); box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset; }
+.chip.amber{ background: var(--amber); color: var(--mist); box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset; }
+
+.btn-adopt{
+  flex:none; height:44px; min-width:44px; padding:0 16px; border-radius:8px; border:0;
+  background: var(--mist); color: var(--iron); font-size:14px; font-weight:500;
+  box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
+  transition: transform 110ms var(--ease), background 110ms var(--ease);
+}
+.btn-adopt:active{ transform: translateY(1px) scale(0.98); background: var(--white); }
+.btn-attach{
+  flex:none; height:44px; min-width:44px; padding:0 16px; border-radius:8px;
+  background:transparent; color: var(--ash); border:1px solid var(--slate);
+  font-size:14px; font-weight:500;
+}
+.chevron{
+  flex:none; width:44px; height:44px; border:0; background:transparent; border-radius:8px;
+  font-family: var(--mono); font-size:11px; color: var(--smoke);
+  display:flex; align-items:center; justify-content:center;
+}
+.chevron span{ display:inline-block; transition: transform 200ms var(--ease); }
+.panel[data-open="true"] .chevron span{ transform: rotate(180deg); }
+
+.panel-body{
+  background: var(--obsid);
+  box-shadow: rgba(255,255,255,0.04) 0 1px 0 0 inset;
+  display:grid; grid-template-rows:0fr;
+  transition: grid-template-rows 200ms var(--ease);
+}
+.panel[data-open="true"] .panel-body{ grid-template-rows:1fr; }
+.panel-body > div{ overflow:hidden; }
+.panel-in{ padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:8px; }
+.panel[data-open="true"] .panel-in > *{ animation: rise 420ms var(--ease) both; }
+.panel[data-open="true"] .panel-in > *:nth-child(1){ animation-delay:60ms; }
+.panel[data-open="true"] .panel-in > *:nth-child(2){ animation-delay:160ms; }
+.panel[data-open="true"] .panel-in > *:nth-child(3){ animation-delay:260ms; }
+@keyframes rise{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
+
+.sugtext{ font-size:17px; font-weight:400; line-height:1.68; letter-spacing:.01em; color: var(--white); text-wrap:pretty; }
+.sugtext.flash{ animation: fadein 180ms var(--ease) both; }
+.panel[data-open="true"] .panel-in > .sugtext.flash{ animation: fadein 180ms var(--ease) both; }
+@keyframes fadein{ from{opacity:0} to{opacity:1} }
+
+.srcline{
+  font-family: var(--mono); font-size:10px; letter-spacing:.4px; line-height:1.6;
+  color: var(--smoke); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.srcline .sdot{ width:3px; height:3px; border-radius:9999px; background: var(--iron); flex:none; }
+
+.footrow{ display:flex; align-items:flex-end; gap:12px; }
+.sugreason{ flex:1; font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty; }
+.linkbtn{
+  flex:none; border:0; background:transparent; padding:8px 0 8px 4px; min-height:44px;
+  font-family: var(--mono); font-size:10px; letter-spacing:.3px; line-height:1.6; color: var(--smoke);
+}
+
+/* ---------- 注音鍵盤（僅視覺，不接系統輸入法） ---------- */
+.kbd{ flex:none; background: var(--mist); padding:8px 4px 12px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:6px; }
+.kbd-row{ display:flex; gap:5px; justify-content:center; padding:0 4px; }
+.key{
+  flex:1; height:40px; border-radius:8px; background: var(--host-card); color: var(--iron);
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+  box-shadow: rgba(0,0,0,0.22) 0 1px 0 0;
+}
+.key.mod{ background: var(--host-key); box-shadow: rgba(0,0,0,0.16) 0 1px 0 0; }
+
+/* ---------- 開發用：QA 角標，出貨前用 ?qa=0 或直接刪掉這個 block 關掉 ---------- */
+.qabadge{
+  position:fixed; top:calc(env(safe-area-inset-top,0px) + 4px); right:8px; z-index:99;
+  font-family: var(--mono); font-size:8px; letter-spacing:1px; color: rgba(0,0,0,0.28);
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="apphead">
+    <span class="backchev">‹</span>
+    <div class="avatar">王</div>
+    <div style="display:flex;align-items:center">
+      <div>
+        <div class="nm">王經理</div>
+        <div class="sub">宏碩採購</div>
+      </div>
+      <span class="rolebadge">客戶</span>
+    </div>
+    <span class="headdots">···</span>
+  </div>
+
+  <div class="thread">
+    <div class="bubwrap">
+      <div class="bub-av">王</div>
+      <div class="bubble">上次那批的報價還沒給我，明天要開會。</div>
+      <div class="bubmeta"><span>14:29</span></div>
+    </div>
+    <div class="bubwrap">
+      <div class="bub-av">王</div>
+      <div class="bubble">這已經是我第二次問了。</div>
+      <div class="bubmeta"><span>已讀</span><span>14:31</span></div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <div class="field" id="fieldA">輸入訊息<span class="caret"></span></div>
+    <div class="sendbtn" id="sendA"></div>
+  </div>
+
+  <div class="panel" id="panelA" data-open="false">
+    <div class="panel-row" id="rowA"><!-- 由 JS 依狀態填入 --></div>
+    <div class="panel-body"><div><div class="panel-in">
+      <div class="sugtext" id="replyA"></div>
+      <div class="srcline" id="tagsA"></div>
+      <div class="footrow">
+        <span class="sugreason" id="reasonA"></span>
+        <button class="linkbtn" id="rerollA">換一版</button>
+      </div>
+    </div></div></div>
+  </div>
+
+  <div class="kbd" data-kbd></div>
+</div>
+
+<span class="qabadge">幕僚 · app-writing · 高壓局</span>
+
+<script>
+"use strict";
+
+/* 修正 WebView 對 100vh 計算不一致（尤其含系統列/導覽列的裝置） */
+function setVH(){ document.documentElement.style.setProperty("--vh", (window.innerHeight * 0.01) + "px"); }
+setVH();
+addEventListener("resize", setVH);
+addEventListener("orientationchange", setVH);
+
+/* 內容：與 refined.html 完全一致，未改寫 */
+const MOODS = {
+  normal: {
+    label: "一般", chip: "",
+    strategy: "",
+    src: ["報價單 #Q-2410", "交期 14 天"],
+    replies: [
+      "王經理午安，報價已完成：A 規格 NT$248／pcs，B 規格 NT$276／pcs，交期同為 14 天。稍後寄 PDF 給您，明天開會直接用這版。",
+      "王經理午安。A 規格 NT$248／pcs、B 規格 NT$276／pcs，交期都是 14 天，等下把 PDF 寄過去。"
+    ],
+    reason: "他只是要數字，這樣他一眼就能複製到明天的會議資料裡。"
+  },
+  tense: {
+    label: "高壓", chip: "warm",
+    strategy: "他已經問第二次 · 要的是有人接住",
+    src: ["報價單 #Q-2410", "交期 14 天"],
+    replies: [
+      "王經理，抱歉讓您問到第二次，這是我這邊的疏漏。報價今天下午三點前給您，含 A／B 兩種規格與交期。明天開會若要簡報版本，我一併整理好。",
+      "王經理，第二次才回覆是我的問題，抱歉。今天下午三點前給您完整報價（A／B 規格與交期），並附一份可直接開會用的一頁版。"
+    ],
+    reason: "他讀到的是有人認了、有時間點；沒有解釋延遲，所以不會像在找理由。"
+  },
+  sensitive: {
+    label: "敏感", chip: "amber",
+    strategy: "話題已碰到價格 · 這裡多說一個數字就會被當成承諾",
+    src: ["報價單 #Q-2410", "折讓需核准"],
+    replies: [
+      "王經理，抱歉讓您等。完整報價今天下午三點前給您；價格條件我需要先與主管確認，今天下班前正式回覆，不會讓您明天開會前空著。",
+      "王經理，抱歉。報價今天下午三點前送到；折讓條件涉及內部核准，我今天下班前正式回覆您，開會前一定給確定的數字。"
+    ],
+    reason: "他會覺得你在幫他爭取，而不是拒絕他；折讓幅度沒有提前露出去。"
+  }
+};
+
+/* 這份 demo 固定走「高壓局」——對應 demo-script.md 第一幕的腳本 */
+const state = { view: "idle", mood: "tense", variant: 0 };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+const ROW_IDLE = `
+  <i class="diamond" style="width:9px;height:9px"></i>
+  <span style="flex:1"></span>
+  <button class="btn-attach" id="attachBtn">附加</button>`;
+
+const ROW_READING = `
+  <i class="diamond" style="width:9px;height:9px"></i>
+  <span class="eyebrow">讀取中</span>
+  <span style="flex:1"></span>`;
+
+function rowSuggest(m, title) {
+  return `
+  <button class="panel-hit" id="hitA">
+    <span class="panel-txt">
+      <span class="panel-eyebrow">
+        <i class="diamond" style="width:6px;height:6px"></i>
+        <span class="eyebrow">幕僚</span>
+        <span class="chip mood ${m.chip}">${esc(m.label)}</span>
+      </span>
+      <span class="panel-title">${esc(title)}</span>
+    </span>
+  </button>
+  <button class="btn-adopt" id="adoptBtn">填入</button>
+  <button class="chevron" id="chevA" aria-label="展開"><span>▴</span></button>`;
+}
+
+function render(animate) {
+  const m = MOODS[state.mood];
+  const reply = m.replies[state.variant % m.replies.length];
+  const v = state.view;
+  const suggesting = (v === "ready" || v === "expanded");
+
+  $("rowA").innerHTML = suggesting ? rowSuggest(m, m.strategy || reply)
+                      : v === "reading" ? ROW_READING
+                      : ROW_IDLE;
+
+  $("panelA").dataset.open = String(v === "expanded");
+  $("panelA").classList.toggle("reading", v === "reading");
+
+  $("tagsA").innerHTML = "引用" + m.src
+    .map(s => '<span class="sdot"></span>' + esc(s))
+    .join("");
+
+  const el = $("replyA");
+  el.textContent = reply;
+  if (animate) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+  $("reasonA").textContent = m.reason;
+
+  const f = $("fieldA");
+  if (v === "adopted") {
+    f.classList.add("typed");
+    f.innerHTML = esc(reply) + '<span class="caret"></span>';
+    $("sendA").classList.add("live");
+  } else {
+    f.classList.remove("typed");
+    f.innerHTML = '輸入訊息<span class="caret"></span>';
+    $("sendA").classList.remove("live");
+  }
+
+  bindRow();
+}
+
+function bindRow() {
+  const attach = $("attachBtn");
+  if (attach) attach.addEventListener("click", () => {
+    state.view = "reading"; render(false);
+    setTimeout(() => { if (state.view === "reading") { state.view = "ready"; render(true); } }, 1100);
+  });
+  const adopt = $("adoptBtn");
+  if (adopt) adopt.addEventListener("click", () => { state.view = "adopted"; render(false); });
+  const toggle = () => { state.view = state.view === "expanded" ? "ready" : "expanded"; render(false); };
+  const chev = $("chevA"), hit = $("hitA");
+  if (chev) chev.addEventListener("click", toggle);
+  if (hit) hit.addEventListener("click", toggle);
+}
+
+/* ---------- 注音鍵盤（視覺，不接系統輸入法） ---------- */
+const KEY_ROWS = [
+  "ㄅㄉˇˋㄓˊ˙ㄚㄞㄢ".split("").map(c => ({ label: c, flex: 1 })),
+  "ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ".split("").map(c => ({ label: c, flex: 1 })),
+  "ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ".split("").map(c => ({ label: c, flex: 1 })),
+  [{ label: "⇧", flex: 1.4, mod: true },
+   ...["ㄈ","ㄌ","ㄏ","ㄒ","ㄖ","ㄙ"].map(c => ({ label: c, flex: 1 })),
+   { label: "⌫", flex: 1.4, mod: true }],
+  [{ label: "?123", flex: 1.6, mod: true },
+   { label: "，", flex: 1 },
+   { label: "", flex: 4.4 },
+   { label: "。", flex: 1 },
+   { label: "↵", flex: 1.6, mod: true }]
+];
+const KBD_HTML = KEY_ROWS.map(row =>
+  '<div class="kbd-row">' + row.map(k =>
+    '<div class="key' + (k.mod ? " mod" : "") + '" style="flex:' + k.flex + '">' + k.label + '</div>'
+  ).join("") + '</div>'
+).join("");
+document.querySelectorAll("[data-kbd]").forEach(el => { el.innerHTML = KBD_HTML; });
+
+render(false);
+</script>
+</body>
+</html>
