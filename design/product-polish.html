@@ -222,6 +222,47 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
 /* M5 · 菱形讀取中慢轉（這頁用 hover 面板列示意） */
 .polish .panel:hover .panel-eyebrow .diamond{ animation: spin 1400ms var(--ease) 1; }
 @keyframes spin{ from{ transform:rotate(45deg) } to{ transform:rotate(405deg) } }
+
+/* ============================================================
+   C 版追加（.polish2，疊在 .polish 之上）
+   C1 · 標籤排整排降級成一行來源註腳（回應「太雜」：
+        「催問 ×2」重複標題、「偏好 · 條列」是內部知識，用戶不需要看；
+        真正值錢的只有「這句話引用了哪筆資料」）
+   C2 · 展開面板內容三段錯拍浮入（載入時播一次）
+   C3 · 狀態列真實化：訊號格＋電池（CSS 畫的，非 emoji）
+   C4 · 手機框加實體側鍵
+   C5 · 本文字距微調 +0.01em、行高 1.6 → 1.68（呼吸感）
+   ============================================================ */
+.polish2 .srcline{
+  font-family:var(--mono); font-size:10px; letter-spacing:.4px; line-height:1.6;
+  color:var(--smoke); display:flex; align-items:center; gap:8px;
+}
+.polish2 .srcline .sdot{ width:3px; height:3px; border-radius:9999px; background:var(--iron); flex:none; }
+.polish2 .panel-in > *{ opacity:0; transform:translateY(6px); animation: rise 420ms var(--ease) forwards; }
+.polish2 .panel-in > *:nth-child(1){ animation-delay:80ms; }
+.polish2 .panel-in > *:nth-child(2){ animation-delay:180ms; }
+.polish2 .panel-in > *:nth-child(3){ animation-delay:280ms; }
+@keyframes rise{ to{ opacity:1; transform:none } }
+.polish2 .sugtext{ letter-spacing:.01em; line-height:1.68; }
+.polish2 .sig{ display:flex; align-items:flex-end; gap:1.5px; height:9px; }
+.polish2 .sig i{ width:2.5px; background:var(--iron); border-radius:1px; }
+.polish2 .batt{
+  width:20px; height:9px; border:1px solid var(--iron); border-radius:2.5px;
+  position:relative; margin-left:2px;
+}
+.polish2 .batt::before{ content:''; position:absolute; left:1px; top:1px; bottom:1px; width:70%; background:var(--iron); border-radius:1px; }
+.polish2 .batt::after{ content:''; position:absolute; right:-3px; top:2px; width:1.5px; height:3px; background:var(--iron); border-radius:0 1px 1px 0; }
+.polish2 .stat-r{ display:flex; align-items:center; gap:5px; }
+.polish2 .phone::before{
+  content:''; position:absolute; right:-2.5px; top:180px; width:3px; height:92px;
+  background:var(--ink); border-radius:0 2px 2px 0;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
+.polish2 .phone::after{
+  content:''; position:absolute; left:-2.5px; top:150px; width:3px; height:56px;
+  background:var(--ink); border-radius:2px 0 0 2px;
+  box-shadow: rgba(255,255,255,0.10) 0 0 0 1px;
+}
 </style>
 </head>
 <body>
@@ -356,9 +397,77 @@ h1{ font-size:32px; font-weight:400; line-height:1.15; margin:0; }
       </div></div>
     </div>
 
+    <!-- ============ C · 強化＋收斂 ============ -->
+    <div class="deck polish polish2">
+      <span class="deck-label">C · 強化＋收斂（B 再加 5 處，標籤排降級成來源註腳）</span>
+      <div class="phone"><div class="screen">
+        <div class="statusbar">
+          <span>14:32</span>
+          <span class="stat-r">
+            <span class="sig"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span>
+            <span style="font-family:var(--mono);font-size:9px">LTE</span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="apphead">
+          <span class="backchev">‹</span>
+          <div class="avatar">王</div>
+          <div style="display:flex;align-items:center">
+            <div>
+              <div class="nm">王經理</div>
+              <div class="sub">宏碩採購</div>
+            </div>
+            <span class="rolebadge">客戶</span>
+          </div>
+          <span class="headdots">···</span>
+        </div>
+        <div class="thread">
+          <div class="bubwrap">
+            <div class="bub-av">王</div>
+            <div class="bubble">上次那批的報價還沒給我，明天要開會。</div>
+            <div class="bubmeta"><span>14:29</span></div>
+          </div>
+          <div class="bubwrap">
+            <div class="bub-av">王</div>
+            <div class="bubble">這已經是我第二次問了。</div>
+            <div class="bubmeta"><span>已讀</span><span>14:31</span></div>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="field">輸入訊息<span class="caret"></span></div>
+          <div class="sendbtn"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-row">
+            <button class="panel-hit">
+              <span class="panel-txt">
+                <span class="panel-eyebrow">
+                  <i class="diamond" style="width:6px;height:6px"></i>
+                  <span class="eyebrow">幕僚</span>
+                  <span class="chip mood warm">高壓</span>
+                </span>
+                <span class="panel-title">他已經問第二次 · 要的是有人接住</span>
+              </span>
+            </button>
+            <button class="btn-adopt">填入</button>
+            <button class="chevron"><span>▴</span></button>
+          </div>
+          <div class="panel-body"><div class="panel-in">
+            <div class="sugtext">王經理，抱歉讓您問到第二次，這是我這邊的疏漏。報價今天下午三點前給您，含 A／B 兩種規格與交期。明天開會若要簡報版本，我一併整理好。</div>
+            <div class="srcline">引用<span class="sdot"></span>報價單 #Q-2410<span class="sdot"></span>交期 14 天</div>
+            <div class="footrow">
+              <span class="sugreason">他讀到的是有人認了、有時間點；沒有解釋延遲，所以不會像在找理由。</span>
+              <button class="linkbtn">換一版</button>
+            </div>
+          </div></div>
+        </div>
+        <div class="kbd" data-kbd></div>
+      </div></div>
+    </div>
+
   </div>
 
-  <p class="caption" style="width:auto;max-width:828px"><b>沒動的東西</b>：色票、四種字級、8dp 網格、hairline 原則、紅色紀律、面板骨架——全部照舊，Zanna 接手不用重學。<b>動的東西</b>都是「光影」和「宿主真實感」兩類，clip 到 CSS 就能套回產品。宿主側的暖色頭像是 LINE 世界觀的顏色，不進幕僚的 token 表。</p>
+  <p class="caption" style="width:auto;max-width:828px"><b>C 版的收斂邏輯</b>：紅框那排四顆 chip 裡，「催問 ×2」跟標題「他已經問第二次」是同一件事講兩次，「偏好 · 條列」是內部知識、用戶不需要看——這兩顆直接刪。真正值錢的是「這句話引用了哪筆資料」，降級成本文下方一行 mono 註腳「引用 · 報價單 #Q-2410 · 交期 14 天」，可信度的故事還在，畫面卻只剩一個主角：那句 17px 的回覆。展開時三段內容錯拍浮入（重新整理頁面可以再看一次）。<br><br><b>沒動的東西</b>：色票、四種字級、8dp 網格、hairline 原則、紅色紀律、面板骨架——全部照舊，Zanna 接手不用重學。<b>動的東西</b>都是「光影」和「宿主真實感」兩類，clip 到 CSS 就能套回產品。宿主側的暖色頭像是 LINE 世界觀的顏色，不進幕僚的 token 表。</p>
 
 </div>
 
