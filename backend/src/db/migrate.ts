@@ -1,10 +1,39 @@
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { closeDb, createDb, getPool } from "./client";
 
-const migrationsFolder = path.resolve(process.cwd(), "drizzle");
+/**
+ * migration 目錄的解析不能依賴 `process.cwd()`：部署平台（如 Zeabur）不保證以
+ * WORKDIR 當工作目錄啟動 process，一旦 cwd 不是 /app，`resolve(cwd, "drizzle")`
+ * 就會指到不存在的路徑，drizzle 只會丟一句 "Can't find meta/_journal.json file"
+ * ——完全看不出它找的是哪裡。改成以「本模組的實際位置」為基準往上找，並保留 cwd
+ * 當最後的候選；全部落空時把查過的路徑一起印出來，讓 log 直接可讀。
+ *
+ * 兩種執行情境的相對深度不同，所以兩個都要試：
+ *   開發（tsx）：src/db/migrate.ts        → ../../drizzle
+ *   正式（tsc）：dist/src/db/migrate.js   → ../../../drizzle
+ */
+export function resolveMigrationsFolder(): string {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.resolve(here, "../../drizzle"),
+    path.resolve(here, "../../../drizzle"),
+    path.resolve(process.cwd(), "drizzle"),
+  ];
+
+  const found = candidates.find(dir => existsSync(path.join(dir, "meta", "_journal.json")));
+  if (!found) {
+    throw new Error(
+      `找不到 migration 目錄（需含 meta/_journal.json）。已查找：\n  ${candidates.join("\n  ")}\n`
+      + `模組位置：${here}\n工作目錄：${process.cwd()}\n`
+      + "若是容器部署，請確認映像有把 drizzle/ 複製進去（見 Dockerfile 的 cp -r \"$APP/drizzle\"）。",
+    );
+  }
+  return found;
+}
 
 /**
  * 固定的 advisory lock key：多實例同時啟動（水平擴展、或本機與 CI 同時跑
@@ -74,6 +103,18 @@ export async function withMigrationLock<T>(
  */
 export const MIGRATION_LOCK_TIMEOUT_MS = 30_000;
 
+/**
+ * Postgres 因 `lock_timeout` 取消 statement 時的 SQLSTATE：55P03 lock_not_available。
+ * 訊息比對是備援：驅動或包裝層有可能吃掉 `code`，那時仍要認得出這是卡鎖而非其他失敗。
+ */
+export function isLockTimeoutError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null)
+    return false;
+  if ("code" in error && (error as { code?: unknown }).code === "55P03")
+    return true;
+  return error instanceof Error && /lock timeout/i.test(error.message);
+}
+
 export async function runMigrations(): Promise<void> {
   const db = createDb();
   const pool = getPool();
@@ -88,15 +129,24 @@ export async function runMigrations(): Promise<void> {
   }
 
   try {
+    const migrationsFolder = resolveMigrationsFolder();
     await withMigrationLock(lockClient, () => migrate(db, { migrationsFolder }));
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `migration 失敗或取得 advisory lock 逾時（${MIGRATION_LOCK_TIMEOUT_MS}ms）：${message}`
-      + "——可能有其他實例卡住或該實例的鎖 session 洩漏，請檢查是否有卡死的部署或殘留連線",
-      { cause: error },
-    );
+
+    // 只有 Postgres 真的因為 lock_timeout 取消 statement（55P03 lock_not_available）
+    // 才是「鎖等不到」；其他失敗（找不到 migration 檔、DDL 出錯、連線斷）照原樣回報。
+    // 一律套上「逾時」的說法會讓 log 指向完全錯誤的方向。
+    if (isLockTimeoutError(error)) {
+      throw new Error(
+        `取得 advisory lock 逾時（${MIGRATION_LOCK_TIMEOUT_MS}ms）：${message}`
+        + "——可能有其他實例卡住或該實例的鎖 session 洩漏，請檢查是否有卡死的部署或殘留連線",
+        { cause: error },
+      );
+    }
+
+    throw new Error(`migration 失敗：${message}`, { cause: error });
   }
 }
 

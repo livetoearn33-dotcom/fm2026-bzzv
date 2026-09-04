@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AdvisoryLockClient } from "./migrate";
@@ -211,8 +213,9 @@ describe("withMigrationLock", () => {
  * 1. 本機起一個 Postgres，開一個連線持有 `select pg_advisory_lock(726190426)`
  *    （跟 MIGRATION_ADVISORY_LOCK_KEY 同一個 key）且故意不釋放。
  * 2. 設定 backend/.env 指向它，跑 `pnpm db:migrate`。
- * 3. 預期：約 `MIGRATION_LOCK_TIMEOUT_MS` 毫秒後印出「migration 失敗或取得 advisory
- *    lock 逾時」並以非 0 結束，而不是無限期卡住。
+ * 3. 預期：約 `MIGRATION_LOCK_TIMEOUT_MS` 毫秒後印出「取得 advisory lock 逾時」
+ *    並以非 0 結束，而不是無限期卡住。（非卡鎖的失敗會印「migration 失敗：…」，
+ *    兩者刻意分開——見 migrate.ts 的 isLockTimeoutError。）
  */
 describe("runMigrations", () => {
   it("設定 lock_timeout（SET lock_timeout）失敗，例如連線斷開時：release lock client、拋出清楚訊息，且不會呼叫 migrate", async () => {
@@ -242,7 +245,9 @@ describe("runMigrations", () => {
         if (sql.startsWith("SET lock_timeout"))
           return undefined;
         if (sql.includes("pg_advisory_lock(")) {
-          throw new Error("canceling statement due to lock timeout");
+          // 真實的 node-postgres 錯誤會帶 SQLSTATE；55P03 = lock_not_available，
+          // 也就是 lock_timeout 觸發時 Postgres 取消 statement 的代碼。
+          throw Object.assign(new Error("canceling statement due to lock timeout"), { code: "55P03" });
         }
         throw new Error(`未預期的 SQL：${sql}`);
       }),
@@ -254,5 +259,21 @@ describe("runMigrations", () => {
 
     await expect(runMigrations()).rejects.toThrow(String(MIGRATION_LOCK_TIMEOUT_MS));
     expect(lockClient.release).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("resolveMigrationsFolder", () => {
+  it("不依賴 process.cwd()：cwd 換成任意目錄仍解析得到含 meta/_journal.json 的 migration 目錄", async () => {
+    const { resolveMigrationsFolder } = await import("./migrate");
+    const original = process.cwd;
+    try {
+      // 模擬部署平台沒有以 WORKDIR 當工作目錄啟動 process 的情況。
+      process.cwd = () => "/";
+      const folder = resolveMigrationsFolder();
+      expect(existsSync(join(folder, "meta", "_journal.json"))).toBe(true);
+    }
+    finally {
+      process.cwd = original;
+    }
   });
 });
