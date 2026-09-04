@@ -6,7 +6,7 @@ import type {
   KnowledgeDocumentSummary,
 } from "@/shared/knowledge";
 
-import { NotFoundError } from "@/shared/errors";
+import { NotFoundError, ValidationError } from "@/shared/errors";
 
 import type { DocumentServiceDeps } from "../domain/entities";
 
@@ -21,6 +21,13 @@ export interface UploadDocumentResult {
   items: ExtractedFactItem[];
   extracted: boolean;
   reason?: string;
+  /** 文件所屬專案（projectName 自動建立時 app 從這裡拿到 id）；null＝未歸屬 */
+  projectId: string | null;
+}
+
+export interface UploadDocumentOptions {
+  projectId?: string;
+  projectName?: string;
 }
 
 /**
@@ -37,12 +44,32 @@ function isPdfFile(file: File): boolean {
 }
 
 export function createDocumentServices(deps: DocumentServiceDeps) {
-  const { model, documents, knowledge, promptLayers } = deps;
+  const { model, documents, knowledge, projects, promptLayers } = deps;
 
-  async function uploadDocument(file: File, projectId?: string): Promise<UploadDocumentResult> {
+  /**
+   * projectName 走「找同名、沒有就建」：Android「新增知識庫」是一步式（輸入名稱＋多個 PDF），
+   * app 逐檔上傳都帶同一個 projectName 時要落在同一個專案，不能每檔建一個。
+   */
+  async function resolveProjectId(options: UploadDocumentOptions): Promise<string | undefined> {
+    if (options.projectId && options.projectName) {
+      throw new ValidationError("projectId 與 projectName 只能擇一");
+    }
+    if (options.projectId) {
+      return options.projectId;
+    }
+    if (options.projectName) {
+      const existing = await projects.findByName(options.projectName);
+      return (existing ?? await projects.create(options.projectName)).id;
+    }
+    return undefined;
+  }
+
+  async function uploadDocument(file: File, options: UploadDocumentOptions = {}): Promise<UploadDocumentResult> {
     if (!isPdfFile(file)) {
       throw new UnsupportedFileTypeError(`只接受 PDF 檔案，收到：${file.type || "未知格式"}`);
     }
+
+    const projectId = await resolveProjectId(options);
 
     const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -102,6 +129,7 @@ export function createDocumentServices(deps: DocumentServiceDeps) {
         items: [],
         extracted: false,
         reason: llmOutput.reason,
+        projectId: documentSummary.projectId,
       };
     }
 
@@ -123,6 +151,7 @@ export function createDocumentServices(deps: DocumentServiceDeps) {
       status: "extracted",
       items,
       extracted: true,
+      projectId: documentSummary.projectId,
     };
   }
 

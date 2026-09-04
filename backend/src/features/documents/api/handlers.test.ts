@@ -51,7 +51,13 @@ function textResult(json: unknown) {
 
 function buildClient(model: LanguageModel) {
   const promptLayers = loadPromptLayers();
-  const services = createDocumentServices({ model, documents: documentStore, knowledge: store, promptLayers });
+  const services = createDocumentServices({
+    model,
+    documents: documentStore,
+    knowledge: store,
+    projects: new DbProjectStore(db),
+    promptLayers,
+  });
   return testClient(createTestApp(createDocumentsRouter(services)));
 }
 
@@ -311,6 +317,42 @@ describe("post /knowledge/documents/{id}/commit", () => {
       },
     });
     expect(missingProject.status).toBe(400);
+  });
+
+  it("上傳帶 projectName：沒有同名專案就自動建立，再次上傳同名共用同一個專案；與 projectId 同時帶回 400", async () => {
+    const projectStore = new DbProjectStore(db);
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => textResult({
+        extracted: true,
+        items: [{ label: "A", content: "內容 A", tags: ["a"], volatility: "low" }],
+      }),
+    });
+    const client = buildClient(model);
+    const upload = (extra: Record<string, string>) => client.knowledge.documents.$post({
+      form: { file: new File([samplePdfBytes], "報價單.pdf", { type: "application/pdf" }), ...extra },
+    });
+
+    const first = await upload({ projectName: "宏碩 Q4 報價案" });
+    expect(first.status).toBe(200);
+    if (first.status !== 200)
+      return;
+    const firstJson = await first.json();
+    expect(firstJson.projectId).not.toBeNull();
+
+    const second = await upload({ projectName: "宏碩 Q4 報價案" });
+    expect(second.status).toBe(200);
+    if (second.status !== 200)
+      return;
+    expect((await second.json()).projectId).toBe(firstJson.projectId);
+
+    const projects = await projectStore.list();
+    expect(projects.filter(project => project.name === "宏碩 Q4 報價案")).toHaveLength(1);
+
+    const both = await upload({
+      projectName: "宏碩 Q4 報價案",
+      projectId: firstJson.projectId ?? "",
+    });
+    expect(both.status).toBe(400);
   });
 
   it("commit 後寫入 facts，GET /v1/facts 看得到新 fact 且 source_document_id 正確", async () => {

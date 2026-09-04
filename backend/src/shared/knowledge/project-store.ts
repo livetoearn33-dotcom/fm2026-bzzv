@@ -44,6 +44,8 @@ function projectRowToProject(row: ProjectRow): Project {
 export interface ProjectRepository {
   list: () => Promise<Project[]>;
   create: (name: string) => Promise<Project>;
+  /** 名稱完全相同的既有專案（同名多筆時取最新建立的）；找不到回 undefined。 */
+  findByName: (name: string) => Promise<Project | undefined>;
   rename: (id: string, name: string) => Promise<Project | undefined>;
   remove: (id: string) => Promise<boolean>;
 }
@@ -59,6 +61,16 @@ export class DbProjectStore implements ProjectRepository {
   async create(name: string): Promise<Project> {
     const [row] = await this.db.insert(projectsTable).values({ name }).returning();
     return projectRowToProject(row);
+  }
+
+  async findByName(name: string): Promise<Project | undefined> {
+    const [row] = await this.db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.name, name))
+      .orderBy(desc(projectsTable.createdAt))
+      .limit(1);
+    return row ? projectRowToProject(row) : undefined;
   }
 
   async rename(id: string, name: string): Promise<Project | undefined> {

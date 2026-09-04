@@ -9,8 +9,10 @@ import { ExtractedFactItemSchema, FactSchema, KnowledgeDocumentDetailSchema, Kno
 
 export const UploadDocumentBodySchema = z.object({
   file: z.instanceof(File).openapi({ type: "string", format: "binary" }),
-  /** 所屬專案 id（見 /v1/projects）；省略＝未歸屬任何專案。commit 出來的 facts 會繼承這個值。 */
+  /** 所屬專案 id（見 /v1/projects）；與 projectName 擇一，都省略＝未歸屬任何專案。commit 出來的 facts 會繼承。 */
   projectId: z.string().uuid().optional().openapi({ example: "b6b6f0d0-7f3e-4a1b-9c2d-000000000000" }),
+  /** 專案名稱（Android「新增知識庫」一步式流程用）：找同名既有專案、沒有就自動建立。與 projectId 擇一。 */
+  projectName: z.string().min(1).optional().openapi({ example: "宏碩 Q4 報價案" }),
 }).openapi("UploadDocumentBody");
 
 /**
@@ -24,6 +26,8 @@ export const UploadDocumentResponseSchema = z.object({
   items: z.array(ExtractedFactItemSchema),
   extracted: z.boolean(),
   reason: z.string().optional(),
+  /** 文件所屬專案；帶 projectName 上傳（自動建立）時 app 從這裡拿到 id。null＝未歸屬 */
+  projectId: z.string().nullable(),
 }).openapi("UploadDocumentResponse");
 
 export const DocumentListResponseSchema = z.array(KnowledgeDocumentSummarySchema).openapi("DocumentList");

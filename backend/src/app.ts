@@ -37,11 +37,13 @@ const personaRouter = createPersonaRouter(personaServices);
 
 const knowledgeRouter = createKnowledgeRouter(knowledge);
 
+const projectStore = new DbProjectStore(createDb());
+
 const knowledgeDocuments = new DbKnowledgeDocumentStore(createDb());
-const documentServices = createDocumentServices({ model, documents: knowledgeDocuments, knowledge, promptLayers });
+const documentServices = createDocumentServices({ model, documents: knowledgeDocuments, knowledge, projects: projectStore, promptLayers });
 const documentsRouter = createDocumentsRouter(documentServices);
 
-const projectsRouter = createProjectsRouter(new DbProjectStore(createDb()));
+const projectsRouter = createProjectsRouter(projectStore);
 
 const v1Routes = [
   analyzeRouter,
