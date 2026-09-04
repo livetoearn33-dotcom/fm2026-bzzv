@@ -14,7 +14,8 @@ import { createTestDb } from "./test-client";
  * 就要跳過，不能把使用者刪掉的 demo 資料或手動維護的資料又塞回去。
  */
 describe("seedIfEmpty", () => {
-  it("兩張表都是空的（全新部署）：自動 seed，筆數等於 loadFacts()/loadContacts()", async () => {
+  // createTestDb（pglite＋整組 migration）單獨跑約 3 秒，全套併發時常超過預設 5 秒——放寬到 20 秒
+  it("兩張表都是空的（全新部署）：自動 seed，筆數等於 loadFacts()/loadContacts()", { timeout: 20_000 }, async () => {
     const db: TestDb = await createTestDb();
 
     const result = await seedIfEmpty(db);

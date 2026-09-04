@@ -28,6 +28,7 @@ export async function seedInto(
           tags: fact.tags,
           volatility: fact.volatility,
           usage: fact.usage,
+          projectId: fact.projectId,
           updatedAt: new Date(`${fact.updatedAt}T00:00:00.000Z`),
         })))
         .onConflictDoNothing()
@@ -44,6 +45,7 @@ export async function seedInto(
           tone: contact.tone,
           notes: contact.notes,
           recentTopics: contact.recentTopics,
+          projectId: contact.projectId,
         })))
         .onConflictDoNothing()
         .returning({ id: contactsTable.id })

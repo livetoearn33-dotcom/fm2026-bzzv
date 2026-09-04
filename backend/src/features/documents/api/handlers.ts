@@ -17,10 +17,10 @@ import { DocumentExtractionError, InvalidPdfError, UnextractableContentError, Un
 
 export function createUploadDocumentHandler(services: DocumentServices): AppRouteHandler<UploadDocumentRoute> {
   return async (c) => {
-    const { file } = c.req.valid("form");
+    const { file, projectId } = c.req.valid("form");
 
     try {
-      const result = await services.uploadDocument(file);
+      const result = await services.uploadDocument(file, projectId);
       return c.json(result, HttpStatusCodes.OK);
     }
     catch (error) {
@@ -28,6 +28,10 @@ export function createUploadDocumentHandler(services: DocumentServices): AppRout
         return c.json({ message: error.message }, HttpStatusCodes.UNSUPPORTED_MEDIA_TYPE);
       }
       if (error instanceof InvalidPdfError) {
+        return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
+      }
+      // projectId 帶了但專案不存在（見 DbKnowledgeDocumentStore.create 的 assertProjectExists）
+      if (error instanceof ValidationError) {
         return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
       }
       if (error instanceof UnextractableContentError) {

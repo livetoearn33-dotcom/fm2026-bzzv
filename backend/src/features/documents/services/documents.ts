@@ -39,7 +39,7 @@ function isPdfFile(file: File): boolean {
 export function createDocumentServices(deps: DocumentServiceDeps) {
   const { model, documents, knowledge, promptLayers } = deps;
 
-  async function uploadDocument(file: File): Promise<UploadDocumentResult> {
+  async function uploadDocument(file: File, projectId?: string): Promise<UploadDocumentResult> {
     if (!isPdfFile(file)) {
       throw new UnsupportedFileTypeError(`只接受 PDF 檔案，收到：${file.type || "未知格式"}`);
     }
@@ -52,6 +52,7 @@ export function createDocumentServices(deps: DocumentServiceDeps) {
       fileName: file.name,
       mimeType: file.type || "application/pdf",
       byteSize: bytes.byteLength,
+      projectId,
     });
 
     let parsed;

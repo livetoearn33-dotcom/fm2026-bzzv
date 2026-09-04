@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import type * as schema from "@/db/schema";
 
-import { contacts as contactsTable, facts as factsTable } from "@/db/schema";
+import { contacts as contactsTable, facts as factsTable, projects as projectsTable } from "@/db/schema";
 import { ValidationError } from "@/shared/errors";
 
 import type { Contact, Fact } from "./types";
@@ -33,6 +33,22 @@ function toDateOnlyString(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * projectId 有帶時先確認專案存在——不存在就回 400（ValidationError），
+ * 不要放給 FK violation 變成 500。projectId 已在 API 層用 zod .uuid() 驗過格式，
+ * 這裡直接查不會有 uuid cast error。匯出給 document-store.ts 共用。
+ */
+export async function assertProjectExists(db: AnyPgDatabase, projectId: string): Promise<void> {
+  const [row] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId))
+    .limit(1);
+  if (!row) {
+    throw new ValidationError(`找不到專案：${projectId}`);
+  }
+}
+
 type FactRow = typeof factsTable.$inferSelect;
 type ContactRow = typeof contactsTable.$inferSelect;
 
@@ -46,6 +62,7 @@ export function factRowToFact(row: FactRow): Fact {
     updatedAt: toDateOnlyString(row.updatedAt),
     volatility: row.volatility,
     usage: row.usage ?? undefined,
+    projectId: row.projectId ?? undefined,
   });
 }
 
@@ -57,6 +74,7 @@ function contactRowToContact(row: ContactRow): Contact {
     tone: row.tone,
     notes: row.notes,
     recentTopics: row.recentTopics,
+    projectId: row.projectId ?? undefined,
   });
 }
 
@@ -100,6 +118,9 @@ export class DbKnowledgeStore implements KnowledgeRepository {
     }
     const updatedAtString = body.updatedAt && body.updatedAt.length > 0 ? body.updatedAt : todayDateString();
     const parsed = FactSchema.parse({ ...body, id, updatedAt: updatedAtString });
+    if (parsed.projectId) {
+      await assertProjectExists(this.db, parsed.projectId);
+    }
 
     const [row] = await this.db
       .insert(factsTable)
@@ -110,6 +131,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
         tags: parsed.tags,
         volatility: parsed.volatility,
         usage: parsed.usage,
+        projectId: parsed.projectId,
         updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
       })
       .onConflictDoUpdate({
@@ -120,6 +142,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
           tags: parsed.tags,
           volatility: parsed.volatility,
           usage: parsed.usage ?? null,
+          projectId: parsed.projectId ?? null,
           updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
         },
       })
@@ -141,6 +164,9 @@ export class DbKnowledgeStore implements KnowledgeRepository {
       throw new ValidationError(`id 不可為保留前綴 _TODO：${id}`);
     }
     const parsed = ContactSchema.parse({ ...body, id });
+    if (parsed.projectId) {
+      await assertProjectExists(this.db, parsed.projectId);
+    }
 
     const [row] = await this.db
       .insert(contactsTable)
@@ -151,6 +177,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
         tone: parsed.tone,
         notes: parsed.notes,
         recentTopics: parsed.recentTopics,
+        projectId: parsed.projectId,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -161,6 +188,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
           tone: parsed.tone,
           notes: parsed.notes,
           recentTopics: parsed.recentTopics,
+          projectId: parsed.projectId ?? null,
           updatedAt: new Date(),
         },
       })

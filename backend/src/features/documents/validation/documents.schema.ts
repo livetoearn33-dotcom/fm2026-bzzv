@@ -9,6 +9,8 @@ import { ExtractedFactItemSchema, FactSchema, KnowledgeDocumentDetailSchema, Kno
 
 export const UploadDocumentBodySchema = z.object({
   file: z.instanceof(File).openapi({ type: "string", format: "binary" }),
+  /** 所屬專案 id（見 /v1/projects）；省略＝未歸屬任何專案。commit 出來的 facts 會繼承這個值。 */
+  projectId: z.string().uuid().optional().openapi({ example: "b6b6f0d0-7f3e-4a1b-9c2d-000000000000" }),
 }).openapi("UploadDocumentBody");
 
 /**

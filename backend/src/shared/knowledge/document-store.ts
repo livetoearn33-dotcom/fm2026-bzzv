@@ -8,7 +8,7 @@ import type { AnyPgDatabase } from "./store";
 import type { Fact } from "./types";
 
 import { isTodoId } from "./repository";
-import { factRowToFact, todayDateString } from "./store";
+import { assertProjectExists, factRowToFact, todayDateString } from "./store";
 import { FactSchema } from "./types";
 
 type DocumentRow = typeof documentsTable.$inferSelect;
@@ -28,6 +28,7 @@ export interface DocumentCreateInput {
   fileName: string;
   mimeType: string;
   byteSize: number;
+  projectId?: string;
 }
 
 /** 使用者確認／編輯過的單筆草稿——`internal` 是前端可勾選的開關，映射成 Fact.usage。 */
@@ -49,6 +50,7 @@ function documentRowToSummary(row: DocumentRow): KnowledgeDocumentSummary {
     pageCount: row.pageCount,
     status: row.status,
     errorReason: row.errorReason,
+    projectId: row.projectId,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -73,12 +75,16 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
   constructor(private readonly db: AnyPgDatabase) {}
 
   async create(input: DocumentCreateInput): Promise<KnowledgeDocumentSummary> {
+    if (input.projectId) {
+      await assertProjectExists(this.db, input.projectId);
+    }
     const [row] = await this.db
       .insert(documentsTable)
       .values({
         fileName: input.fileName,
         mimeType: input.mimeType,
         byteSize: input.byteSize,
+        projectId: input.projectId,
         status: "parsing",
       })
       .returning();
@@ -133,6 +139,13 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
    */
   async commit(id: string, items: DocumentCommitItemInput[]): Promise<Fact[]> {
     return this.db.transaction(async (tx) => {
+      // commit 出來的 facts 一律繼承文件的所屬專案（上傳時指定的 project_id）
+      const [documentRow] = await tx
+        .select({ projectId: documentsTable.projectId })
+        .from(documentsTable)
+        .where(eq(documentsTable.id, id));
+      const projectId = documentRow?.projectId ?? null;
+
       if (items.length > 0) {
         const ids = items.map(item => item.id);
         const existingRows = await tx
@@ -167,6 +180,7 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
           tags: item.tags,
           volatility: item.volatility,
           usage: item.internal ? "internal" : undefined,
+          projectId: projectId ?? undefined,
           updatedAt: updatedAtString,
         });
 
@@ -179,6 +193,7 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
             tags: parsed.tags,
             volatility: parsed.volatility,
             usage: parsed.usage,
+            projectId: parsed.projectId,
             sourceDocumentId: id,
             updatedAt,
           })
@@ -190,6 +205,7 @@ export class DbKnowledgeDocumentStore implements KnowledgeDocumentRepository {
               tags: parsed.tags,
               volatility: parsed.volatility,
               usage: parsed.usage ?? null,
+              projectId: parsed.projectId ?? null,
               sourceDocumentId: id,
               updatedAt,
             },

@@ -41,6 +41,8 @@ export const KnowledgeDocumentSummarySchema = z.object({
   pageCount: z.number().nullable(),
   status: DocumentStatusSchema,
   errorReason: z.string().nullable(),
+  /** 上傳時指定的所屬專案 id（見 /v1/projects）；null＝未歸屬任何專案 */
+  projectId: z.string().nullable(),
   createdAt: z.string(),
 });
 export type KnowledgeDocumentSummary = z.infer<typeof KnowledgeDocumentSummarySchema>;

@@ -13,6 +13,8 @@ export const FactSchema = z.object({
   volatility: z.enum(["high", "low"]),
   /** "internal" = AI 可參考、絕不能寫進回覆／sources；省略＝可引用 */
   usage: z.enum(["internal"]).optional(),
+  /** 所屬專案 id（見 /v1/projects）；省略＝未歸屬任何專案 */
+  projectId: z.string().uuid().optional(),
 });
 
 export type Fact = z.infer<typeof FactSchema>;
@@ -27,6 +29,8 @@ export const ContactSchema = z.object({
   tone: z.string(),
   notes: z.string(),
   recentTopics: z.array(z.string()),
+  /** 所屬專案 id（見 /v1/projects）；省略＝未歸屬任何專案 */
+  projectId: z.string().uuid().optional(),
 });
 
 export type Contact = z.infer<typeof ContactSchema>;

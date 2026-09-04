@@ -9,10 +9,11 @@ import healthRouter from "@/features/health/api";
 import { createKnowledgeRouter } from "@/features/knowledge/api";
 import { createPersonaRouter } from "@/features/persona/api";
 import { createPersonaServices } from "@/features/persona/services";
+import { createProjectsRouter } from "@/features/projects/api";
 import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
 import { createLanguageModel } from "@/shared/ai/model";
-import { DbKnowledgeDocumentStore, DbKnowledgeStore } from "@/shared/knowledge";
+import { DbKnowledgeDocumentStore, DbKnowledgeStore, DbProjectStore } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 const app = createApp();
@@ -40,12 +41,15 @@ const knowledgeDocuments = new DbKnowledgeDocumentStore(createDb());
 const documentServices = createDocumentServices({ model, documents: knowledgeDocuments, knowledge, promptLayers });
 const documentsRouter = createDocumentsRouter(documentServices);
 
+const projectsRouter = createProjectsRouter(new DbProjectStore(createDb()));
+
 const v1Routes = [
   analyzeRouter,
   guardRouter,
   personaRouter,
   knowledgeRouter,
   documentsRouter,
+  projectsRouter,
 ] as const;
 
 app.route("/", healthRouter);

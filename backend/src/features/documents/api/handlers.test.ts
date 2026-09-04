@@ -13,7 +13,7 @@ import { facts as factsTable } from "@/db/schema";
 import { createTestDb } from "@/db/test-client";
 import { createKnowledgeRouter } from "@/features/knowledge/api";
 import { createTestApp } from "@/lib/create-app";
-import { DbKnowledgeDocumentStore, DbKnowledgeStore } from "@/shared/knowledge";
+import { DbKnowledgeDocumentStore, DbKnowledgeStore, DbProjectStore } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 import { createDocumentServices } from "../services";
@@ -72,14 +72,16 @@ interface DraftItemInput {
 }
 
 /** 上傳一份合法 PDF，用 mock LLM 回固定的抽取結果，回傳 client 與上傳回應 json。 */
-async function uploadAndExtract(items: DraftItemInput[]) {
+async function uploadAndExtract(items: DraftItemInput[], projectId?: string) {
   const model = new MockLanguageModelV4({
     doGenerate: async () => textResult({ extracted: true, items }),
   });
   const client = buildClient(model);
   const file = new File([samplePdfBytes], "報價單.pdf", { type: "application/pdf" });
 
-  const response = await client.knowledge.documents.$post({ form: { file } });
+  const response = await client.knowledge.documents.$post({
+    form: { file, ...(projectId === undefined ? {} : { projectId }) },
+  });
   expect(response.status).toBe(200);
   if (response.status !== 200) {
     throw new Error("上傳失敗，測試前提不成立");
@@ -273,6 +275,44 @@ describe("get /knowledge/documents/{id}", () => {
 });
 
 describe("post /knowledge/documents/{id}/commit", () => {
+  it("上傳時帶 projectId：文件紀錄保存 projectId，commit 出來的 facts 繼承；專案不存在回 400", async () => {
+    const project = await new DbProjectStore(db).create("宏碩 Q4 報價案");
+    const { client, json } = await uploadAndExtract([
+      { label: "A", content: "內容 A", tags: ["a"], volatility: "low" },
+    ], project.id);
+
+    const detail = await documentStore.getById(json.documentId);
+    expect(detail?.projectId).toBe(project.id);
+
+    const draft = json.items[0];
+    const commitResponse = await client.knowledge.documents[":id"].commit.$post({
+      param: { id: json.documentId },
+      json: {
+        items: [{
+          id: draft.suggestedId,
+          label: draft.label,
+          content: draft.content,
+          tags: draft.tags,
+          volatility: draft.volatility,
+          internal: false,
+        }],
+      },
+    });
+    expect(commitResponse.status).toBe(200);
+    if (commitResponse.status !== 200)
+      return;
+    const facts = await commitResponse.json();
+    expect(facts[0].projectId).toBe(project.id);
+
+    const missingProject = await client.knowledge.documents.$post({
+      form: {
+        file: new File([samplePdfBytes], "報價單.pdf", { type: "application/pdf" }),
+        projectId: "00000000-0000-4000-8000-000000000000",
+      },
+    });
+    expect(missingProject.status).toBe(400);
+  });
+
   it("commit 後寫入 facts，GET /v1/facts 看得到新 fact 且 source_document_id 正確", async () => {
     const { client, json } = await uploadAndExtract([
       { label: "Y 方案報價", content: "Y 方案 8 萬。", tags: ["報價"], volatility: "high" },

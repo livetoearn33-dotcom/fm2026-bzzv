@@ -12,6 +12,18 @@ export const volatilityEnum = pgEnum("volatility", ["high", "low"]);
 export const factUsageEnum = pgEnum("fact_usage", ["internal"]);
 export const documentStatusEnum = pgEnum("document_status", ["parsing", "extracted", "committed", "failed"]);
 
+/**
+ * 專案是知識庫的父層實體（對應 Android app-settings 的「每個知識庫以專案為單位」）：
+ * facts／contacts／knowledge_documents 都可以用 project_id 掛在某個專案底下。
+ * 刪除專案時底下資料保留但脫鉤（ON DELETE SET NULL），跟刪除文件的溯源語意一致。
+ */
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** PDF 上傳（下一批功能）會用到；本次只建結構，不接 endpoint。 */
 export const knowledgeDocuments = pgTable("knowledge_documents", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -22,6 +34,7 @@ export const knowledgeDocuments = pgTable("knowledge_documents", {
   status: documentStatusEnum("status").notNull(),
   errorReason: text("error_reason"),
   extractedDraft: jsonb("extracted_draft"),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -32,6 +45,7 @@ export const facts = pgTable("facts", {
   tags: text("tags").array().notNull().default([]),
   volatility: volatilityEnum("volatility").notNull(),
   usage: factUsageEnum("usage"),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
   sourceDocumentId: uuid("source_document_id").references(() => knowledgeDocuments.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -44,6 +58,7 @@ export const contacts = pgTable("contacts", {
   tone: text("tone").notNull(),
   notes: text("notes").notNull(),
   recentTopics: text("recent_topics").array().notNull().default([]),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
