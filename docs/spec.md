@@ -13,7 +13,7 @@ FUTUREMODE × SITCON BUILDMODE Hackathon 2026｜賽道 Future of Work
 | 平台 | **Android** | 2026-08-31 |
 | **介面形態** | **兩個 surface：浮層卡片 ＋ 鍵盤上方建議條** | 2026-08-31 |
 | UI 技術 | **純 HTML + CSS，跑在 WebView 裡** | 2026-08-31 |
-| 知識庫 | **事實庫 ＋ 對象檔案** | 2026-08-31 |
+| 知識庫 | **事實庫**（對象檔案 2026-09-04 停用：截圖模式沒有 contactId，改由讀空氣從對話判讀；`data/contacts.json` 保留不刪） | 2026-09-04 |
 | 角色改寫 | **三張角色卡（諸葛亮／霸道總裁／情場達人），改寫已生成的回覆；上台版演諸葛亮、影片只閃過、情場達人不進 demo**。契約見 prompts/README-組裝說明.md 的 /persona 段 | 2026-09-02 |
 | 知識庫餵入 | **做最小可行版：貼文字或連結 → AI 抽成條目草稿 → 使用者確認才寫入。收文字與連結（連結抓不到就請使用者貼文字，不編）。不做編輯／刪除 UI（CRUD API 已存在，這次不接）。上台不加演，只當 QA 彈藥。** 契約見 prompts/README-組裝說明.md 的 /extract 段 | 2026-09-03 |
 | **輸入形式** | **改為截圖（base64）**，不再傳對話文字陣列。AI 讀圖後回傳 `conversationText` 給後端比對 golden path | 2026-09-03 |
@@ -125,6 +125,21 @@ demo 不單獨演這條，但它是第一幕「0.2 秒安全牌」的來源。
 ---
 
 ## API 介面
+
+> ## ⚠️ 以下整段已作廢（2026-09-04）
+>
+> 這段寫於 9/1，之後歷經三次架構調整，**已經跟實作對不上**：
+> - `conversation` 陣列 → 已改為 **截圖（base64）**
+> - `safeCard` → **分流與安全牌整個功能砍掉**
+> - `contactId` / `/contacts` → **對象檔案停用**
+> - `/facts` CRUD → 已重設計為 `/v1/knowledge-bases`（含 PDF 上傳）
+>
+> **真源在這三個地方，以它們為準**：
+> 1. **後端 API**：`backend/` 的 `GET /reference`（OpenAPI 文件頁），或跑起來看
+> 2. **Prompt 組裝**：[../prompts/README-組裝說明.md](../prompts/README-組裝說明.md)
+> 3. **原生 ↔ WebView**：[js-bridge契約.md](js-bridge契約.md)（待 Vincent 以實作覆蓋）
+>
+> 下面保留只為了看歷史決策，**不要照著寫程式**。
 
 前後端可以並行開發，靠這份契約對齊。
 
