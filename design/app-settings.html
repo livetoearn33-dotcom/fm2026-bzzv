@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>幕聊 · 知識庫設定（WebView 正式版）</title>
+<title>幕聊 · 知識庫（WebView 正式版）</title>
 <link rel="stylesheet" href="fonts/fonts.css"><!-- 本機字型，離線可跑 -->
 <style>
 /* ============================================================
-   幕聊 · 畫面 5 知識庫設定頁 —— WebView 正式版
-   從 settings-page.html 抽出、拿掉桌機展示外框（.page/.decks/.caption），
-   改成吃滿真實裝置螢幕、支援 safe-area 的全螢幕版本。
-   視覺 token、假引擎（mockExtract）、互動邏輯完全沿用，未改寫。
-   真 API 接上 /extract 時，只需替換 runExtract() 裡的 setTimeout 區塊。
+   幕聊 · 知識庫設定頁 —— WebView 正式版
+   以 settings-page.html 互動版（2026-09-03 19:42）為準重做：
+   貼上 → 抽取草稿（含 internal 開關）→ 確認寫入 → 列表列承接。
+   全螢幕、safe-area、tap target ≥ 44dp。
+   這份檔案是「要放進 Android WebView 的東西」，不是設計稿。
    ============================================================ */
 
 :root{
@@ -45,9 +45,8 @@ body{
 button{ font-family: inherit; cursor: pointer; }
 
 .screen{
-  position: relative; width: 100%; height: 100%;
+  position:relative; width:100%; height:100%;
   display:flex; flex-direction:column;
-  background: var(--void);
   padding-top: env(safe-area-inset-top, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
@@ -55,22 +54,25 @@ button{ font-family: inherit; cursor: pointer; }
 .apphead{
   flex:none; display:flex; align-items:center; gap:8px; padding:12px 16px 8px;
 }
-.apphead .ttl{ font-size:15px; font-weight:500; line-height:1.3; color: var(--white); }
-.apphead .cnt{ margin-left:auto; font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); }
+.backchev{
+  width:44px; height:44px; margin-left:-12px; flex:none; border:0; background:transparent;
+  display:flex; align-items:center; justify-content:center; color: var(--smoke); font-size:20px; font-weight:300;
+}
 .diamond{ background: var(--coral); transform: rotate(45deg); flex:none; }
+.apphead .ttl{ font-size:14px; font-weight:500; line-height:1.3; color: var(--white); }
+.apphead .cnt{ margin-left:auto; font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); }
+.scroll{
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:8px 16px; padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+  display:flex; flex-direction:column; gap:8px;
+}
+.scroll::-webkit-scrollbar{ width:0; }
+
+.sect{ display:flex; align-items:center; gap:8px; padding:16px 0 4px; }
 .eyebrow{
   font-family: var(--mono); font-size:10px; line-height:1;
   letter-spacing:.8px; text-transform:uppercase; color: var(--smoke);
 }
-
-.scroll{
-  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  padding:8px 16px 24px; padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px));
-  display:flex; flex-direction:column; gap:8px;
-}
-
-.sect{ display:flex; align-items:center; gap:8px; padding:16px 0 4px; }
-.sect .eyebrow{ color: var(--smoke); }
 .sect .ln{ flex:1; height:1px; background: rgba(255,255,255,0.06); }
 
 .chip{
@@ -82,9 +84,7 @@ button{ font-family: inherit; cursor: pointer; }
 .chip.ghost{ background:transparent; border:1px solid var(--slate); }
 .datep{ font-family: var(--mono); font-size:10px; letter-spacing:.3px; color: var(--smoke); white-space:nowrap; }
 
-/* ============================================================
-   第 1 步 · 餵入區（單一加入口）
-   ============================================================ */
+/* ---------- 第 1 步 · 餵入區（單一加入口） ---------- */
 .feeder{
   position:relative; background: var(--obsid); border-radius:16px; padding:16px;
   display:flex; flex-direction:column; gap:12px; overflow:hidden;
@@ -97,16 +97,16 @@ button{ font-family: inherit; cursor: pointer; }
 .feeder.reading::before{ opacity:1; animation: sweep 900ms linear infinite; }
 @keyframes sweep{ from{ transform: translateX(-100%) } to{ transform: translateX(286%) } }
 .feeder textarea{
-  width:100%; min-height:72px; resize:none; border:0; outline:0;
-  background: var(--ink); border-radius:8px; padding:10px 12px;
+  width:100%; min-height:80px; resize:none; border:0; outline:0;
+  background: var(--ink); border-radius:8px; padding:12px;
   font-family: inherit; font-size:15px; line-height:1.6; color: var(--mist);
   box-shadow: rgba(255,255,255,0.06) 0 0 0 1px inset;
 }
 .feeder textarea::placeholder{ color: var(--smoke); }
 .feedrow{ display:flex; align-items:center; gap:8px; }
-.feedhint{ flex:1; font-size:11px; line-height:1.5; color: var(--smoke); }
+.feedhint{ flex:1; font-size:12px; line-height:1.5; color: var(--smoke); }
 .btn-extract{
-  flex:none; height:44px; min-width:44px; padding:0 16px; border-radius:8px; border:0;
+  flex:none; height:44px; min-width:44px; padding:0 18px; border-radius:8px; border:0;
   background: var(--mist); color: var(--iron); font-size:14px; font-weight:500;
   box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
   transition: transform 110ms var(--ease), background 110ms var(--ease), opacity 150ms var(--ease);
@@ -116,13 +116,11 @@ button{ font-family: inherit; cursor: pointer; }
 .samples{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .samples .lb{ font-family: var(--mono); font-size:9px; letter-spacing:.8px; text-transform:uppercase; color: var(--iron); }
 .sample{
-  min-height:36px; font-size:12px; line-height:1; padding:8px 11px; border-radius:8px;
+  font-size:12px; line-height:1; padding:10px 12px; border-radius:8px;
   background:transparent; color: var(--ash); border:1px solid var(--slate);
 }
 
-/* ============================================================
-   第 2 步 · 草稿卡（主角：internal 開關）
-   ============================================================ */
+/* ---------- 第 2 步 · 草稿卡（主角：internal 開關） ---------- */
 .draft{
   background: var(--obsid); border-radius:16px; padding:16px;
   display:flex; flex-direction:column; gap:10px;
@@ -151,29 +149,31 @@ button{ font-family: inherit; cursor: pointer; }
 .draft.internal .introw .t1{ color: var(--mist); }
 .introw .t2{ font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty; }
 .switch{
-  flex:none; width:44px; height:26px; border-radius:9999px; border:0; padding:3px;
+  flex:none; width:46px; height:26px; border-radius:9999px; border:0; padding:2px;
   background: var(--graph); display:flex; justify-content:flex-start;
   box-shadow: rgba(0,0,0,0.30) 0 1px 2px 0 inset;
   transition: background 200ms var(--ease);
 }
 .switch .knob{
-  width:20px; height:20px; border-radius:9999px; background: var(--iron);
+  width:22px; height:22px; border-radius:9999px; background: var(--iron);
   transition: transform 200ms var(--ease), background 200ms var(--ease);
 }
 .switch[aria-checked="true"]{ background: var(--amber); }
-.switch[aria-checked="true"] .knob{ transform: translateX(18px); background: var(--mist); }
+.switch[aria-checked="true"] .knob{ transform: translateX(20px); background: var(--mist); }
 .confirmrow{ display:flex; align-items:center; gap:12px; padding-top:4px; }
 .btn-confirm{
   flex:1; height:44px; border-radius:8px; border:0;
   background: var(--mist); color: var(--iron); font-size:14px; font-weight:500;
   box-shadow: rgba(255,255,255,0.85) 0 1px 0 0 inset, rgba(0,0,0,0.30) 0 -1.5px 0 0 inset;
-  transition: transform 110ms var(--ease), background 110ms var(--ease);
+  transition: transform 110ms var(--ease), background 110ms var(--ease), opacity 150ms var(--ease);
 }
 .btn-confirm:active{ transform: translateY(1px) scale(0.99); background: var(--white); }
+.btn-confirm:disabled{ opacity:.4; cursor:default; }
 .linkbtn{
-  flex:none; border:0; background:transparent; padding:8px 4px; min-height:44px;
+  flex:none; border:0; background:transparent; padding:12px 4px; min-height:44px;
   font-family: var(--mono); font-size:10px; letter-spacing:.3px; line-height:1.6; color: var(--smoke);
 }
+/* 抽不到／連線問題：安靜的說明卡，不是錯誤 */
 .nores{
   background: var(--obsid); border-radius:16px; padding:16px;
   display:flex; flex-direction:column; gap:10px;
@@ -182,13 +182,13 @@ button{ font-family: inherit; cursor: pointer; }
 }
 .nores .why{ font-size:14px; line-height:1.6; color: var(--mist); text-wrap:pretty; }
 .nores .orig{
-  background: var(--ink); border-radius:8px; padding:10px 12px;
+  background: var(--ink); border-radius:8px; padding:12px;
   font-size:13px; line-height:1.6; color: var(--smoke); white-space:pre-wrap;
   box-shadow: rgba(255,255,255,0.05) 0 0 0 1px inset;
 }
 
 /* ---------- 第 3 步之後 · 列表列（定案 A） ---------- */
-.rowitem{ display:flex; flex-direction:column; gap:6px; padding:10px 0; }
+.rowitem{ display:flex; flex-direction:column; gap:6px; padding:12px 0; }
 .rowitem.fresh{ animation: rise 420ms var(--ease) both; }
 .rowtop{ display:flex; align-items:baseline; gap:8px; }
 .rowtop .lb{ flex:1; min-width:0; font-size:14px; font-weight:500; line-height:1.4; color: var(--white); }
@@ -214,9 +214,10 @@ button{ font-family: inherit; cursor: pointer; }
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
 
+/* ---------- 開發用：QA 角標 ---------- */
 .qabadge{
   position:fixed; top:calc(env(safe-area-inset-top,0px) + 4px); right:8px; z-index:99;
-  font-family: var(--mono); font-size:8px; letter-spacing:1px; color: rgba(255,255,255,0.15);
+  font-family: var(--mono); font-size:8px; letter-spacing:1px; color: rgba(255,255,255,0.14);
   pointer-events:none;
 }
 </style>
@@ -225,20 +226,20 @@ button{ font-family: inherit; cursor: pointer; }
 
 <div class="screen">
   <div class="apphead">
+    <button class="backchev" id="backBtn">‹</button>
     <i class="diamond" style="width:8px;height:8px"></i>
     <span class="ttl">知識庫</span>
     <span class="cnt" id="cnt"></span>
   </div>
   <div class="scroll" id="scroll">
 
-    <!-- 第 1 步 · 餵入 -->
     <div class="feeder" id="feeder">
       <textarea id="feedText" rows="3" placeholder="貼上文字或連結——報價信、對話、備忘都行"></textarea>
       <div class="feedrow">
         <span class="feedhint" id="feedHint">抽出來的是草稿，你確認了才會寫入。</span>
         <button class="btn-extract" id="btnExtract">抽取</button>
       </div>
-      <div class="samples">
+      <div class="samples" id="samples" hidden>
         <span class="lb">試貼</span>
         <button class="sample" data-sample="quote">報價信</button>
         <button class="sample" data-sample="contact">對象備註</button>
@@ -247,10 +248,7 @@ button{ font-family: inherit; cursor: pointer; }
       </div>
     </div>
 
-    <!-- 第 2 步 · 草稿區（JS 填入） -->
     <div id="draftArea" style="display:contents"></div>
-
-    <!-- 第 3 步之後 · 列表 -->
     <div id="listArea" style="display:contents"></div>
 
   </div>
@@ -266,94 +264,90 @@ setVH();
 addEventListener("resize", setVH);
 addEventListener("orientationchange", setVH);
 
-/* ============ 既有資料（照抄 data/facts.json 與 contacts.json） ============ */
-const FACTS = [
-  { label:"代操服務標準報價",   tags:["報價","價格","方案","月費"], date:"2026-05-27", internal:false },
-  { label:"議價底線（內部）",   tags:["報價","折扣","議價"],       date:"2026-05-27", internal:true },
-  { label:"檔期合作兩版報價",   tags:["報價","方案","預算","檔期"], date:"2026-08-03", internal:false },
-  { label:"A 案進度",           tags:["進度","A案","合約"],         date:"2026-09-01", internal:false },
-  { label:"影片交付節奏",       tags:["交期","影片","時程"],       date:"2026-07-06", internal:false },
-  { label:"頻道代營運月方案",   tags:["報價","方案","影片"],       date:"2026-07-24", internal:false },
-  { label:"逐項計價表",         tags:["報價","計價","比價"],       date:"2026-07-24", internal:false },
-  { label:"五月檔期成效",       tags:["成效","合作歷史","案例"],   date:"2026-06-01", internal:false },
-  { label:"十週年檔期時程",     tags:["時程","檔期","死線"],       date:"2026-08-03", internal:false },
-  { label:"W 品牌合作歷史",     tags:["合作歷史","窗口","影片"],   date:"2026-07-09", internal:false }
-];
-const CONTACTS = [
-  { name:"林經理", role:"主管",               tone:"簡潔、先講結論、要具體時間",
-    note:"在意時程超過在意細節。回覆一定要給明確的時間點。" },
-  { name:"王先生", role:"客戶",               tone:"禮貌、給選項、不要壓迫",
-    note:"價格敏感，比較過三家。給台階比給折扣有效。" },
-  { name:"陳姐",   role:"品牌窗口（行銷主管）", tone:"直接、行動快；給具體選項和時段她就動",
-    note:"開放式問句會石沉大海——訊息要帶具體選項與時段。" },
-  { name:"凱文",   role:"老客戶（頻道經營）",   tone:"對帳的平靜：先講基準與事實、再講結論",
-    note:"慢回、會用已讀不回施壓。回覆順序固定：基準→做了什麼→交付→結論。" }
-];
+/* ============================================================
+   JS Bridge（照 docs/js-bridge契約.md）
+   原生 → 網頁：EQ.renderList({facts,contacts})、EQ.renderDrafts(res)、
+   　　　　　　　EQ.saved(count)、EQ.error(code)
+   網頁 → 原生：EQNative.extract(input, kind)、EQNative.confirm(itemsJson)、
+   　　　　　　　EQNative.back()
+   - internal 開關狀態以網頁送回的為準（使用者可能改過 LLM 判定）
+   - internalReason 只給人看，confirm 前已丟棄，不進資料庫
+   - extracted:false 顯示 reason 原文，不改寫
+   沒有原生環境 → 檔尾 mock 區塊接手（含試貼四鍵），雙擊 HTML 走完整流程。
+   ============================================================ */
 
-/* ============ 試貼樣本（走完四種狀態） ============ */
-const SAMPLES = {
-  quote: "跟你確認 Y 方案：8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。內部先知道就好——最低可以讓到 7 萬，但要搭配季度合作。",
-  contact: "李副理今天口頭提的：他不看長訊息，重點放前三行；約時間直接給他兩個時段二選一，開放式問他有空嗎不會回。最近在追短影音企劃。",
-  link: "https://example.com/pricing-2026",
-  chat: "今天開會開到快吐，晚點再說"
-};
-
-/* ============ 原型假引擎（規則版；真 API 接 /extract 即換，欄位相同） ============ */
-const TODAY = "2026-09-03";
-function mockExtract(raw) {
-  const t = raw.trim();
-  if (/^https?:\/\/|https?:\/\/\S+$/.test(t) && !/\s[^h]/.test(t))
-    return { extracted:false, reason:"這個連結我讀不到內容，可以直接把文字貼給我" };
-  if (t.length < 15 || !/[0-9０-９]|方案|報價|交期|進度|檔期|偏好|時段|不看|在意|雷點/.test(t))
-    return { extracted:false, reason:"這段沒有具體的數字或條件，我抽不出可以引用的事實" };
-
-  /* 對象備註樣態 */
-  if (/不看|重點放|二選一|不會回|吃什麼語氣|偏好/.test(t) && /理|經理|窗口|先生|小姐|姐|哥/.test(t)) {
-    const name = (t.match(/^([一-龥]{1,3}(?:副理|經理|協理|主任|先生|小姐))/) || [,"對象"])[1];
-    return { extracted:true, items:[{
-      type:"contact", name, role:"窗口",
-      tone:"短訊息、重點前置；給具體時段二選一",
-      notes:"不看長訊息，重點放前三行；開放式問句不會回。",
-      recentTopics:["短影音企劃"]
-    }]};
-  }
-
-  /* 事實樣態：含內部訊號就多抽一張 internal */
-  const items = [{
-    type:"fact", label:"Y 方案報價",
-    tags:["報價","價格","多少錢","方案","預算"],
-    content:"Y 方案 8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。",
-    updatedAt:TODAY, volatility:"high", internal:false
-  }];
-  if (/底線|最低|讓到|成本|利潤|內部/.test(t)) {
-    items.push({
-      type:"fact", label:"Y 方案底線",
-      tags:["報價","折扣","議價","底線"],
-      content:"Y 方案最低可讓到 7 萬，需搭配季度合作。",
-      updatedAt:TODAY, volatility:"high",
-      internal:true, internalReason:"這是你的讓價空間，寫進回覆等於先自砍一刀"
-    });
-  }
-  return { extracted:true, items };
-}
-
-/* ============ 畫面 ============ */
+const BRIDGED = !!window.EQNative;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const sect = (t) => '<div class="sect"><span class="eyebrow">' + esc(t) + '</span><span class="ln"></span></div>';
 
-let drafts = [];
-let noResult = null;
+let FACTS = [];       // EQ.renderList 餵進來
+let CONTACTS = [];
+let drafts = [];      // 目前草稿（含使用者改過的 internal 狀態）
+let noResult = null;  // { reason, orig }
+let pendingConfirm = null;
 
+/* ---------- 原生打進來的介面 ---------- */
+window.EQ = {
+  renderList(data) {
+    FACTS = (data.facts || []).map(f => ({
+      label: f.label, tags: f.tags || [], date: f.updatedAt || "",
+      internal: f.usage === "internal"
+    }));
+    CONTACTS = (data.contacts || []).map(c => ({
+      name: c.name, role: c.role || "", tone: c.tone || "", note: c.notes || c.note || ""
+    }));
+    renderList();
+  },
+  renderDrafts(res) {
+    $("feeder").classList.remove("reading");
+    $("btnExtract").disabled = false;
+    if (res && res.extracted) {
+      drafts = (res.items || []).slice(0, 3).map(d => ({ ...d, internal: !!(d.usage === "internal" || d.internal) }));
+      noResult = null;
+      $("feedHint").textContent = "抽出 " + drafts.length + " 筆草稿，看過再按確認。";
+    } else {
+      drafts = [];
+      noResult = { reason: (res && res.reason) || "抽取沒有成功，再試一次。", orig: $("feedText").value.trim() };
+      $("feedHint").textContent = "抽出來的是草稿，你確認了才會寫入。";
+    }
+    renderDrafts();
+  },
+  saved(count) {
+    const items = pendingConfirm || [];
+    pendingConfirm = null;
+    items.slice().reverse().forEach(d => {
+      if (d.type === "contact") CONTACTS.unshift({ name: d.name, role: d.role || "窗口", tone: d.tone, note: d.notes, _fresh: true });
+      else FACTS.unshift({ label: d.label, tags: d.tags, date: d.updatedAt, internal: d.usage === "internal", _fresh: true });
+    });
+    drafts = [];
+    renderDrafts();
+    renderList();
+    $("feedText").value = "";
+    $("feedHint").textContent = "已寫入 " + count + " 筆，回主畫面立刻能被引用。";
+  },
+  error(code) {
+    $("feeder").classList.remove("reading");
+    $("btnExtract").disabled = false;
+    const btn = $("draftArea").querySelector(".btn-confirm");
+    if (btn) btn.disabled = false;
+    pendingConfirm = null;
+    $("feedHint").textContent = code === "network"
+      ? "連線不順——內容都還在，稍等再按一次。"
+      : "引擎那邊出了狀況——內容都還在，稍等再按一次。";
+  }
+};
+
+/* ---------- 畫面 ---------- */
 function renderCount() {
   $("cnt").textContent = FACTS.length + " 條 · " + CONTACTS.length + " 人";
 }
 
-function renderList(freshCount) {
+function renderList() {
   $("listArea").innerHTML =
     sect("知識 · " + FACTS.length + " 條") +
-    FACTS.map((f, i) => `
-      <div class="rowitem${i < (freshCount||0) && f._fresh ? " fresh" : ""}">
+    FACTS.map(f => `
+      <div class="rowitem${f._fresh ? " fresh" : ""}">
         <div class="rowtop">
           <span class="lb">${esc(f.label)}</span>
           <span class="datep">${esc(f.date)}</span>
@@ -367,7 +361,7 @@ function renderList(freshCount) {
     CONTACTS.map(c => `
       <div class="pcard${c._fresh ? " fresh" : ""}">
         <div class="nmrow">
-          <span class="avatar">${esc(c.name[0])}</span>
+          <span class="avatar">${esc((c.name || "？")[0])}</span>
           <span class="nm">${esc(c.name)}</span>
           <span class="role">${esc(c.role)}</span>
         </div>
@@ -381,29 +375,29 @@ function renderList(freshCount) {
 
 function draftCard(d, i) {
   if (d.type === "contact") return `
-    <div class="draft" style="animation-delay:${i*120}ms">
+    <div class="draft" style="animation-delay:${i * 120}ms">
       <div class="top">
         <span class="lb">${esc(d.name)}</span>
         <span class="chip ghost">對象</span>
       </div>
       <div class="content">${esc(d.tone)}／${esc(d.notes)}</div>
-      <div class="tagline">${(d.recentTopics||[]).map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
+      <div class="tagline">${(d.recentTopics || []).map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
     </div>`;
   return `
-    <div class="draft${d.internal ? " internal" : ""}" data-draft="${i}" style="animation-delay:${i*120}ms">
+    <div class="draft${d.internal ? " internal" : ""}" style="animation-delay:${i * 120}ms">
       <div class="top">
         <span class="lb">${esc(d.label)}</span>
         ${d.internal ? '<span class="chip amber">內部</span>' : ""}
         ${d.volatility === "high" ? '<span class="chip ghost">效期短</span>' : ""}
-        <span class="datep">${esc(d.updatedAt)}</span>
+        <span class="datep">${esc(d.updatedAt || "")}</span>
       </div>
       <div class="content">${esc(d.content)}</div>
-      <div class="tagline">${d.tags.map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
+      <div class="tagline">${(d.tags || []).map(t => '<span class="chip">' + esc(t) + '</span>').join("")}</div>
       <div class="introw">
         <span class="tx">
           <span class="t1">內部參考 · 知道但不說</span>
           <span class="t2">${esc(d.internal ? (d.internalReason || "引擎讀得到，永遠不寫進回覆、不出現在來源標註。")
-                                             : (d.internalReason || "目前會照常引用；打開後只供引擎判斷，不寫進回覆。"))}</span>
+                                             : "目前會照常引用；打開後只供引擎判斷，不寫進回覆。")}</span>
         </span>
         <button class="switch" role="switch" aria-checked="${d.internal}" data-toggle="${i}" aria-label="內部參考">
           <span class="knob"></span>
@@ -441,50 +435,118 @@ function renderDrafts() {
   }));
   $("btnDiscard").addEventListener("click", () => { drafts = []; renderDrafts(); });
   $("btnConfirm").addEventListener("click", () => {
-    drafts.slice().reverse().forEach(d => {
-      if (d.type === "contact") CONTACTS.unshift({ name:d.name, role:d.role || "窗口", tone:d.tone, note:d.notes, _fresh:true });
-      else FACTS.unshift({ label:d.label, tags:d.tags, date:d.updatedAt, internal:d.internal, _fresh:true });
+    /* internal 以開關現況為準；internalReason 丟棄，不進資料庫 */
+    const items = drafts.map(d => {
+      if (d.type === "contact")
+        return { type: "contact", name: d.name, role: d.role || "", tone: d.tone, notes: d.notes, recentTopics: d.recentTopics || [] };
+      const it = { type: "fact", label: d.label, tags: d.tags, content: d.content, updatedAt: d.updatedAt, volatility: d.volatility };
+      if (d.internal) it.usage = "internal";
+      return it;
     });
-    const n = drafts.length;
-    drafts = [];
-    renderDrafts();
-    renderList(n);
-    $("feedText").value = "";
-    $("feedHint").textContent = "已寫入 " + n + " 筆，回主畫面立刻能被引用。";
+    pendingConfirm = items;
+    $("btnConfirm").disabled = true;
+    window.EQNative.confirm(JSON.stringify(items));
   });
 }
 
-/* ============ 抽取流程 ============ */
+/* ---------- 抽取 ---------- */
 function runExtract() {
-  const raw = $("feedText").value;
-  if (!raw.trim()) return;
-  const feeder = $("feeder"), btn = $("btnExtract");
+  const raw = $("feedText").value.trim();
+  if (!raw) return;
+  const kind = /^https?:\/\/\S+$/.test(raw) ? "url" : "text";
   drafts = []; noResult = null; renderDrafts();
-  feeder.classList.add("reading");
-  btn.disabled = true;
+  $("feeder").classList.add("reading");
+  $("btnExtract").disabled = true;
   $("feedHint").textContent = "讀取中……";
-  setTimeout(() => {   /* 原型固定 900ms；真 API 換成 fetch(/v1/extract) */
-    feeder.classList.remove("reading");
-    btn.disabled = false;
-    const res = mockExtract(raw);
-    if (res.extracted) {
-      drafts = res.items.map(d => ({ ...d, internal: !!(d.internal || d.usage === "internal") }));
-      $("feedHint").textContent = "抽出 " + drafts.length + " 筆草稿，看過再按確認。";
-    } else {
-      noResult = { reason: res.reason, orig: raw.trim() };
-      $("feedHint").textContent = "抽出來的是草稿，你確認了才會寫入。";
+  window.EQNative.extract(raw, kind);
+}
+$("btnExtract").addEventListener("click", runExtract);
+$("backBtn").addEventListener("click", () => window.EQNative.back());
+
+/* ============================================================
+   Mock 區塊（契約規定內建，不要刪）：
+   沒有原生環境就退回內建假資料——雙擊 HTML 走完整流程，
+   含試貼四鍵（報價信／對象備註／連結讀不到／閒聊抽不到）。
+   QA：?err=network 看寫入失敗路徑。
+   ============================================================ */
+if (!window.EQNative) {
+  const TODAY = "2026-09-04";
+  const SAMPLES = {
+    quote: "跟你確認 Y 方案：8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。內部先知道就好——最低可以讓到 7 萬，但要搭配季度合作。",
+    contact: "李副理今天口頭提的：他不看長訊息，重點放前三行；約時間直接給他兩個時段二選一，開放式問他有空嗎不會回。最近在追短影音企劃。",
+    link: "https://example.com/pricing-2026",
+    chat: "今天開會開到快吐，晚點再說"
+  };
+  function mockExtract(raw) {
+    const t = raw.trim();
+    if (/^https?:\/\/\S+$/.test(t))
+      return { extracted: false, reason: "這個連結我讀不到內容，可以直接把文字貼給我" };
+    if (t.length < 15 || !/[0-9０-９]|方案|報價|交期|進度|檔期|偏好|時段|不看|在意|雷點/.test(t))
+      return { extracted: false, reason: "這段沒有具體的數字或條件，我抽不出可以引用的事實" };
+    if (/不看|重點放|二選一|不會回|偏好/.test(t) && /理|經理|窗口|先生|小姐|姐|哥/.test(t)) {
+      const name = (t.match(/^([一-龥]{1,3}(?:副理|經理|協理|主任|先生|小姐))/) || [, "對象"])[1];
+      return { extracted: true, items: [{
+        type: "contact", name, role: "窗口",
+        tone: "短訊息、重點前置；給具體時段二選一",
+        notes: "不看長訊息，重點放前三行；開放式問句不會回。",
+        recentTopics: ["短影音企劃"]
+      }]};
     }
-    renderDrafts();
-  }, 900);
+    const items = [{
+      type: "fact", label: "Y 方案報價",
+      tags: ["報價", "價格", "多少錢", "方案", "預算"],
+      content: "Y 方案 8 萬，含企劃、單日拍攝、基礎剪輯，不含空拍與二次修改。",
+      updatedAt: TODAY, volatility: "high"
+    }];
+    if (/底線|最低|讓到|成本|利潤|內部/.test(t)) items.push({
+      type: "fact", label: "Y 方案底線",
+      tags: ["報價", "折扣", "議價", "底線"],
+      content: "Y 方案最低可讓到 7 萬，需搭配季度合作。",
+      updatedAt: TODAY, volatility: "high",
+      usage: "internal", internalReason: "這是你的讓價空間，寫進回覆等於先自砍一刀"
+    });
+    return { extracted: true, items };
+  }
+  const err = new URLSearchParams(location.search).get("err");
+  window.EQNative = {
+    extract: (input, kind) => setTimeout(() => EQ.renderDrafts(mockExtract(input)), 900),
+    confirm: (itemsJson) => setTimeout(() => {
+      if (err === "network") { EQ.error("network"); return; }
+      EQ.saved(JSON.parse(itemsJson).length);
+    }, 500),
+    back: () => console.log("[mock] back")
+  };
+  /* 內建現況資料（照 data/facts.json、contacts.json） */
+  EQ.renderList({
+    facts: [
+      { label:"代操服務標準報價", tags:["報價","價格","方案","月費"], updatedAt:"2026-05-27" },
+      { label:"議價底線（內部）", tags:["報價","折扣","議價"], updatedAt:"2026-05-27", usage:"internal" },
+      { label:"檔期合作兩版報價", tags:["報價","方案","預算","檔期"], updatedAt:"2026-08-03" },
+      { label:"A 案進度", tags:["進度","A案","合約"], updatedAt:"2026-09-01" },
+      { label:"影片交付節奏", tags:["交期","影片","時程"], updatedAt:"2026-07-06" },
+      { label:"頻道代營運月方案", tags:["報價","方案","影片"], updatedAt:"2026-07-24" },
+      { label:"逐項計價表", tags:["報價","計價","比價"], updatedAt:"2026-07-24" },
+      { label:"五月檔期成效", tags:["成效","合作歷史","案例"], updatedAt:"2026-06-01" },
+      { label:"十週年檔期時程", tags:["時程","檔期","死線"], updatedAt:"2026-08-03" },
+      { label:"W 品牌合作歷史", tags:["合作歷史","窗口","影片"], updatedAt:"2026-07-09" }
+    ],
+    contacts: [
+      { name:"林經理", role:"主管", tone:"簡潔、先講結論、要具體時間", notes:"在意時程超過在意細節。回覆一定要給明確的時間點。" },
+      { name:"王先生", role:"客戶", tone:"禮貌、給選項、不要壓迫", notes:"價格敏感，比較過三家。給台階比給折扣有效。" },
+      { name:"陳姐", role:"品牌窗口（行銷主管）", tone:"直接、行動快；給具體選項和時段她就動", notes:"開放式問句會石沉大海——訊息要帶具體選項與時段。" },
+      { name:"凱文", role:"老客戶（頻道經營）", tone:"對帳的平靜：先講基準與事實、再講結論", notes:"慢回、會用已讀不回施壓。回覆順序固定：基準→做了什麼→交付→結論。" }
+    ]
+  });
+  /* 試貼四鍵只在 mock 模式出現 */
+  $("samples").hidden = false;
+  document.querySelectorAll(".sample").forEach(b => b.addEventListener("click", () => {
+    $("feedText").value = SAMPLES[b.dataset.sample];
+    runExtract();
+  }));
+} else {
+  renderList();  /* 橋接模式：先畫空殼，等原生 EQ.renderList */
 }
 
-$("btnExtract").addEventListener("click", runExtract);
-document.querySelectorAll(".sample").forEach(b => b.addEventListener("click", () => {
-  $("feedText").value = SAMPLES[b.dataset.sample];
-  runExtract();
-}));
-
-renderList(0);
 renderDrafts();
 </script>
 </body>

@@ -246,7 +246,7 @@ button{ font-family: inherit; cursor: pointer; }
     <div class="sendbtn"></div>
   </div>
 
-  <div class="panel" id="panelB" data-open="false">
+  <div class="panel" id="panelB" data-open="false" hidden>
     <div class="panel-row">
       <button class="panel-hit" id="hitB">
         <span class="panel-txt">
@@ -254,7 +254,7 @@ button{ font-family: inherit; cursor: pointer; }
             <i class="diamond" style="width:6px;height:6px"></i>
             <span class="eyebrow">幕聊 · 對方會怎麼讀</span>
           </span>
-          <span class="panel-title">他讀起來會像被推回去自己想辦法</span>
+          <span class="panel-title" id="titleB"></span>
         </span>
       </button>
       <button class="btn-adopt" id="replaceBtn">替換</button>
@@ -262,10 +262,10 @@ button{ font-family: inherit; cursor: pointer; }
     </div>
 
     <div class="panel-body"><div><div class="panel-in">
-      <div class="sugtext">交期我來幫您確認。今天內跟生產端對過，回覆您一個能承諾的日期。</div>
-      <div class="srcline">引用<span class="sdot"></span>案 #P-118<span class="sdot"></span>交期 14 天</div>
+      <div class="sugtext" id="suggB"></div>
       <div class="footrow">
-        <span class="sugreason">他會覺得有人接手了，而不是又被轉一手。</span>
+        <span class="sugreason"></span>
+        <button class="linkbtn" id="dismissBtn">照我的送</button>
       </div>
     </div></div></div>
   </div>
@@ -283,25 +283,67 @@ setVH();
 addEventListener("resize", setVH);
 addEventListener("orientationchange", setVH);
 
-/* 內容：與 refined.html「02 · 防自爆」deck 完全一致，未改寫 */
-const TYPED_HTML = '這個<span class="mark-typo">交其</span><span class="mark-tone">本來就不是我能決定的</span>，你要問生產那邊<span class="caret"></span>';
-const REPLACED_HTML = '交期我來幫您確認。今天內跟生產端對過，回覆您一個能承諾的日期。<span class="caret"></span>';
+/* ============================================================
+   JS Bridge（照 docs/js-bridge契約.md）
+   原生 → 網頁：EQ.setState("idle"|"checking")、EQ.render(payload)
+   網頁 → 原生：EQNative.replace(text)、EQNative.dismiss()
+   payload：{flagged, type, reason, spans[{start,end,label}], suggestion, draft}
+   spans 是 draft 的字元索引（0 起算、含頭不含尾），draft 原樣、不 trim。
+   idle ＝面板整個不佔位（hidden）。checking 畫面不變，避免閃爍。
+   ============================================================ */
 
+const BRIDGED = !!window.EQNative;
 const $ = (id) => document.getElementById(id);
 const field = $("fieldB");
 const panel = $("panelB");
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 
-field.innerHTML = TYPED_HTML;
+let current = null;   // 最近一次 render 的 payload
+
+/* spans → 帶標記的輸入框內容。label 含「錯」「字」走灰點線，其餘走語氣實線 */
+function markDraft(draft, spans) {
+  const sorted = (spans || []).slice().sort((a, b) => a.start - b.start);
+  let html = "", cursor = 0;
+  sorted.forEach(sp => {
+    if (sp.start < cursor) return;                    /* 重疊的略過，保底不壞版 */
+    html += esc(draft.slice(cursor, sp.start));
+    const cls = /錯|字/.test(sp.label || "") ? "mark-typo" : "mark-tone";
+    html += '<span class="' + cls + '">' + esc(draft.slice(sp.start, sp.end)) + "</span>";
+    cursor = sp.end;
+  });
+  html += esc(draft.slice(cursor));
+  return html + '<span class="caret"></span>';
+}
+
+window.EQ = {
+  setState(s) {
+    if (s === "idle") {
+      panel.hidden = true; panel.dataset.open = "false"; current = null;
+    }
+    /* checking：畫面不變 */
+  },
+  render(p) {
+    if (!p || p.flagged === false) { EQ.setState("idle"); return; }
+    current = p;
+    field.classList.add("typed");
+    field.innerHTML = markDraft(p.draft, p.spans);
+    $("titleB").textContent = p.reason || "";
+    $("suggB").textContent = p.suggestion || "";
+    panel.hidden = false;
+    panel.dataset.open = "false";
+  }
+};
 
 const toggle = () => { panel.dataset.open = panel.dataset.open === "true" ? "false" : "true"; };
 $("chevB").addEventListener("click", toggle);
 $("hitB").addEventListener("click", toggle);
 
-/* 替換：面板收合，輸入框的字被換成建議版本 */
+/* 替換：交給原生寫回輸入框；後續狀態由原生驅動（成功即 setState("idle")） */
 $("replaceBtn").addEventListener("click", () => {
-  field.innerHTML = REPLACED_HTML;
-  panel.dataset.open = "false";
+  if (current) window.EQNative.replace(current.suggestion);
 });
+/* 照我的送：收起建議條，同一段草稿不再提醒 */
+$("dismissBtn").addEventListener("click", () => { window.EQNative.dismiss(); });
 
 /* ---------- 注音鍵盤（視覺，不接系統輸入法） ---------- */
 const KEY_ROWS = [
@@ -323,6 +365,38 @@ const KBD_HTML = KEY_ROWS.map(row =>
   ).join("") + '</div>'
 ).join("");
 document.querySelectorAll("[data-kbd]").forEach(el => { el.innerHTML = KBD_HTML; });
+
+/* ============================================================
+   Mock 區塊（契約規定內建，不要刪）：
+   沒有原生環境就退回內建假資料——雙擊 HTML 走完整流程。
+   場景走 demo 第二幕（價格防禦句）。QA：?flag=0 看 flagged:false（面板不出現）。
+   ============================================================ */
+if (!window.EQNative) {
+  window.EQNative = {
+    replace: (t) => {
+      field.classList.add("typed");
+      field.innerHTML = esc(t) + '<span class="caret"></span>';
+      setTimeout(() => EQ.setState("idle"), 200);
+    },
+    dismiss: () => EQ.setState("idle")
+  };
+  const MOCK = {
+    flagged: true,
+    type: "defensive",
+    reason: "他讀起來會像被下戰帖",
+    spans: [{ start: 3, end: 11, label: "防禦" }, { start: 16, end: 18, label: "錯字" }],
+    suggestion: "這個價格包含 A、B、C。如果預算有考量，我們也有 Y 方案可以談。",
+    draft: "我們的品質跟別人不一樣，你可以去筆較看看。"
+  };
+  const flag = new URLSearchParams(location.search).get("flag");
+  /* 先看到自己打的字，半拍後建議條長出來（推開內容，不是蓋住） */
+  field.classList.add("typed");
+  field.innerHTML = markDraft(MOCK.draft, []);
+  setTimeout(() => {
+    if (flag === "0") { EQ.render({ flagged: false }); return; }
+    EQ.render(MOCK);
+  }, 900);
+}
 </script>
 </body>
 </html>

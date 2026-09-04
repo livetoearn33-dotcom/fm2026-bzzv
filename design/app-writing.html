@@ -207,6 +207,7 @@ button{ font-family: inherit; cursor: pointer; }
 .panel[data-open="true"] .panel-in > *:nth-child(1){ animation-delay:60ms; }
 .panel[data-open="true"] .panel-in > *:nth-child(2){ animation-delay:160ms; }
 .panel[data-open="true"] .panel-in > *:nth-child(3){ animation-delay:260ms; }
+.panel[data-open="true"] .panel-in > *:nth-child(4){ animation-delay:360ms; }
 @keyframes rise{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
 
 .sugtext{ font-size:17px; font-weight:400; line-height:1.68; letter-spacing:.01em; color: var(--white); text-wrap:pretty; }
@@ -219,6 +220,18 @@ button{ font-family: inherit; cursor: pointer; }
   color: var(--smoke); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
 }
 .srcline .sdot{ width:3px; height:3px; border-radius:9999px; background: var(--iron); flex:none; }
+
+/* 角色 chip 排（定案 A · 本文上方；點擊走 EQNative.persona） */
+.prow{ display:flex; gap:6px; flex-wrap:wrap; }
+.pchip{
+  height:36px; padding:0 14px; border-radius:8px;
+  background:transparent; color: var(--ash); border:1px solid var(--slate);
+  font-size:13px; line-height:1;
+  transition: color 150ms var(--ease), background 150ms var(--ease), border-color 150ms var(--ease);
+}
+.pchip[aria-pressed="true"]{ background: var(--graph); color: var(--mist); border-color: var(--slate); }
+
+.sugtext.selectable{ user-select:text; -webkit-user-select:text; }
 
 .footrow{ display:flex; align-items:flex-end; gap:12px; }
 .sugreason{ flex:1; font-size:12px; line-height:1.5; color: var(--smoke); text-wrap:pretty; }
@@ -282,6 +295,7 @@ button{ font-family: inherit; cursor: pointer; }
   <div class="panel" id="panelA" data-open="false">
     <div class="panel-row" id="rowA"><!-- 由 JS 依狀態填入 --></div>
     <div class="panel-body"><div><div class="panel-in">
+      <div class="prow" id="prowA"></div>
       <div class="sugtext" id="replyA"></div>
       <div class="srcline" id="tagsA"></div>
       <div class="footrow">
@@ -305,7 +319,23 @@ setVH();
 addEventListener("resize", setVH);
 addEventListener("orientationchange", setVH);
 
-/* 內容：與 refined.html 完全一致，未改寫 */
+/* ============================================================
+   JS Bridge（照 docs/js-bridge契約.md）
+   原生 → 網頁：EQ.setState("idle"|"loading"|"filled")、EQ.render(payload)、EQ.error(code)
+   網頁 → 原生：EQNative.fill(text)、EQNative.persona(id)、EQNative.close()
+   沒有原生環境（window.EQNative 不存在）→ 檔尾 mock 區塊接手，
+   雙擊 HTML 即可走完整流程；QA 可用 ?err=no_conversation|network|fill_failed 看失敗態。
+
+   契約外備註（不擅自擴充契約，先照下列行為做，有異議找 Zeno）：
+   - 「附加」：契約沒有網頁→原生的 attach 通道。橋接模式下按附加會呼叫
+     選配的 EQNative.attach()（若原生有實作），否則只進 loading 等原生驅動。
+   - 「換一版」：契約沒有 reroll 通道，橋接模式下隱藏此鍵（mock 模式保留）。
+   - 「本色」chip：切回不打原生——用 payload 的 plainReply 本地還原（契約設計本意）。
+   ============================================================ */
+
+const BRIDGED = !!window.EQNative;
+
+/* 內容（mock 模式用）：與 refined.html 完全一致，未改寫 */
 const MOODS = {
   normal: {
     label: "一般", chip: "",
@@ -339,10 +369,50 @@ const MOODS = {
   }
 };
 
-/* 這份 demo 固定走「高壓局」——對應 demo-script.md 第一幕的腳本 */
-const state = { view: "idle", mood: "tense", variant: 0 };
+/* ---------- 狀態機 ----------
+   view: idle | reading | ready | expanded | adopted | error
+   data: 契約 render payload（{risk, riskReason, reply, plainReply?, naiveReply, sources[]}） */
+const RISK = {
+  normal:   { label: "一般", chip: "" },
+  pressure: { label: "高壓", chip: "warm" },
+  sensitive:{ label: "敏感", chip: "amber" }
+};
+const PERSONAS = [
+  { id: "none",    label: "本色" },
+  { id: "zhuge",   label: "諸葛亮" },
+  { id: "ceo",     label: "顧北辰" },
+  { id: "charmer", label: "童錦城" }
+];
+const ERRORS = {
+  no_conversation: "讀不到這個畫面的對話——回到聊天室再按一次附加",
+  network: "連線不順——按附加再試一次",
+  server: "引擎那邊出了狀況——按附加再試一次"
+};
+
+const state = { view: "idle", data: null, persona: "none", pendingPersona: null, fillFailed: false, variant: 0 };
 const $ = (id) => document.getElementById(id);
-const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+/* ---------- 原生打進來的介面 ---------- */
+window.EQ = {
+  setState(s) {
+    if (s === "idle")   { state.view = "idle"; state.data = null; state.persona = "none"; state.fillFailed = false; }
+    if (s === "loading"){ state.view = "reading"; state.fillFailed = false; }
+    if (s === "filled") { state.view = "adopted"; }
+    render(false);
+  },
+  render(p) {
+    state.data = p;
+    if (state.pendingPersona !== null) { state.persona = state.pendingPersona; state.pendingPersona = null; }
+    state.view = (state.view === "expanded") ? "expanded" : "ready";
+    state.fillFailed = false;
+    render(true);
+  },
+  error(code) {
+    if (code === "fill_failed") { state.fillFailed = true; render(false); return; }
+    state.view = "error"; state.errorCode = code; render(false);
+  }
+};
 
 const ROW_IDLE = `
   <i class="diamond" style="width:9px;height:9px"></i>
@@ -354,14 +424,27 @@ const ROW_READING = `
   <span class="eyebrow">讀取中</span>
   <span style="flex:1"></span>`;
 
-function rowSuggest(m, title) {
+function rowError(code) {
+  return `
+  <span class="panel-txt" style="flex:1;min-width:0">
+    <span class="panel-eyebrow">
+      <i class="diamond" style="width:6px;height:6px"></i>
+      <span class="eyebrow">幕聊</span>
+    </span>
+    <span class="panel-title" style="color:var(--ash)">${esc(ERRORS[code] || ERRORS.server)}</span>
+  </span>
+  <button class="btn-attach" id="attachBtn">附加</button>`;
+}
+
+function rowSuggest(riskKey, title) {
+  const r = RISK[riskKey] || RISK.normal;
   return `
   <button class="panel-hit" id="hitA">
     <span class="panel-txt">
       <span class="panel-eyebrow">
         <i class="diamond" style="width:6px;height:6px"></i>
-        <span class="eyebrow">幕聊</span>
-        <span class="chip mood ${m.chip}">${esc(m.label)}</span>
+        <span class="eyebrow">幕聊${state.persona !== "none" ? " · " + esc((PERSONAS.find(p => p.id === state.persona) || {}).label || "") : ""}</span>
+        <span class="chip mood ${r.chip}">${esc(r.label)}</span>
       </span>
       <span class="panel-title">${esc(title)}</span>
     </span>
@@ -370,32 +453,42 @@ function rowSuggest(m, title) {
   <button class="chevron" id="chevA" aria-label="展開"><span>▴</span></button>`;
 }
 
-function render(animate) {
-  const m = MOODS[state.mood];
-  const reply = m.replies[state.variant % m.replies.length];
-  const v = state.view;
-  const suggesting = (v === "ready" || v === "expanded");
+function currentReply() { return state.data ? state.data.reply : ""; }
 
-  $("rowA").innerHTML = suggesting ? rowSuggest(m, m.strategy || reply)
+function render(animate) {
+  const v = state.view, d = state.data;
+  const suggesting = (v === "ready" || v === "expanded") && d;
+
+  $("rowA").innerHTML = suggesting ? rowSuggest(d.risk, d.riskReason || d.reply)
                       : v === "reading" ? ROW_READING
+                      : v === "error" ? rowError(state.errorCode)
                       : ROW_IDLE;
 
   $("panelA").dataset.open = String(v === "expanded");
   $("panelA").classList.toggle("reading", v === "reading");
 
-  $("tagsA").innerHTML = "引用" + m.src
-    .map(s => '<span class="sdot"></span>' + esc(s))
-    .join("");
+  /* 角色 chip 排（定案 A · 本文上方） */
+  $("prowA").innerHTML = PERSONAS.map(p =>
+    '<button class="pchip" data-pers="' + p.id + '" aria-pressed="' + (state.persona === p.id) + '">' + esc(p.label) + '</button>'
+  ).join("");
+
+  $("tagsA").innerHTML = d && d.sources && d.sources.length
+    ? "引用" + d.sources.map(s => '<span class="sdot"></span>' + esc(s.label)).join("")
+    : "";
 
   const el = $("replyA");
-  el.textContent = reply;
+  el.textContent = currentReply();
+  el.classList.toggle("selectable", state.fillFailed);
   if (animate) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
-  $("reasonA").textContent = m.reason;
+  $("reasonA").textContent = state.fillFailed
+    ? "寫入輸入框失敗——長按上面那句話可以自己複製。"
+    : "";
+  $("rerollA").style.display = BRIDGED ? "none" : "";
 
   const f = $("fieldA");
   if (v === "adopted") {
     f.classList.add("typed");
-    f.innerHTML = esc(reply) + '<span class="caret"></span>';
+    f.innerHTML = esc(currentReply()) + '<span class="caret"></span>';
     $("sendA").classList.add("live");
   } else {
     f.classList.remove("typed");
@@ -409,15 +502,33 @@ function render(animate) {
 function bindRow() {
   const attach = $("attachBtn");
   if (attach) attach.addEventListener("click", () => {
-    state.view = "reading"; render(false);
-    setTimeout(() => { if (state.view === "reading") { state.view = "ready"; render(true); } }, 1100);
+    state.view = "reading"; state.errorCode = null; render(false);
+    if (window.EQNative && typeof window.EQNative.attach === "function") window.EQNative.attach();
   });
   const adopt = $("adoptBtn");
-  if (adopt) adopt.addEventListener("click", () => { state.view = "adopted"; render(false); });
+  if (adopt) adopt.addEventListener("click", () => {
+    /* 填入後畫面不自己收——等原生 EQ.setState("filled") 或 EQ.error("fill_failed") */
+    window.EQNative.fill(currentReply());
+  });
   const toggle = () => { state.view = state.view === "expanded" ? "ready" : "expanded"; render(false); };
   const chev = $("chevA"), hit = $("hitA");
   if (chev) chev.addEventListener("click", toggle);
   if (hit) hit.addEventListener("click", toggle);
+
+  document.querySelectorAll("#prowA .pchip").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.pers;
+    if (id === state.persona) return;
+    if (id === "none") {
+      /* 切回本色：用 plainReply 本地還原，不打原生 */
+      if (state.data && state.data.plainReply) {
+        state.data = { ...state.data, reply: state.data.plainReply, plainReply: undefined };
+      }
+      state.persona = "none"; render(true); return;
+    }
+    state.pendingPersona = id;
+    $("panelA").classList.add("reading");
+    window.EQNative.persona(id);
+  }));
 }
 
 /* ---------- 注音鍵盤（視覺，不接系統輸入法） ---------- */
@@ -440,6 +551,51 @@ const KBD_HTML = KEY_ROWS.map(row =>
   ).join("") + '</div>'
 ).join("");
 document.querySelectorAll("[data-kbd]").forEach(el => { el.innerHTML = KBD_HTML; });
+
+/* ============================================================
+   Mock 區塊（契約規定內建，不要刪）：
+   沒有原生環境就退回內建假資料——雙擊 HTML 走完整流程，
+   也是 demo 現場的降級路徑。資料走「高壓局」（demo 第一幕）。
+   ============================================================ */
+if (!window.EQNative) {
+  const base = () => {
+    const m = MOODS.tense;
+    return {
+      risk: "pressure",
+      riskReason: m.strategy,
+      reply: m.replies[state.variant % m.replies.length],
+      naiveReply: "收到",
+      sources: [{ id: "quote-q2410", label: "報價單 #Q-2410" }, { id: "lead-14d", label: "交期 14 天" }]
+    };
+  };
+  const PERSONA_REPLIES = {
+    zhuge:   "主公息怒。亮已探得軍情：報價仍候內部核算，癥結在數不在人，已遣人催之。今日午後三時，完整報價必至——若誤期，甘受軍法。",
+    ceo:     "報價？這種事不該讓你問第二次。今天下午三點，A／B 兩版連同交期放你桌上——我顧北辰說到做到。",
+    charmer: "讓你問到第二次，是我不對——你的案子我一向排最前面。下午三點前把 A／B 規格和交期一次給你，開會前我們先對一遍。"
+  };
+  window.EQNative = {
+    attach: () => setTimeout(() => { if (state.view === "reading") EQ.render(base()); }, 1100),
+    fill: (t) => { console.log("[mock] fill:", t); setTimeout(() => EQ.setState("filled"), 250); },
+    persona: (id) => setTimeout(() => {
+      const b = base();
+      EQ.render({ ...b, reply: PERSONA_REPLIES[id] || b.reply, plainReply: b.reply });
+    }, 700),
+    close: () => console.log("[mock] close")
+  };
+  /* mock 限定：換一版（契約無 reroll 通道，橋接模式此鍵隱藏） */
+  $("rerollA").addEventListener("click", () => {
+    state.variant++;
+    state.persona = "none";
+    EQ.render(base());
+  });
+  /* 自動跑一次 demo；QA 失敗態：?err=no_conversation|network|fill_failed */
+  const err = new URLSearchParams(location.search).get("err");
+  setTimeout(() => {
+    if (err === "fill_failed") { EQ.render(base()); setTimeout(() => EQ.error("fill_failed"), 400); }
+    else if (err) { EQ.setState("loading"); setTimeout(() => EQ.error(err), 700); }
+    else { state.view = "reading"; render(false); window.EQNative.attach(); }
+  }, 500);
+}
 
 render(false);
 </script>
