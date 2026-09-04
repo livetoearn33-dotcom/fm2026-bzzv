@@ -101,6 +101,48 @@ describe("post /knowledge-bases", () => {
     expect(detail?.fileCount).toBe(2);
   });
 
+  it("internal 知識庫：草稿條目全部預填 usage internal，commit 傳 internal:false 也強制蓋成 internal", async () => {
+    const client = buildClient(queuedModel([
+      { extracted: true, items: [ITEM_A, { ...ITEM_B, usage: undefined }] },
+    ]));
+
+    const created = await client["knowledge-bases"].$post({
+      form: { files: pdfFile(), name: "議價底線", internal: "true" },
+    });
+    expect(created.status).toBe(200);
+    if (created.status !== 200)
+      return;
+    const createdJson = await created.json();
+    expect(createdJson.internal).toBe(true);
+    expect(createdJson.items.every(item => item.usage === "internal")).toBe(true);
+
+    // 逐條傳 internal:false 嘗試反轉——應被知識庫層旗標蓋掉
+    const commitResponse = await client["knowledge-bases"][":id"].commit.$post({
+      param: { id: createdJson.knowledgeBaseId },
+      json: {
+        items: createdJson.items.map(item => ({
+          id: item.suggestedId,
+          label: item.label,
+          content: item.content,
+          tags: item.tags,
+          volatility: item.volatility,
+          internal: false,
+        })),
+      },
+    });
+    expect(commitResponse.status).toBe(200);
+    if (commitResponse.status !== 200)
+      return;
+    const committed = await commitResponse.json();
+    expect(committed.facts.every(fact => fact.usage === "internal")).toBe(true);
+
+    const listResponse = await client["knowledge-bases"].$get();
+    expect(listResponse.status).toBe(200);
+    if (listResponse.status !== 200)
+      return;
+    expect((await listResponse.json())[0].internal).toBe(true);
+  });
+
   it("跳過壞檔繼續：一好一壞（txt）回 200，壞檔標 failed 帶 errorReason，好檔照抽", async () => {
     const client = buildClient(queuedModel([{ extracted: true, items: [ITEM_A] }]));
 

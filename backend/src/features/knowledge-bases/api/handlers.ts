@@ -15,10 +15,10 @@ import type {
 
 export function createCreateKnowledgeBaseHandler(services: KnowledgeBaseServices): AppRouteHandler<CreateKnowledgeBaseRoute> {
   return async (c) => {
-    const { files, name } = c.req.valid("form");
+    const { files, name, internal } = c.req.valid("form");
 
     try {
-      const result = await services.createKnowledgeBase(files, name);
+      const result = await services.createKnowledgeBase(files, { name, internal });
       return c.json(result, HttpStatusCodes.OK);
     }
     catch (error) {

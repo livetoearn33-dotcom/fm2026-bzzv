@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_bases" ADD COLUMN "internal" boolean DEFAULT false NOT NULL;

@@ -85,7 +85,7 @@ describe("put /contacts/{id}", () => {
   });
 
   it("帶 knowledgeBaseId 新增：回應與列表都保存；知識庫不存在回 400", async () => {
-    const base = await new DbKnowledgeBaseStore(db).createBase("幕聊");
+    const base = await new DbKnowledgeBaseStore(db).createBase({ name: "幕聊" });
     const client = buildKnowledgeClient();
     const response = await client.contacts[":id"].$put({
       param: { id: "proj-contact" },
@@ -201,7 +201,7 @@ describe("put /facts/{id}", () => {
   });
 
   it("帶 knowledgeBaseId 新增與清除：省略時更新會清掉既有值", async () => {
-    const base = await new DbKnowledgeBaseStore(db).createBase("幕聊");
+    const base = await new DbKnowledgeBaseStore(db).createBase({ name: "幕聊" });
     const client = buildKnowledgeClient();
     const withProject = await client.facts[":id"].$put({
       param: { id: "proj-fact" },

@@ -56,6 +56,8 @@ export const KnowledgeBaseSummarySchema = z.object({
   id: z.string(),
   /** 產品畫面的「專案名稱」；contract 未要求、選填 */
   name: z.string().nullable(),
+  /** 內部知識庫：底下 facts 全部 usage: "internal"（AI 可參考、絕不透露給對方） */
+  internal: z.boolean(),
   status: KnowledgeBaseStatusSchema,
   fileCount: z.number(),
   files: z.array(KnowledgeBaseFileSchema),

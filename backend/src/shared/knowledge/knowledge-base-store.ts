@@ -62,6 +62,7 @@ function baseRowToSummary(row: BaseRow, files: KnowledgeBaseFile[]): KnowledgeBa
   return {
     id: row.id,
     name: row.name,
+    internal: row.internal,
     status: row.status,
     fileCount: files.length,
     files,
@@ -95,7 +96,7 @@ export function mergeDrafts(documents: DocumentRow[]): ExtractedDraft | null {
 }
 
 export interface KnowledgeBaseRepository {
-  createBase: (name?: string) => Promise<{ id: string }>;
+  createBase: (options?: { name?: string; internal?: boolean }) => Promise<{ id: string }>;
   addDocument: (baseId: string, input: KnowledgeBaseFileInput) => Promise<{ id: string }>;
   markDocumentExtracted: (documentId: string, pageCount: number, draft: ExtractedDraft) => Promise<void>;
   markDocumentFailed: (documentId: string, reason: string, pageCount?: number) => Promise<void>;
@@ -112,10 +113,10 @@ export interface KnowledgeBaseRepository {
 export class DbKnowledgeBaseStore implements KnowledgeBaseRepository {
   constructor(private readonly db: AnyPgDatabase) {}
 
-  async createBase(name?: string): Promise<{ id: string }> {
+  async createBase(options?: { name?: string; internal?: boolean }): Promise<{ id: string }> {
     const [row] = await this.db
       .insert(basesTable)
-      .values({ name: name ?? null, status: "extracting" })
+      .values({ name: options?.name ?? null, internal: options?.internal ?? false, status: "extracting" })
       .returning({ id: basesTable.id });
     return row;
   }
@@ -201,6 +202,14 @@ export class DbKnowledgeBaseStore implements KnowledgeBaseRepository {
    */
   async commit(id: string, items: KnowledgeBaseCommitItemInput[]): Promise<Fact[]> {
     return this.db.transaction(async (tx) => {
+      // internal 知識庫：全部條目強制 usage internal，commit body 的 internal:false 也蓋掉
+      // （語意不可逐條反轉，見 schema.ts knowledge_bases.internal 的註解）
+      const [baseRow] = await tx
+        .select({ internal: basesTable.internal })
+        .from(basesTable)
+        .where(eq(basesTable.id, id));
+      const forceInternal = baseRow?.internal ?? false;
+
       if (items.length > 0) {
         const ids = items.map(item => item.id);
         const existingRows = await tx
@@ -234,7 +243,7 @@ export class DbKnowledgeBaseStore implements KnowledgeBaseRepository {
           content: item.content,
           tags: item.tags,
           volatility: item.volatility,
-          usage: item.internal ? "internal" : undefined,
+          usage: forceInternal || item.internal ? "internal" : undefined,
           knowledgeBaseId: id,
           updatedAt: updatedAtString,
         });

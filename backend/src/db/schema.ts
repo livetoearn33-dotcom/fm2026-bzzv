@@ -1,4 +1,4 @@
-import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Drizzle schema（真源）。改這裡之後跑 `pnpm db:generate` 產生對應的 migration SQL
@@ -21,6 +21,11 @@ export const knowledgeBaseStatusEnum = pgEnum("knowledge_base_status", ["extract
 export const knowledgeBases = pgTable("knowledge_bases", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name"),
+  /**
+   * 內部知識庫：commit 出來的 facts 一律強制 usage: "internal"（AI 可參考、
+   * 絕不寫進回覆／sources），commit 時不可逐條反轉；建立時決定、不可事後修改。
+   */
+  internal: boolean("internal").notNull().default(false),
   status: knowledgeBaseStatusEnum("status").notNull(),
   errorReason: text("error_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

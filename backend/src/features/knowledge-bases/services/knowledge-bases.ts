@@ -29,11 +29,18 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export interface CreateKnowledgeBaseResult {
   knowledgeBaseId: string;
   name: string | null;
+  internal: boolean;
   status: "draft";
   files: KnowledgeBaseFile[];
   extracted: boolean;
   reason: string | null;
   items: ExtractedFactItem[];
+}
+
+export interface CreateKnowledgeBaseOptions {
+  name?: string;
+  /** 內部知識庫：抽取草稿與 commit 出來的 facts 全部強制 usage: "internal" */
+  internal?: boolean;
 }
 
 export interface CommitKnowledgeBaseResult {
@@ -65,12 +72,13 @@ export function createKnowledgeBaseServices(deps: KnowledgeBaseServiceDeps) {
    * 標成 failed 收進 files[]，其餘檔照抽；全部檔案都失敗才讓整個 create 失敗
    * （以第一個檔的錯誤類別決定狀態碼），並把知識庫標成 failed 留紀錄。
    */
-  async function createKnowledgeBase(files: File[], name?: string): Promise<CreateKnowledgeBaseResult> {
+  async function createKnowledgeBase(files: File[], options: CreateKnowledgeBaseOptions = {}): Promise<CreateKnowledgeBaseResult> {
+    const { name, internal = false } = options;
     if (files.length === 0) {
       throw new ValidationError("至少要上傳一個 PDF 檔案");
     }
 
-    const base = await bases.createBase(name);
+    const base = await bases.createBase({ name, internal });
     const resultFiles: KnowledgeBaseFile[] = [];
     const mergedItems: ExtractedFactItem[] = [];
     const noFactReasons: string[] = [];
@@ -167,7 +175,8 @@ export function createKnowledgeBaseServices(deps: KnowledgeBaseServiceDeps) {
         content: item.content,
         tags: item.tags,
         volatility: item.volatility,
-        usage: item.usage,
+        // internal 知識庫：草稿全部預填 internal，前端確認畫面直接呈現全勾狀態
+        usage: internal ? "internal" : item.usage,
       }));
 
       await bases.markDocumentExtracted(document.id, parsed.pageCount, { extracted: true, items });
@@ -189,6 +198,7 @@ export function createKnowledgeBaseServices(deps: KnowledgeBaseServiceDeps) {
     return {
       knowledgeBaseId: base.id,
       name: name ?? null,
+      internal,
       status: "draft",
       files: resultFiles,
       extracted,

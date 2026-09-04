@@ -26,11 +26,18 @@ export const CreateKnowledgeBaseBodySchema = z.object({
     .openapi({ type: "array", items: { type: "string", format: "binary" } }),
   /** 產品畫面的「專案名稱」；contract 未要求、選填 */
   name: z.string().min(1).optional().openapi({ example: "宏碩 Q4 報價案" }),
+  /**
+   * 內部知識庫：commit 出來的 facts 全部強制 usage: "internal"——AI 可參考、
+   * 絕不寫進回覆／sources。multipart 的值是字串，收 "true"/"false"；省略＝false。
+   * 建立時決定、不可事後修改。
+   */
+  internal: z.enum(["true", "false"]).optional().transform(value => value === "true").openapi({ type: "boolean", example: false }),
 }).openapi("CreateKnowledgeBaseBody");
 
 export const CreateKnowledgeBaseResponseSchema = z.object({
   knowledgeBaseId: z.string(),
   name: z.string().nullable(),
+  internal: z.boolean(),
   status: z.literal("draft"),
   files: z.array(KnowledgeBaseFileSchema),
   extracted: z.boolean(),
