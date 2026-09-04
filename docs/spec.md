@@ -2,6 +2,23 @@
 
 FUTUREMODE × SITCON BUILDMODE Hackathon 2026｜賽道 Future of Work
 
+## 地圖（迷茫先看這裡；交付東西時順手改你那一行）
+
+| 東西 | 現行版在哪 | 誰拿去用 | 狀態 |
+|---|---|---|---|
+| 浮層 UI（含來源標籤／對比／角色列） | `design/overlay.html` | Vincent 放 `assets/` 覆蓋 | ✅ 可用，等換裝＋`onComposeFinished` 帶 payload |
+| 知識庫設定頁 UI | APK 內建版為準（`design/app-settings.html` 為舊參考） | Vincent | ✅ 已在跑 |
+| 後端 API | Zeabur 已部署；介面看 `GET /reference`（自動生成，永遠是對的） | Vincent 打 | ✅ 待驗證 LLM 是否真的打通 |
+| Prompt 引擎 ×4＋語氣層＋角色卡 | `prompts/*.md` | Brian 讀檔組裝 | ✅ |
+| 知識庫資料 | 後端資料庫（`data/facts.json` 為 seed） | 後端 | ✅ |
+| 影片分鏡（逐秒腳本） | `docs/影片分鏡-2min.md` | 影片製作者 | ✅ 定稿 |
+| 影片字卡素材（鉤子／片頭／片尾） | `design/video-cards.html`（瀏覽器開，按 1-3 跳段，可直接錄） | 影片製作者 | ✅ 隨時可錄 |
+| Round 2 簡報 | `design/slides-template.html` | Zanna 填內容 | 🟡 進行中 |
+| QA 答案 | `docs/qa-彈藥.md` | 上台三人 | ✅ |
+| 繳交（9/6 10:00）：影片≤2min＋介紹文字＋開源 repo | 表單等主辦放出 | 隊長送出 | 🔴 介紹文字未寫 |
+
+
+
 **這份 spec 的上游是 [demo-script.md](demo-script.md)。** 功能如果沒出現在 demo 腳本裡，就不是這次的優先項。
 
 ---
