@@ -26,7 +26,6 @@
 {
   "screenshot": "data:image/png;base64,...",
   "draft": "（選填）使用者已經打在輸入框的字",
-  "contactId": "（選填）",
   "persona": "（選填）zhuge | ceo | charmer"
 }
 ```
@@ -36,11 +35,6 @@
 ```
 〈本次任務〉
 今天是 {YYYY-MM-DD}（週X）
-
-對象：{contacts.json 該筆的 name}（{role}）
-　語氣偏好：{tone}
-　註記：{notes}
-（沒有 contactId 或查無此人時寫「對象：未知（無檔案）」）
 
 〈相關事實〉
 - id: {fact.id}｜{fact.label}｜{fact.content}
@@ -76,7 +70,7 @@
 ```
 1. 引擎-guard.md    （固定）
 2. 語氣-Zeno.md     （固定）
-3. 〈本次任務〉      （動態：對象檔案＋對話最後 1-3 則＋草稿原文）
+3. 〈本次任務〉      （動態：對話最後 1-3 則＋草稿原文）
 ```
 
 ### 契約重點
@@ -105,7 +99,7 @@ Response: { "extracted": true, "items": [ ...見引擎檔輸出格式... ] }
 
 1. **連結處理**：`kind: "url"` 時後端抓網頁內文再當文字送進 prompt。**抓不到就不要送 LLM**，直接回 `{ "extracted": false, "reason": "這個連結我讀不到內容，可以直接把文字貼給我" }`。現場網路不穩時這是唯一不會爆的行為。
 2. **id 由後端產**：LLM 不回 id。用 label 轉英文 kebab-case，碰撞時加序號。
-3. **確認才寫入**：`/extract` 只回草稿，不落檔。使用者按確認後前端再打 `PUT /v1/facts/{id}` 或 `/v1/contacts/{id}`。
+3. **確認才寫入**：`/extract` 只回草稿，不落檔。使用者按確認後前端再打知識庫寫入 API。
 4. **internal 是勾選不是自動**：`usage: "internal"` 與 `internalReason` 要在確認畫面顯示成**可勾選的開關**，預設照 LLM 判定，使用者可以改。引擎已寫明判不準時傾向標 internal——多標的代價遠小於少標。
 5. `internalReason` 只是給使用者看的說明，**不寫進 facts.json**（寫入時丟棄）。
 6. 最多回 3 筆；`extracted: false` 時前端顯示 `reason` 原文，不要自己改寫。
@@ -113,7 +107,7 @@ Response: { "extracted": true, "items": [ ...見引擎檔輸出格式... ] }
 ## 兩個引擎的通用組裝規則
 
 1. **今天日期**：第 4 層〈本次任務〉開頭注入一行「今天是 YYYY-MM-DD（週X）」——「這週來得及嗎」這類時效問題沒有它會答含糊。
-2. **查無對象的 fallback**：request 沒帶 contactId、或 contacts.json 查無此人時，對象段寫「對象：未知（無檔案）」，語氣照 Zeno 預設層走，不要省略整段。
+2. **對象檔案已停用（2026-09-04）**：不再組對象段、不再收 `contactId`。對方要什麼一律從對話判讀。`data/contacts.json` 保留在 repo 但不進 prompt。
 3. **`usage: "internal"` 的事實**（見 data/README-知識庫.md）：可以進 prompt 當背景，但引擎紅線禁止寫進回覆；組裝時在該筆後面加一行「（內部參考，不得寫入回覆）」。
 
 ## 角色改寫（persona，9/2 定案）
