@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<!-- ============================================================
+     幕聊 EQ Copilot · 浮層建議條（WebView 正式版）
+
+     這份是接續 Vincent 的 assets/overlay.html 改寫，**介面完全不變**：
+       網頁 → 原生：Android.compose / applyGuardSuggestion / setGuardExpanded
+       原生 → 網頁：onComposeStarted / onComposeFinished / onComposeError
+                    onGuardRisk / onGuardClear / onGuardApplied
+
+     只加三件 demo 要演的東西：
+       1. 填入後停 2.5 秒，顯示「引用：A 案進度」來源標籤
+       2. 可展開看「一般 AI 會回：收到」的對比
+       3. 語氣列可切換成角色列（諸葛亮／總裁／達人），走同一支 compose
+
+     ⚠️ Vincent 唯一要改的：onComposeFinished 帶上 payload
+        onComposeFinished({ reply, sources, naiveReply })
+        沒帶也不會壞——退回原本「已填入輸入框」的行為。
+     ============================================================ -->
+<style>
+:root{
+  --void:#040506;
+  --ink:#07080a;
+  --obsid:#111214;
+  --graph:#1b1c1e;
+  --slate:#363739;
+  --iron:#454647;
+  --smoke:#6a6b6c;
+  --ash:#9c9c9d;
+  --mist:#e6e6e6;
+  --white:#ffffff;
+  --coral:#ff6363;
+  --ember:#452324;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --mono:ui-monospace,Menlo,Monaco,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+body{
+  font-family:"Noto Sans TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;-webkit-user-select:none
+}
+button{font-family:inherit;cursor:pointer}
+.panel{
+  position:relative;width:100%;min-height:64px;overflow:hidden;
+  border-radius:16px 16px 0 0;
+  background:linear-gradient(180deg,#0a0b0d,var(--ink));
+  box-shadow:rgba(255,255,255,.28) 0 1px 0 inset,
+             rgba(255,255,255,.06) 0 0 0 1px
+}
+.panel.reading::after{
+  content:"";position:absolute;left:0;top:0;width:35%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent);
+  animation:sweep 1.1s linear infinite
+}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(286%)}}
+.row,.guard-row{
+  min-height:64px;display:flex;align-items:center;gap:8px;
+  padding:8px 8px 8px 16px
+}
+.brand,.guard-head{display:flex;align-items:center;gap:8px;flex:none}
+.diamond{
+  width:7px;height:7px;background:var(--coral);
+  transform:rotate(45deg);flex:none
+}
+.eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.8px;
+  color:var(--smoke);white-space:nowrap
+}
+.actions{flex:1;display:flex;gap:7px;min-width:0}
+.tone{
+  flex:1;height:44px;border-radius:8px;border:1px solid var(--slate);
+  background:var(--obsid);color:var(--mist);
+  font-size:14px;font-weight:500;white-space:nowrap;padding:0
+}
+.tone:active{background:var(--graph);transform:translateY(1px)}
+.swap{
+  width:38px;height:44px;flex:none;border:1px solid var(--slate);
+  border-radius:8px;background:transparent;color:var(--smoke);
+  font-family:var(--mono);font-size:11px
+}
+.swap:active{background:var(--graph)}
+
+/* ---------- 狀態列（讀取中／填入完成） ---------- */
+.status{flex:1;display:none;align-items:center;gap:8px;padding:0 8px;min-width:0}
+.status-main{font-size:13px;font-weight:500;color:var(--white);white-space:nowrap;flex:none}
+.status-sub{
+  margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--smoke);flex:none
+}
+/* 來源標籤：demo 第一幕的可信度證明 */
+.src{
+  display:flex;gap:6px;min-width:0;overflow:hidden;flex:1
+}
+.src-chip{
+  font-family:var(--mono);font-size:10px;line-height:1.6;letter-spacing:.3px;
+  border-radius:6px;padding:3px 7px;white-space:nowrap;
+  background:var(--graph);color:var(--ash);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transform:translateY(3px);
+  transition:opacity .32s var(--ease),transform .32s var(--ease)
+}
+.src-chip.in{opacity:1;transform:none}
+.chev{
+  width:38px;height:44px;flex:none;border:0;background:transparent;
+  color:var(--smoke);font-family:var(--mono)
+}
+
+/* ---------- 展開區（對比／建議版本共用） ---------- */
+.body{
+  display:none;padding:14px 16px 16px;background:var(--obsid);
+  box-shadow:rgba(255,255,255,.04) 0 1px 0 inset
+}
+.label{
+  display:block;margin-bottom:7px;
+  font-family:var(--mono);font-size:10px;color:var(--smoke)
+}
+.text{font-size:16px;line-height:1.62;color:var(--white)}
+.naive{
+  margin-top:12px;padding-top:12px;
+  border-top:1px solid rgba(255,255,255,.07)
+}
+.naive .text{font-size:14px;color:var(--iron)}
+
+/* ---------- 防自爆 ---------- */
+.guard{display:none}
+.guard-info{
+  flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:3px 0
+}
+.guard-head{margin-bottom:5px}
+.guard-interpretation{
+  display:block;color:var(--white);font-size:13px;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.guard-improve{
+  height:44px;padding:0 16px;flex:none;border:0;border-radius:8px;
+  background:var(--mist);color:var(--iron);
+  font-size:14px;font-weight:500
+}
+</style>
+</head>
+<body>
+<div class="panel" id="panel">
+
+  <div class="row" id="normalPanel">
+    <div class="brand">
+      <i class="diamond"></i>
+      <span class="eyebrow" id="brandLabel">幕聊</span>
+    </div>
+
+    <div class="actions" id="actions">
+      <button class="tone" data-style="empathy">同理</button>
+      <button class="tone" data-style="concise">簡潔</button>
+      <button class="tone" data-style="affirmative">肯定</button>
+    </div>
+
+    <div class="actions" id="personaActions" style="display:none">
+      <button class="tone" data-style="zhuge">諸葛亮</button>
+      <button class="tone" data-style="ceo">總裁</button>
+      <button class="tone" data-style="charmer">達人</button>
+    </div>
+
+    <button class="swap" id="swapBtn" title="切換語氣／角色">⇄</button>
+
+    <div class="status" id="status">
+      <span class="status-main" id="statusMain"></span>
+      <span class="src" id="srcWrap"></span>
+      <span class="status-sub" id="statusSub"></span>
+      <button class="chev" id="resultChev" style="display:none">▴</button>
+    </div>
+  </div>
+
+  <div class="guard" id="guardPanel">
+    <div class="guard-row">
+      <button class="guard-info" id="guardInfo">
+        <span class="guard-head">
+          <i class="diamond"></i>
+          <span class="eyebrow">幕聊 · 對方會怎麼讀</span>
+        </span>
+        <span class="guard-interpretation" id="guardInterpretation"></span>
+      </button>
+
+      <button class="guard-improve" id="guardImprove">改善</button>
+      <button class="chev" id="guardChevron">▴</button>
+    </div>
+  </div>
+
+  <div class="body" id="body">
+    <span class="label" id="bodyLabel">建議版本</span>
+    <div class="text" id="bodyText"></div>
+    <div class="naive" id="naiveWrap" style="display:none">
+      <span class="label">一般 AI 會回</span>
+      <div class="text" id="naiveText"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+function $(id){return document.getElementById(id)}
+
+const panel=$("panel");
+const normalPanel=$("normalPanel");
+const actions=$("actions");
+const personaActions=$("personaActions");
+const swapBtn=$("swapBtn");
+const status=$("status");
+const statusMain=$("statusMain");
+const statusSub=$("statusSub");
+const srcWrap=$("srcWrap");
+const resultChev=$("resultChev");
+const guardPanel=$("guardPanel");
+const guardInterpretation=$("guardInterpretation");
+const guardImprove=$("guardImprove");
+const guardChevron=$("guardChevron");
+const body=$("body");
+const bodyLabel=$("bodyLabel");
+const bodyText=$("bodyText");
+const naiveWrap=$("naiveWrap");
+const naiveText=$("naiveText");
+
+const LABELS={
+  empathy:"同理",concise:"簡潔",affirmative:"肯定",
+  zhuge:"諸葛亮",ceo:"顧北辰",charmer:"童錦城"
+};
+
+/* 填入後結果停留多久才收回。demo 錄影靠這 2.5 秒拍到來源標籤 */
+const RESULT_HOLD_MS=2500;
+
+let mode="";                 // "" | "guard" | "result"
+let expanded=false;
+let latestGuardSuggestion="";
+let latestReply="";
+let latestNaive="";
+let holdTimer=null;
+
+/* 高度由原生控制，沿用既有的 setGuardExpanded 當「我需要變高」的訊號 */
+function requestHeight(isExpanded){
+  if(window.Android && Android.setGuardExpanded){
+    Android.setGuardExpanded(!!isExpanded);
+  }
+}
+
+function clearHold(){
+  if(holdTimer){clearTimeout(holdTimer);holdTimer=null}
+}
+
+function collapseBody(){
+  expanded=false;
+  body.style.display="none";
+  guardChevron.textContent="▴";
+  resultChev.textContent="▴";
+  requestHeight(false);
+}
+
+function showActions(){
+  clearHold();
+  mode="";
+  panel.classList.remove("reading");
+  normalPanel.style.display="flex";
+  guardPanel.style.display="none";
+  swapBtn.style.display="block";
+  setActionRow();
+  status.style.display="none";
+  srcWrap.innerHTML="";
+  resultChev.style.display="none";
+  collapseBody();
+}
+
+function showStatus(main,sub,reading){
+  normalPanel.style.display="flex";
+  guardPanel.style.display="none";
+  actions.style.display="none";
+  personaActions.style.display="none";
+  swapBtn.style.display="none";
+  status.style.display="flex";
+  statusMain.textContent=main||"";
+  statusSub.textContent=sub||"";
+  panel.classList.toggle("reading",!!reading);
+}
+
+/* ---------- 語氣列 ↔ 角色列 ---------- */
+let personaMode=false;
+function setActionRow(){
+  actions.style.display=personaMode?"none":"flex";
+  personaActions.style.display=personaMode?"flex":"none";
+  $("brandLabel").textContent=personaMode?"幕聊 · 角色":"幕聊";
+}
+swapBtn.addEventListener("click",()=>{
+  personaMode=!personaMode;
+  setActionRow();
+});
+
+document.querySelectorAll("[data-style]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    if(window.Android && Android.compose){
+      Android.compose(btn.dataset.style);
+    }
+  });
+});
+
+/* ---------- 原生 → 網頁 ---------- */
+
+window.onComposeStarted=function(style){
+  clearHold();
+  collapseBody();
+  showStatus("正在理解聊天室",LABELS[style]||style,true);
+};
+
+/**
+ * payload（全部選填，沒帶就退回原本行為）：
+ *   { reply:string, sources:[{id,label}]|[string], naiveReply:string }
+ */
+window.onComposeFinished=function(payload){
+  clearHold();
+  panel.classList.remove("reading");
+
+  const p=payload||{};
+  latestReply=p.reply||"";
+  latestNaive=p.naiveReply||"";
+  const sources=Array.isArray(p.sources)?p.sources:[];
+
+  showStatus("已填入","完成",false);
+  mode="result";
+
+  srcWrap.innerHTML="";
+  sources.slice(0,2).forEach((s,i)=>{
+    const label=(s&&typeof s==="object")?(s.label||s.id||""):String(s||"");
+    if(!label)return;
+    const el=document.createElement("span");
+    el.className="src-chip";
+    el.textContent="引用 · "+label;
+    srcWrap.appendChild(el);
+    setTimeout(()=>el.classList.add("in"),120+i*110);
+  });
+
+  const canExpand=!!(latestNaive||latestReply);
+  resultChev.style.display=canExpand?"block":"none";
+
+  /* 沒帶 payload 就照舊：快速收回。有帶就停久一點讓人讀完來源 */
+  const hold=(sources.length||canExpand)?RESULT_HOLD_MS:850;
+  holdTimer=setTimeout(showActions,hold);
+};
+
+window.onComposeError=function(message){
+  clearHold();
+  collapseBody();
+  showStatus(message||"處理失敗","請重試",false);
+  holdTimer=setTimeout(showActions,1800);
+};
+
+window.onGuardRisk=function(result){
+  clearHold();
+  panel.classList.remove("reading");
+  mode="guard";
+
+  latestGuardSuggestion=(result&&result.suggestion)||"";
+
+  guardInterpretation.textContent=
+    (result&&(result.interpretation||result.reason))||
+    "這句話可能讓對方讀起來不太舒服";
+
+  guardImprove.style.display=latestGuardSuggestion?"block":"none";
+
+  normalPanel.style.display="none";
+  guardPanel.style.display="block";
+  collapseBody();
+  guardChevron.style.display=latestGuardSuggestion?"block":"none";
+};
+
+window.onGuardClear=function(){
+  latestGuardSuggestion="";
+  mode="";
+  guardPanel.style.display="none";
+  collapseBody();
+  normalPanel.style.display="flex";
+  showActions();
+};
+
+window.onGuardApplied=function(){
+  guardInterpretation.textContent="已改善";
+  guardImprove.style.display="none";
+  guardChevron.style.display="none";
+  collapseBody();
+  setTimeout(()=>{window.onGuardClear()},700);
+};
+
+/* ---------- 展開／收合 ---------- */
+
+function toggle(){
+  if(mode==="guard"&&!latestGuardSuggestion)return;
+  if(mode==="result"&&!latestNaive&&!latestReply)return;
+
+  expanded=!expanded;
+
+  if(expanded){
+    clearHold();   /* 展開後不要自動收掉，等使用者自己收 */
+    if(mode==="guard"){
+      bodyLabel.textContent="建議版本";
+      bodyText.textContent=latestGuardSuggestion;
+      naiveWrap.style.display="none";
+    }else{
+      bodyLabel.textContent="幕聊寫的";
+      bodyText.textContent=latestReply||"（已填入輸入框）";
+      naiveWrap.style.display=latestNaive?"block":"none";
+      naiveText.textContent=latestNaive;
+    }
+    body.style.display="block";
+    guardChevron.textContent="▾";
+    resultChev.textContent="▾";
+    requestHeight(true);
+  }else{
+    collapseBody();
+    if(mode==="result"){holdTimer=setTimeout(showActions,1200)}
+  }
+}
+
+$("guardInfo").addEventListener("click",toggle);
+guardChevron.addEventListener("click",toggle);
+resultChev.addEventListener("click",toggle);
+
+guardImprove.addEventListener("click",()=>{
+  if(!latestGuardSuggestion)return;
+  if(window.Android && Android.applyGuardSuggestion){
+    Android.applyGuardSuggestion(latestGuardSuggestion);
+  }
+});
+
+/* ---------- 沒有原生環境：自動退回假資料，瀏覽器雙擊即可看完整流程 ---------- */
+if(!window.Android){
+  window.Android={
+    compose:function(style){
+      window.onComposeStarted(style);
+      setTimeout(function(){
+        window.onComposeFinished({
+          reply:"收到，我確認一下進度——今晚 8 點前補完整版給您確認。目前卡在客戶端還沒回簽，已經在追。",
+          sources:[{id:"proj-a-status",label:"A 案進度"}],
+          naiveReply:"收到"
+        });
+      },1600);
+    },
+    applyGuardSuggestion:function(){window.onGuardApplied()},
+    setGuardExpanded:function(){}
+  };
+  /* 5 秒後自動示範一次防自爆 */
+  setTimeout(function(){
+    if(mode==="")window.onGuardRisk({
+      interpretation:"他讀起來會像被推回去自己想辦法",
+      suggestion:"這個價格包含 A、B、C。如果預算有考量，我們也有 Y 方案可以談。"
+    });
+  },5000);
+}
+
+showActions();
+</script>
+</body>
+</html>
