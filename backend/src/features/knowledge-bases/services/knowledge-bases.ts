@@ -8,6 +8,7 @@ import type {
   KnowledgeBaseSummary,
 } from "@/shared/knowledge";
 
+import env from "@/env";
 import { NotFoundError, ValidationError } from "@/shared/errors";
 
 import type { KnowledgeBaseServiceDeps } from "../domain/entities";
@@ -56,6 +57,7 @@ function isPdfFile(file: File): boolean {
 
 export function createKnowledgeBaseServices(deps: KnowledgeBaseServiceDeps) {
   const { model, bases, knowledge, promptLayers } = deps;
+  const mockOnLlmError = deps.mockOnLlmError ?? env.MOCK_ON_LLM_ERROR;
 
   /**
    * 一次上傳 1..N 個 PDF 建立知識庫（contract 的 POST /v1/knowledge-bases）。
@@ -132,10 +134,12 @@ export function createKnowledgeBaseServices(deps: KnowledgeBaseServiceDeps) {
 
       let llmOutput;
       try {
-        llmOutput = await extractFactsFromDocument(model, promptLayers, {
-          fileName: file.name,
-          text: parsed.text,
-        });
+        llmOutput = await extractFactsFromDocument(
+          model,
+          promptLayers,
+          { fileName: file.name, text: parsed.text },
+          { mockOnError: mockOnLlmError },
+        );
       }
       catch (error) {
         await fail(error instanceof DocumentExtractionError

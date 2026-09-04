@@ -45,9 +45,9 @@ function textResult(json: unknown) {
   };
 }
 
-function buildClient(model: LanguageModel) {
+function buildClient(model: LanguageModel, mockOnLlmError = false) {
   const promptLayers = loadPromptLayers();
-  const services = createKnowledgeBaseServices({ model, bases: baseStore, knowledge: store, promptLayers });
+  const services = createKnowledgeBaseServices({ model, bases: baseStore, knowledge: store, promptLayers, mockOnLlmError });
   return testClient(createTestApp(createKnowledgeBasesRouter(services)));
 }
 
@@ -132,6 +132,28 @@ describe("post /knowledge-bases", () => {
     const list = await baseStore.list();
     expect(list).toHaveLength(1);
     expect(list[0].status).toBe("failed");
+  });
+
+  it("mockOnLlmError 開啟時：LLM 失敗改回示範抽取條目（標「示範資料」），流程照走", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("network down");
+      },
+    });
+    const client = buildClient(model, true);
+
+    const response = await client["knowledge-bases"].$post({
+      form: { files: pdfFile() },
+    });
+    expect(response.status).toBe(200);
+    if (response.status !== 200)
+      return;
+    const json = await response.json();
+    expect(json.status).toBe("draft");
+    expect(json.extracted).toBe(true);
+    expect(json.items.length).toBeGreaterThan(0);
+    expect(json.items.every(item => item.tags.includes("示範資料"))).toBe(true);
+    expect(json.files[0].status).toBe("extracted");
   });
 
   it("引擎判定所有檔案都抽不到事實：回 200、extracted:false 帶 reason", async () => {

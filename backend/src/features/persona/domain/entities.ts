@@ -9,6 +9,8 @@ import type { PersonaRequest, PersonaResponse } from "../validation/persona.sche
  */
 export interface PersonaServiceDeps {
   model: LanguageModel;
+  /** LLM 失敗時退回原文不改寫；未指定時吃 env.MOCK_ON_LLM_ERROR（見 src/env.ts） */
+  mockOnLlmError?: boolean;
 }
 
 export type PersonaFn = (input: PersonaRequest) => Promise<PersonaResponse>;

@@ -26,8 +26,8 @@ function textResult(json: unknown) {
   };
 }
 
-function buildClient(model: LanguageModel) {
-  const services = createGuardServices({ model, knowledge, promptLayers });
+function buildClient(model: LanguageModel, mockOnLlmError = false) {
+  const services = createGuardServices({ model, knowledge, promptLayers, mockOnLlmError });
   const router = createGuardRouter(services);
   return testClient(createTestApp(router));
 }
@@ -156,6 +156,34 @@ describe("post /guard", () => {
     });
 
     expect(response.status).toBe(502);
+  });
+
+  it("mockOnLlmError 開啟時：draft 超過 15 字回警告＋原因＋改善建議；15 字內回 flagged:false", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("network down");
+      },
+    });
+    const client = buildClient(model, true);
+
+    const longDraft = await client.guard.$post({
+      json: { draft: "這件事情我覺得我們應該再多討論幾次比較好，不然很難收尾", conversation: [] },
+    });
+    expect(longDraft.status).toBe(200);
+    if (longDraft.status !== 200)
+      return;
+    const flagged = await longDraft.json();
+    expect(flagged.flagged).toBe(true);
+    expect(flagged.reason).toContain("示範資料");
+    expect(flagged.suggestion).not.toBeNull();
+
+    const shortDraft = await client.guard.$post({
+      json: { draft: "好，我確認一下。", conversation: [] },
+    });
+    expect(shortDraft.status).toBe(200);
+    if (shortDraft.status !== 200)
+      return;
+    expect((await shortDraft.json()).flagged).toBe(false);
   });
 });
 

@@ -21,8 +21,8 @@ function textResult(text: string) {
   };
 }
 
-function buildClient(model: LanguageModel) {
-  const services = createPersonaServices({ model });
+function buildClient(model: LanguageModel, mockOnLlmError = false) {
+  const services = createPersonaServices({ model, mockOnLlmError });
   const router = createPersonaRouter(services);
   return testClient(createTestApp(router));
 }
@@ -124,5 +124,27 @@ describe("post /persona", () => {
     });
 
     expect(response.status).toBe(502);
+  });
+
+  it("mockOnLlmError 開啟時：LLM 失敗改回 200，原文照回不改寫", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("network down");
+      },
+    });
+    const client = buildClient(model, true);
+
+    const response = await client.persona.$post({
+      json: {
+        reply: "收到，我看一下。",
+        conversation: [],
+        persona: "charmer",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    if (response.status !== 200)
+      return;
+    expect((await response.json()).reply).toBe("收到，我看一下。");
   });
 });

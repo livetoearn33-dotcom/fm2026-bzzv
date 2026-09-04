@@ -28,8 +28,8 @@ function textResult(json: unknown) {
   };
 }
 
-function buildClient(model: LanguageModel, customKnowledge: KnowledgeReader = knowledge) {
-  const services = createAnalyzeServices({ model, knowledge: customKnowledge, promptLayers });
+function buildClient(model: LanguageModel, customKnowledge: KnowledgeReader = knowledge, mockOnLlmError = false) {
+  const services = createAnalyzeServices({ model, knowledge: customKnowledge, promptLayers, mockOnLlmError });
   const router = createAnalyzeRouter(services);
   return testClient(createTestApp(router));
 }
@@ -184,6 +184,29 @@ describe("post /analyze", () => {
       return;
     const json = await response.json();
     expect(json.message).toContain("network down");
+  });
+
+  it("mockOnLlmError 開啟時：LLM 失敗改回 200 示範資料，不回 502", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error("network down");
+      },
+    });
+    const client = buildClient(model, knowledge, true);
+
+    const response = await client.analyze.$post({
+      json: {
+        conversation: [{ speaker: "them", text: "報價大概多少？", ts: "2026-09-06T09:12:00Z" }],
+      },
+    });
+
+    expect(response.status).toBe(200);
+    if (response.status !== 200)
+      return;
+    const json = await response.json();
+    expect(json.riskReason).toContain("示範資料");
+    expect(json.reply.length).toBeGreaterThan(0);
+    expect(json.sources).toEqual([]);
   });
 });
 

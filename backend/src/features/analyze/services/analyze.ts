@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 
 import type { Fact } from "@/shared/knowledge";
 
+import env from "@/env";
 import { matchAnalyzeGoldenPath } from "@/shared/golden-path";
 import { findContact, retrieveKnowledge, selectFactsWithinBudget } from "@/shared/knowledge";
 import { computeSafeCard, computeSafeCardForText } from "@/shared/local-rules";
@@ -16,6 +17,32 @@ import { buildAnalyzeScreenshotTaskBlock, buildAnalyzeSystemPrompt, buildAnalyze
 import { normalizeScreenshot } from "./screenshot";
 
 const TASK_TRIGGER_PROMPT = "請依照系統提示的規則與〈本次任務〉產生 JSON 輸出。";
+
+/** LLM 未接通時的示範回覆（MOCK_ON_LLM_ERROR，見 src/env.ts）——依三顆語氣按鈕各準備一份。 */
+const MOCK_REPLIES = {
+  empathy: "我理解你的考量，這部分我再跟內部確認一次細節，今天下班前給你明確回覆，謝謝你提醒。",
+  concise: "收到，我確認後今天內回覆你。",
+  affirmative: "好的沒問題，這件事交給我，今天內給你確定的答案。",
+} as const;
+
+const MOCK_NAIVE_REPLY = "好喔，我再看看。";
+
+function buildMockAnalyzeResponse(
+  tone: keyof typeof MOCK_REPLIES | undefined,
+  safeCard: string,
+  start: number,
+): AnalyzeResponse {
+  const canned = MOCK_REPLIES[tone ?? "empathy"];
+  return {
+    risk: "safe",
+    riskReason: "（示範資料）LLM 未接通，此為預設內容",
+    safeCard,
+    reply: safeCard.length > 0 ? `${safeCard}${canned}` : canned,
+    naiveReply: MOCK_NAIVE_REPLY,
+    sources: [],
+    latencyMs: Math.round(performance.now() - start),
+  };
+}
 
 /** sources 只列真的被塞進 context 的知識庫條目——用 id 對映回被檢索出的 facts，其餘（含幻覺 id、internal 事實）一律丟棄 */
 function mapSources(ids: string[], injectedFacts: Fact[]): AnalyzeSource[] {
@@ -59,6 +86,7 @@ async function generateWithRetry(callModel: () => Promise<{ output: AnalyzeLlmOu
 
 export function createAnalyzeService(deps: AnalyzeServiceDeps): AnalyzeFn {
   const { model, knowledge, promptLayers } = deps;
+  const mockOnLlmError = deps.mockOnLlmError ?? env.MOCK_ON_LLM_ERROR;
 
   async function runTextAnalyze(input: TextAnalyzeRequest, start: number): Promise<AnalyzeResponse> {
     const { conversation, contactId, tone } = input;
@@ -95,7 +123,17 @@ export function createAnalyzeService(deps: AnalyzeServiceDeps): AnalyzeFn {
       prompt: TASK_TRIGGER_PROMPT,
     });
 
-    let llmOutput = await generateWithRetry(callModel);
+    let llmOutput;
+    try {
+      llmOutput = await generateWithRetry(callModel);
+    }
+    catch (error) {
+      if (error instanceof AnalyzeGenerationError && mockOnLlmError) {
+        console.warn(`[analyze] LLM 失敗，退回示範資料（MOCK_ON_LLM_ERROR）：${error.message}`);
+        return buildMockAnalyzeResponse(tone, safeCard, start);
+      }
+      throw error;
+    }
 
     // 回包驗證：reply 必須以 safeCard 開頭，不符就重打一次，再不符就退回 safeCard 本身當 reply
     if (!llmOutput.reply.startsWith(safeCard)) {
@@ -154,7 +192,18 @@ export function createAnalyzeService(deps: AnalyzeServiceDeps): AnalyzeFn {
       ],
     });
 
-    const llmOutput = await generateWithRetry(callModel);
+    let llmOutput;
+    try {
+      llmOutput = await generateWithRetry(callModel);
+    }
+    catch (error) {
+      if (error instanceof AnalyzeGenerationError && mockOnLlmError) {
+        console.warn(`[analyze] LLM 失敗，退回示範資料（MOCK_ON_LLM_ERROR）：${error.message}`);
+        // 截圖模式沒有文字可跑本地安全牌規則，safeCard 給空字串
+        return buildMockAnalyzeResponse(tone, "", start);
+      }
+      throw error;
+    }
 
     // 截圖模式沒有預先算好的安全牌（沒有文字可以先跑本地關鍵字規則），
     // 改成事後用 LLM 讀圖辨識出的 conversationText 跑同一套規則。不強制 reply

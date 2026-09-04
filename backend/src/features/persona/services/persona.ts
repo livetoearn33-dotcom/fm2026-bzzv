@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 
+import env from "@/env";
 import { matchPersonaGoldenPath } from "@/shared/golden-path";
 import { loadPersonaCard } from "@/shared/prompts";
 
@@ -11,6 +12,7 @@ import { buildPersonaSystemPrompt, buildPersonaTaskBlock } from "./build-prompt"
 
 export function createPersonaService(deps: PersonaServiceDeps): PersonaFn {
   const { model } = deps;
+  const mockOnLlmError = deps.mockOnLlmError ?? env.MOCK_ON_LLM_ERROR;
 
   return async (input) => {
     const { reply, conversation, persona } = input;
@@ -46,6 +48,11 @@ export function createPersonaService(deps: PersonaServiceDeps): PersonaFn {
       }
       catch (secondError) {
         const message = secondError instanceof Error ? secondError.message : String(secondError);
+        if (mockOnLlmError) {
+          // LLM 未接通：不改寫，原文照回
+          console.warn(`[persona] LLM 失敗，原文照回（MOCK_ON_LLM_ERROR）：${message}`);
+          return { reply };
+        }
         throw new PersonaGenerationError(`LLM 呼叫失敗（已重試一次）：${message}`);
       }
     }

@@ -13,4 +13,6 @@ export interface KnowledgeBaseServiceDeps {
   bases: KnowledgeBaseRepository;
   knowledge: KnowledgeReader;
   promptLayers: PromptLayers;
+  /** LLM 失敗時退回示範抽取條目；未指定時吃 env.MOCK_ON_LLM_ERROR（見 src/env.ts） */
+  mockOnLlmError?: boolean;
 }

@@ -24,6 +24,15 @@ const EnvSchema = z.object({
   PROMPTS_DIR: z.preprocess(v => (v === "" ? undefined : v), z.string().optional()),
   /** Postgres 連線字串（知識庫儲存層）；未設時 createDb() 會丟出明確錯誤。 */
   DATABASE_URL: z.preprocess(v => (v === "" ? undefined : v), z.string().optional()),
+  /**
+   * LLM 呼叫失敗（重試後仍失敗）時改回傳標了「示範資料」的假回應，而不是 502——
+   * OPENAI_API_KEY 還沒到位前讓整條 demo 流程可走。預設開；key 設好後 LLM 正常
+   * 就不會觸發，要恢復嚴格 502 語意設成 "false"。
+   */
+  MOCK_ON_LLM_ERROR: z.preprocess(
+    v => (v === "" ? undefined : v),
+    z.enum(["true", "false"]).default("true"),
+  ).transform(v => v === "true"),
 });
 
 export type env = z.infer<typeof EnvSchema>;
