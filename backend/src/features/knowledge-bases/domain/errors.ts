@@ -2,10 +2,17 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { AppError } from "@/shared/errors";
 
-/** 上傳的檔案不是 PDF——415，不建立 document 列（見 services/documents.ts）。 */
+/** 上傳的檔案不是 PDF——415。多檔上傳時單一壞檔只標 failed 跳過；全部都壞才丟這個錯。 */
 export class UnsupportedFileTypeError extends AppError {
   constructor(message = "只接受 PDF 檔案") {
     super(message, "UNSUPPORTED_FILE_TYPE", HttpStatusCodes.UNSUPPORTED_MEDIA_TYPE);
+  }
+}
+
+/** 單一 PDF 超過大小上限——413。多檔時同樣是跳過壞檔語意。 */
+export class FileTooLargeError extends AppError {
+  constructor(message = "檔案超過 10MB 上限") {
+    super(message, "FILE_TOO_LARGE", HttpStatusCodes.REQUEST_TOO_LONG);
   }
 }
 

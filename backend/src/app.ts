@@ -1,19 +1,18 @@
 import { createDb } from "@/db/client";
 import { createAnalyzeRouter } from "@/features/analyze/api";
 import { createAnalyzeServices } from "@/features/analyze/services";
-import { createDocumentsRouter } from "@/features/documents/api";
-import { createDocumentServices } from "@/features/documents/services";
 import { createGuardRouter } from "@/features/guard/api";
 import { createGuardServices } from "@/features/guard/services";
 import healthRouter from "@/features/health/api";
+import { createKnowledgeBasesRouter } from "@/features/knowledge-bases/api";
+import { createKnowledgeBaseServices } from "@/features/knowledge-bases/services";
 import { createKnowledgeRouter } from "@/features/knowledge/api";
 import { createPersonaRouter } from "@/features/persona/api";
 import { createPersonaServices } from "@/features/persona/services";
-import { createProjectsRouter } from "@/features/projects/api";
 import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
 import { createLanguageModel } from "@/shared/ai/model";
-import { DbKnowledgeDocumentStore, DbKnowledgeStore, DbProjectStore } from "@/shared/knowledge";
+import { DbKnowledgeBaseStore, DbKnowledgeStore } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 const app = createApp();
@@ -37,21 +36,16 @@ const personaRouter = createPersonaRouter(personaServices);
 
 const knowledgeRouter = createKnowledgeRouter(knowledge);
 
-const projectStore = new DbProjectStore(createDb());
-
-const knowledgeDocuments = new DbKnowledgeDocumentStore(createDb());
-const documentServices = createDocumentServices({ model, documents: knowledgeDocuments, knowledge, projects: projectStore, promptLayers });
-const documentsRouter = createDocumentsRouter(documentServices);
-
-const projectsRouter = createProjectsRouter(projectStore);
+const knowledgeBaseStore = new DbKnowledgeBaseStore(createDb());
+const knowledgeBaseServices = createKnowledgeBaseServices({ model, bases: knowledgeBaseStore, knowledge, promptLayers });
+const knowledgeBasesRouter = createKnowledgeBasesRouter(knowledgeBaseServices);
 
 const v1Routes = [
   analyzeRouter,
   guardRouter,
   personaRouter,
   knowledgeRouter,
-  documentsRouter,
-  projectsRouter,
+  knowledgeBasesRouter,
 ] as const;
 
 app.route("/", healthRouter);

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import type * as schema from "@/db/schema";
 
-import { contacts as contactsTable, facts as factsTable, projects as projectsTable } from "@/db/schema";
+import { contacts as contactsTable, facts as factsTable, knowledgeBases as knowledgeBasesTable } from "@/db/schema";
 import { ValidationError } from "@/shared/errors";
 
 import type { Contact, Fact } from "./types";
@@ -23,7 +23,7 @@ export type FactUpsertInput = Omit<Fact, "id" | "updatedAt"> & { updatedAt?: str
  */
 export type AnyPgDatabase = PgDatabase<any, typeof schema>;
 
-/** 匯出給 document-store.ts 共用（commit 時的 fact.updatedAt 也補今天日期）。 */
+/** 匯出給 knowledge-base-store.ts 共用（commit 時的 fact.updatedAt 也補今天日期）。 */
 export function todayDateString(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -34,25 +34,25 @@ function toDateOnlyString(date: Date): string {
 }
 
 /**
- * projectId 有帶時先確認專案存在——不存在就回 400（ValidationError），
- * 不要放給 FK violation 變成 500。projectId 已在 API 層用 zod .uuid() 驗過格式，
- * 這裡直接查不會有 uuid cast error。匯出給 document-store.ts 共用。
+ * knowledgeBaseId 有帶時先確認知識庫存在——不存在就回 400（ValidationError），
+ * 不要放給 FK violation 變成 500。id 已在 API 層用 zod .uuid() 驗過格式，
+ * 這裡直接查不會有 uuid cast error。
  */
-export async function assertProjectExists(db: AnyPgDatabase, projectId: string): Promise<void> {
+export async function assertKnowledgeBaseExists(db: AnyPgDatabase, knowledgeBaseId: string): Promise<void> {
   const [row] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(eq(projectsTable.id, projectId))
+    .select({ id: knowledgeBasesTable.id })
+    .from(knowledgeBasesTable)
+    .where(eq(knowledgeBasesTable.id, knowledgeBaseId))
     .limit(1);
   if (!row) {
-    throw new ValidationError(`找不到專案：${projectId}`);
+    throw new ValidationError(`找不到知識庫：${knowledgeBaseId}`);
   }
 }
 
 type FactRow = typeof factsTable.$inferSelect;
 type ContactRow = typeof contactsTable.$inferSelect;
 
-/** 匯出給 document-store.ts 共用（commit 完 fact 後轉成對外 Fact 形狀）。 */
+/** 匯出給 knowledge-base-store.ts 共用（commit 完 fact 後轉成對外 Fact 形狀）。 */
 export function factRowToFact(row: FactRow): Fact {
   return FactSchema.parse({
     id: row.id,
@@ -62,7 +62,7 @@ export function factRowToFact(row: FactRow): Fact {
     updatedAt: toDateOnlyString(row.updatedAt),
     volatility: row.volatility,
     usage: row.usage ?? undefined,
-    projectId: row.projectId ?? undefined,
+    knowledgeBaseId: row.knowledgeBaseId ?? undefined,
   });
 }
 
@@ -74,7 +74,7 @@ function contactRowToContact(row: ContactRow): Contact {
     tone: row.tone,
     notes: row.notes,
     recentTopics: row.recentTopics,
-    projectId: row.projectId ?? undefined,
+    knowledgeBaseId: row.knowledgeBaseId ?? undefined,
   });
 }
 
@@ -118,8 +118,8 @@ export class DbKnowledgeStore implements KnowledgeRepository {
     }
     const updatedAtString = body.updatedAt && body.updatedAt.length > 0 ? body.updatedAt : todayDateString();
     const parsed = FactSchema.parse({ ...body, id, updatedAt: updatedAtString });
-    if (parsed.projectId) {
-      await assertProjectExists(this.db, parsed.projectId);
+    if (parsed.knowledgeBaseId) {
+      await assertKnowledgeBaseExists(this.db, parsed.knowledgeBaseId);
     }
 
     const [row] = await this.db
@@ -131,7 +131,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
         tags: parsed.tags,
         volatility: parsed.volatility,
         usage: parsed.usage,
-        projectId: parsed.projectId,
+        knowledgeBaseId: parsed.knowledgeBaseId,
         updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
       })
       .onConflictDoUpdate({
@@ -142,7 +142,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
           tags: parsed.tags,
           volatility: parsed.volatility,
           usage: parsed.usage ?? null,
-          projectId: parsed.projectId ?? null,
+          knowledgeBaseId: parsed.knowledgeBaseId ?? null,
           updatedAt: new Date(`${updatedAtString}T00:00:00.000Z`),
         },
       })
@@ -164,8 +164,8 @@ export class DbKnowledgeStore implements KnowledgeRepository {
       throw new ValidationError(`id 不可為保留前綴 _TODO：${id}`);
     }
     const parsed = ContactSchema.parse({ ...body, id });
-    if (parsed.projectId) {
-      await assertProjectExists(this.db, parsed.projectId);
+    if (parsed.knowledgeBaseId) {
+      await assertKnowledgeBaseExists(this.db, parsed.knowledgeBaseId);
     }
 
     const [row] = await this.db
@@ -177,7 +177,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
         tone: parsed.tone,
         notes: parsed.notes,
         recentTopics: parsed.recentTopics,
-        projectId: parsed.projectId,
+        knowledgeBaseId: parsed.knowledgeBaseId,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -188,7 +188,7 @@ export class DbKnowledgeStore implements KnowledgeRepository {
           tone: parsed.tone,
           notes: parsed.notes,
           recentTopics: parsed.recentTopics,
-          projectId: parsed.projectId ?? null,
+          knowledgeBaseId: parsed.knowledgeBaseId ?? null,
           updatedAt: new Date(),
         },
       })

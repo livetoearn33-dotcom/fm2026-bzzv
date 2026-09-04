@@ -11,20 +11,27 @@ import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-
 export const volatilityEnum = pgEnum("volatility", ["high", "low"]);
 export const factUsageEnum = pgEnum("fact_usage", ["internal"]);
 export const documentStatusEnum = pgEnum("document_status", ["parsing", "extracted", "committed", "failed"]);
+export const knowledgeBaseStatusEnum = pgEnum("knowledge_base_status", ["extracting", "draft", "committed", "failed"]);
 
 /**
- * 專案是知識庫的父層實體（對應 Android app-settings 的「每個知識庫以專案為單位」）：
- * facts／contacts／knowledge_documents 都可以用 project_id 掛在某個專案底下。
- * 刪除專案時底下資料保留但脫鉤（ON DELETE SET NULL），跟刪除文件的溯源語意一致。
+ * 知識庫（frontend_backend_contract 的 knowledge-bases 資源）：一次上傳 1..N 個 PDF
+ * 組成一個知識庫，抽取草稿確認後整庫 commit。name 是產品畫面的「專案名稱」，
+ * contract 未要求、選填。status 對應 contract 的 extracting|draft|committed|failed。
  */
-export const projects = pgTable("projects", {
+export const knowledgeBases = pgTable("knowledge_bases", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
+  name: text("name"),
+  status: knowledgeBaseStatusEnum("status").notNull(),
+  errorReason: text("error_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** PDF 上傳（下一批功能）會用到；本次只建結構，不接 endpoint。 */
+/**
+ * 知識庫底下的單一 PDF。刪知識庫連動刪文件（CASCADE）——contract 的刪除語意是
+ * 「刪除整個知識庫及其關聯 documents」。knowledge_base_id 在 DB 層保持 nullable
+ * （歷史孤兒列），新寫入的文件一律由程式碼掛上知識庫。
+ */
 export const knowledgeDocuments = pgTable("knowledge_documents", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   fileName: text("file_name"),
@@ -34,7 +41,7 @@ export const knowledgeDocuments = pgTable("knowledge_documents", {
   status: documentStatusEnum("status").notNull(),
   errorReason: text("error_reason"),
   extractedDraft: jsonb("extracted_draft"),
-  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+  knowledgeBaseId: uuid("knowledge_base_id").references(() => knowledgeBases.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -45,7 +52,8 @@ export const facts = pgTable("facts", {
   tags: text("tags").array().notNull().default([]),
   volatility: volatilityEnum("volatility").notNull(),
   usage: factUsageEnum("usage"),
-  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+  /** commit 時寫入。刪知識庫連動刪 facts（CASCADE）——frontend 預期「刪除後不可再被 RAG 引用」；手動建的 facts（null）不受影響。 */
+  knowledgeBaseId: uuid("knowledge_base_id").references(() => knowledgeBases.id, { onDelete: "cascade" }),
   sourceDocumentId: uuid("source_document_id").references(() => knowledgeDocuments.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -58,7 +66,8 @@ export const contacts = pgTable("contacts", {
   tone: text("tone").notNull(),
   notes: text("notes").notNull(),
   recentTopics: text("recent_topics").array().notNull().default([]),
-  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+  /** 對象檔案不是 PDF 抽出來的知識——刪知識庫只脫鉤（SET NULL），不連動刪除。 */
+  knowledgeBaseId: uuid("knowledge_base_id").references(() => knowledgeBases.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

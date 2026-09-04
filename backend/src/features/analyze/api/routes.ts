@@ -11,7 +11,7 @@ const tags = ["Analyze"];
 /**
  * 截圖模式的 base64 字串上限：對應約 10MB 原始圖（base64 膨脹 4/3 ≈ 13.3MB）＋
  * JSON 其餘欄位與跳脫字元的緩衝。整支 request body 一起量，跟 documents 上傳
- * 用的 bodyLimit 是同一套慣例（見 features/documents/api/routes.ts）。
+ * 用的 bodyLimit 是同一套慣例（見 features/knowledge-bases/api/routes.ts）。
  */
 const MAX_ANALYZE_BODY_BYTES = 14 * 1024 * 1024;
 

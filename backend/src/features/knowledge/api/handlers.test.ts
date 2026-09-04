@@ -11,7 +11,7 @@ import { createTestDb } from "@/db/test-client";
 import { createAnalyzeRouter } from "@/features/analyze/api";
 import { createAnalyzeServices } from "@/features/analyze/services";
 import { createTestApp } from "@/lib/create-app";
-import { DbKnowledgeStore, DbProjectStore, loadContacts, loadFacts } from "@/shared/knowledge";
+import { DbKnowledgeBaseStore, DbKnowledgeStore, loadContacts, loadFacts } from "@/shared/knowledge";
 import { loadPromptLayers } from "@/shared/prompts";
 
 import { createKnowledgeRouter } from "./index";
@@ -84,8 +84,8 @@ describe("put /contacts/{id}", () => {
     expect(list.map(contact => contact.id)).toContain("new-contact");
   });
 
-  it("帶 projectId 新增：回應與列表都保存；專案不存在回 400", async () => {
-    const project = await new DbProjectStore(db).create("幕聊");
+  it("帶 knowledgeBaseId 新增：回應與列表都保存；知識庫不存在回 400", async () => {
+    const base = await new DbKnowledgeBaseStore(db).createBase("幕聊");
     const client = buildKnowledgeClient();
     const response = await client.contacts[":id"].$put({
       param: { id: "proj-contact" },
@@ -95,20 +95,20 @@ describe("put /contacts/{id}", () => {
         tone: "客氣",
         notes: "",
         recentTopics: [],
-        projectId: project.id,
+        knowledgeBaseId: base.id,
       },
     });
     expect(response.status).toBe(200);
     if (response.status !== 200)
       return;
     const json = await response.json();
-    expect(json.projectId).toBe(project.id);
+    expect(json.knowledgeBaseId).toBe(base.id);
 
     const listResponse = await client.contacts.$get();
     const list = await listResponse.json();
-    expect(list.find(contact => contact.id === "proj-contact")?.projectId).toBe(project.id);
-    // seed 進來的既有資料沒有 projectId，序列化時應該整個欄位省略而不是 null
-    expect(list.find(contact => contact.id === "boss-lin")).not.toHaveProperty("projectId");
+    expect(list.find(contact => contact.id === "proj-contact")?.knowledgeBaseId).toBe(base.id);
+    // seed 進來的既有資料沒有 knowledgeBaseId，序列化時應該整個欄位省略而不是 null
+    expect(list.find(contact => contact.id === "boss-lin")).not.toHaveProperty("knowledgeBaseId");
 
     const missingProject = await client.contacts[":id"].$put({
       param: { id: "proj-contact-2" },
@@ -118,7 +118,7 @@ describe("put /contacts/{id}", () => {
         tone: "客氣",
         notes: "",
         recentTopics: [],
-        projectId: "00000000-0000-4000-8000-000000000000",
+        knowledgeBaseId: "00000000-0000-4000-8000-000000000000",
       },
     });
     expect(missingProject.status).toBe(400);
@@ -200,19 +200,19 @@ describe("put /facts/{id}", () => {
     expect(json.id).toBe("new-fact");
   });
 
-  it("帶 projectId 新增與清除：省略 projectId 更新時會清掉既有值", async () => {
-    const project = await new DbProjectStore(db).create("幕聊");
+  it("帶 knowledgeBaseId 新增與清除：省略時更新會清掉既有值", async () => {
+    const base = await new DbKnowledgeBaseStore(db).createBase("幕聊");
     const client = buildKnowledgeClient();
     const withProject = await client.facts[":id"].$put({
       param: { id: "proj-fact" },
-      json: { label: "專案事實", tags: [], content: "內容", volatility: "low", projectId: project.id },
+      json: { label: "專案事實", tags: [], content: "內容", volatility: "low", knowledgeBaseId: base.id },
     });
     expect(withProject.status).toBe(200);
     if (withProject.status !== 200)
       return;
-    expect((await withProject.json()).projectId).toBe(project.id);
+    expect((await withProject.json()).knowledgeBaseId).toBe(base.id);
 
-    // PUT 是整筆覆蓋語意：再次 PUT 不帶 projectId 應清除
+    // PUT 是整筆覆蓋語意：再次 PUT 不帶 knowledgeBaseId 應清除
     const withoutProject = await client.facts[":id"].$put({
       param: { id: "proj-fact" },
       json: { label: "專案事實", tags: [], content: "內容", volatility: "low" },
@@ -220,7 +220,7 @@ describe("put /facts/{id}", () => {
     expect(withoutProject.status).toBe(200);
     if (withoutProject.status !== 200)
       return;
-    expect(await withoutProject.json()).not.toHaveProperty("projectId");
+    expect(await withoutProject.json()).not.toHaveProperty("knowledgeBaseId");
   });
 
   it("更新既有 id 會覆蓋整筆內容", async () => {
@@ -290,7 +290,7 @@ describe("put 後 /analyze 立刻看到新 fact（同一個 DB，不是啟動時
     return testClient(createTestApp(createAnalyzeRouter(services)));
   }
 
-  it("pUT 新 fact 後，/analyze 的檢索與 sources 能看到它", async () => {
+  it("put 新 fact 後，/analyze 的檢索與 sources 能看到它", async () => {
     const knowledgeClient = buildKnowledgeClient();
     const putResponse = await knowledgeClient.facts[":id"].$put({
       param: { id: "test-new-topic" },

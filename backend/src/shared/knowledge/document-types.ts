@@ -1,12 +1,18 @@
 import { z } from "@hono/zod-openapi";
 
 /**
- * knowledge_documents（PDF 上傳 → 抽取草稿 → 確認寫入）的對外型別。
- * DB 欄位定義見 src/db/schema.ts；儲存層轉換見 document-store.ts。
+ * knowledge-bases（一次上傳 1..N 個 PDF → 抽取草稿 → 整庫確認寫入）的對外型別，
+ * 形狀對齊 frontend_backend_contract.json 的 knowledgeBase 段。
+ * DB 欄位定義見 src/db/schema.ts；儲存層轉換見 knowledge-base-store.ts。
  */
 
+/** 單一 PDF 的處理狀態（DB 內部）。 */
 export const DocumentStatusSchema = z.enum(["parsing", "extracted", "committed", "failed"]);
 export type DocumentStatus = z.infer<typeof DocumentStatusSchema>;
+
+/** 知識庫整體狀態（contract 的 extracting | draft | committed | failed）。 */
+export const KnowledgeBaseStatusSchema = z.enum(["extracting", "draft", "committed", "failed"]);
+export type KnowledgeBaseStatus = z.infer<typeof KnowledgeBaseStatusSchema>;
 
 /**
  * PDF 抽取草稿單筆條目。`suggestedId` 由後端生成（見 services/slug.ts），
@@ -23,8 +29,9 @@ export const ExtractedFactItemSchema = z.object({
 export type ExtractedFactItem = z.infer<typeof ExtractedFactItemSchema>;
 
 /**
- * knowledge_documents.extracted_draft 這個 jsonb 欄位的形狀：
+ * knowledge_documents.extracted_draft 這個 jsonb 欄位的形狀（單一 PDF 的抽取結果）：
  * 抽到東西（items 可能是空陣列）或 LLM 判定整份文件沒有可抽的事實。
+ * 知識庫層的 draft 由所有文件的 extracted_draft 合併而成（見 knowledge-base-store.ts）。
  */
 export const ExtractedDraftSchema = z.discriminatedUnion("extracted", [
   z.object({ extracted: z.literal(true), items: z.array(ExtractedFactItemSchema) }),
@@ -32,8 +39,8 @@ export const ExtractedDraftSchema = z.discriminatedUnion("extracted", [
 ]);
 export type ExtractedDraft = z.infer<typeof ExtractedDraftSchema>;
 
-/** GET /v1/knowledge/documents 列表用——不含 extracted_draft，避免 payload 過大。 */
-export const KnowledgeDocumentSummarySchema = z.object({
+/** 知識庫底下單一 PDF 的對外形狀。status/errorReason 是 contract 的超集——「跳過壞檔繼續」時 app 靠它顯示哪些檔失敗。 */
+export const KnowledgeBaseFileSchema = z.object({
   id: z.string(),
   fileName: z.string().nullable(),
   mimeType: z.string().nullable(),
@@ -41,14 +48,24 @@ export const KnowledgeDocumentSummarySchema = z.object({
   pageCount: z.number().nullable(),
   status: DocumentStatusSchema,
   errorReason: z.string().nullable(),
-  /** 上傳時指定的所屬專案 id（見 /v1/projects）；null＝未歸屬任何專案 */
-  projectId: z.string().nullable(),
-  createdAt: z.string(),
 });
-export type KnowledgeDocumentSummary = z.infer<typeof KnowledgeDocumentSummarySchema>;
+export type KnowledgeBaseFile = z.infer<typeof KnowledgeBaseFileSchema>;
 
-/** GET /v1/knowledge/documents/{id} 用——多帶草稿內容。 */
-export const KnowledgeDocumentDetailSchema = KnowledgeDocumentSummarySchema.extend({
+/** GET /v1/knowledge-bases 列表單筆——不含 draft 全文，避免 payload 過大。 */
+export const KnowledgeBaseSummarySchema = z.object({
+  id: z.string(),
+  /** 產品畫面的「專案名稱」；contract 未要求、選填 */
+  name: z.string().nullable(),
+  status: KnowledgeBaseStatusSchema,
+  fileCount: z.number(),
+  files: z.array(KnowledgeBaseFileSchema),
+  createdAt: z.string(),
+  errorReason: z.string().nullable(),
+});
+export type KnowledgeBaseSummary = z.infer<typeof KnowledgeBaseSummarySchema>;
+
+/** GET /v1/knowledge-bases/{id} 用——多帶合併後的抽取草稿。 */
+export const KnowledgeBaseDetailSchema = KnowledgeBaseSummarySchema.extend({
   draft: ExtractedDraftSchema.nullable(),
 });
-export type KnowledgeDocumentDetail = z.infer<typeof KnowledgeDocumentDetailSchema>;
+export type KnowledgeBaseDetail = z.infer<typeof KnowledgeBaseDetailSchema>;
