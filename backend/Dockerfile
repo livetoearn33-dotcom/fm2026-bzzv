@@ -61,6 +61,7 @@ RUN APP="$(cat /tmp/app-dir)" \
  && echo "== /out/app ==" && ls -la /out/app \
  && echo "== /out/assets/data ==" && ls -la /out/assets/data \
  && echo "== /out/assets/prompts ==" && ls -la /out/assets/prompts \
+ && test -f /out/app/drizzle/meta/_journal.json \
  && test -f /out/assets/data/facts.json \
  && test -f /out/assets/data/contacts.json \
  && test "$(ls /out/assets/prompts | wc -l)" -gt 0
